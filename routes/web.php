@@ -1,12 +1,22 @@
 <?php
 
+use App\Http\Controllers\ContactController;
+use App\Models\PageView;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 
 Route::get('/', function () {
+    PageView::firstOrCreate([], ['visits' => 0])->increment('visits');
+
     return view('welcome');
 })->name('home');
+
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+Route::view('Impressum.html', 'legal.impressum')->name('impressum');
+Route::view('dsgvo.html', 'legal.dsgvo')->name('dsgvo');
+Route::view('AGB.html', 'legal.agb')->name('agb');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
