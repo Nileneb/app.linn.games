@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - linn-storage-production:/var/www/storage:ro
+      - linn-build-assets:/var/www/public/build:ro
       - ./docker/common/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
       - ./public/images:/var/www/public/images:ro
     environment:
@@ -25,6 +26,7 @@ services:
     restart: unless-stopped
     volumes:
       - linn-storage-production:/var/www/storage
+      - linn-build-assets:/var/www/public/build-shared
       - ./public/images:/var/www/public/images:ro
     env_file:
       - .env
@@ -135,7 +137,7 @@ services:
     restart: unless-stopped
     command: ["--access-mode=unrestricted", "--transport=sse"]
     environment:
-      - DATABASE_URI=postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
+      - DATABASE_URI=postgresql://${LANGDOCK_DB_USERNAME}:${LANGDOCK_DB_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
     # ports:
     #   - "8200:8000"
     networks:
@@ -151,3 +153,4 @@ networks:
 volumes:
   linn-postgres-data:
   linn-storage-production:
+  linn-build-assets:

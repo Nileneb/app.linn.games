@@ -8,13 +8,13 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'langdock_agent') THEN
-        CREATE ROLE langdock_agent LOGIN PASSWORD 'CHANGE_ME';
+        CREATE ROLE langdock_agent LOGIN PASSWORD 'CHANGE_ME_IN_ENV';
     END IF;
 END
 $$;
 
 -- 2. Allow connection
-GRANT CONNECT ON DATABASE app_linn_games TO langdock_agent;
+GRANT CONNECT ON DATABASE linn_games TO langdock_agent;
 
 -- 3. Schema usage
 GRANT USAGE ON SCHEMA public TO langdock_agent;
@@ -70,7 +70,6 @@ REVOKE ALL ON
     jobs,
     job_batches,
     failed_jobs,
-    personal_access_tokens,
     permissions,
     roles,
     model_has_permissions,

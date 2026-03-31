@@ -75,6 +75,10 @@ sleep 5
 echo "==> Service status:"
 docker compose ps
 
+# ── Deploy notification mail ───────────────────
+echo "==> Sending deploy notification..."
+docker compose run --rm php-cli php artisan deploy:notify || echo "WARN: Deploy notification mail failed."
+
 echo ""
 echo "==> Deployment complete."
 echo "    App:          http://localhost:6479"

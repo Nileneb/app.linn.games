@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Sync built frontend assets to the shared volume so nginx can serve them
+if [ -d /var/www/public/build ] && [ -d /var/www/public/build-shared ]; then
+    echo "Syncing build assets to shared volume..."
+    cp -r /var/www/public/build/* /var/www/public/build-shared/
+fi
+
 # Wait for database to be ready
 echo "Waiting for database..."
 while ! php artisan tinker --execute="DB::connection()->getPdo();" > /dev/null 2>&1; do

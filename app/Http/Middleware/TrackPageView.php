@@ -18,11 +18,14 @@ class TrackPageView
         $response = $next($request);
 
         if ($request->isMethod('GET') && !$this->isBot($request->userAgent() ?? '')) {
-            PageView::create([
-                'path' => $request->path(),
-                'ip_anonymous' => $this->anonymizeIp($request->ip()),
-                'user_agent' => mb_substr($request->userAgent() ?? '', 0, 500),
-            ]);
+            $pageView = PageView::firstOrCreate(
+                ['path' => $request->path()],
+                [
+                    'ip_anonymous' => $this->anonymizeIp($request->ip()),
+                    'user_agent' => mb_substr($request->userAgent() ?? '', 0, 500),
+                ],
+            );
+            $pageView->increment('visits');
         }
 
         return $response;
