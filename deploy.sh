@@ -36,7 +36,7 @@ docker compose pull postgres redis postgres-mcp
 # ── Build ──────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building production images..."
-  docker compose build --no-cache web php-fpm queue-worker php-cli
+  docker compose build --no-cache postgres web php-fpm queue-worker php-cli
 else
   echo "==> Skipping build (--skip-build)"
 fi
@@ -49,6 +49,9 @@ docker compose exec postgres pg_isready -q --timeout=30 || {
   echo "ERROR: Postgres did not become ready." >&2
   exit 1
 }
+
+echo "==> Ensuring required Postgres extensions..."
+docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
 
 # ── Migrate ────────────────────────────────────
 if [ "$SKIP_MIGRATE" = false ]; then

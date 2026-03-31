@@ -152,6 +152,34 @@ services:
       postgres:
         condition: service_healthy
 
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - linn-ollama-data:/root/.ollama
+    networks:
+      - linn-network
+
+  mcp-paper-search:
+    build:
+      context: ./paper-search-mcp
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - BEARER_TOKEN=${MCP_AUTH_TOKEN}
+      - DOWNLOAD_PATH=/data/papers
+      - LARAVEL_INGEST_URL=http://php-fpm/api/papers/ingest
+      - LARAVEL_MCP_TOKEN=${MCP_AUTH_TOKEN}
+    volumes:
+      - linn-papers-data:/data/papers
+    networks:
+      - linn-network
+    depends_on:
+      ollama:
+        condition: service_started
+      php-fpm:
+        condition: service_started
+
 networks:
   linn-network:
     driver: bridge
@@ -160,3 +188,5 @@ volumes:
   linn-postgres-data:
   linn-storage-production:
   linn-build-assets:
+  linn-papers-data:
+  linn-ollama-data:

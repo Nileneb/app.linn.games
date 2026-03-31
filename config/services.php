@@ -41,4 +41,8 @@ return [
         'secret' => env('LANGDOCK_WEBHOOK_SECRET'),
     ],
 
+    'mcp' => [
+        'auth_token' => env('MCP_AUTH_TOKEN'),
+    ],
+
 ];
