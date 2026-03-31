@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Recherche\Projekt;
 use App\Policies\ProjektPolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,5 +24,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Projekt::class, ProjektPolicy::class);
+
+        if ($this->app->isProduction()) {
+            URL::forceScheme('https');
+        }
     }
 }

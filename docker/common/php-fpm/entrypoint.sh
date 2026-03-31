@@ -4,7 +4,8 @@ set -e
 # Sync built frontend assets to the shared volume so nginx can serve them
 if [ -d /var/www/public/build ] && [ -d /var/www/public/build-shared ]; then
     echo "Syncing build assets to shared volume..."
-    cp -r /var/www/public/build/* /var/www/public/build-shared/
+    rm -rf /var/www/public/build-shared/*
+    cp -a /var/www/public/build/. /var/www/public/build-shared/
 fi
 
 # Wait for database to be ready

@@ -65,6 +65,10 @@ docker compose run --rm php-cli php artisan route:cache
 docker compose run --rm php-cli php artisan view:cache
 
 # ── Start all services ─────────────────────────
+echo "==> Clearing stale build-asset volume..."
+docker compose down --remove-orphans 2>/dev/null || true
+docker volume rm applinngames_linn-build-assets 2>/dev/null || true
+
 echo "==> Starting all services..."
 docker compose up -d
 
