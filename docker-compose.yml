@@ -165,8 +165,11 @@ services:
       context: ./paper-search-mcp
       dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "8089:8089"
     environment:
       - BEARER_TOKEN=${MCP_AUTH_TOKEN}
+      - MCP_MESSAGES_PATH=/paper-messages/
       - DOWNLOAD_PATH=/data/papers
       - LARAVEL_INGEST_URL=http://php-fpm/api/papers/ingest
       - LARAVEL_MCP_TOKEN=${MCP_AUTH_TOKEN}
