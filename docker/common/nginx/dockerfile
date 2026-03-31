@@ -8,10 +8,13 @@ RUN rm -rf /var/www/tests /var/www/.git /var/www/.github \
     /var/www/.gitignore /var/www/.dockerignore /var/www/node_modules /var/www/.env* \
     || true
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-RUN apt-get update && apt-get install -y unzip git curl && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip git curl libicu-dev libzip-dev && \
+    docker-php-ext-install intl zip && \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin \
     --filename=composer && \
-    composer install --no-dev --optimize-autoloader
+    composer install --no-dev --optimize-autoloader && \
+    apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Node.js (npm build)
 FROM node:24-alpine AS node_build
