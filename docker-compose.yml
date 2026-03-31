@@ -104,17 +104,21 @@ services:
         condition: service_healthy
 
   postgres:
-    image: postgres:16
+    build:
+      context: .
+      dockerfile: ./docker/common/postgres/dockerfile
     restart: unless-stopped
     user: postgres
     # ports:
     #   - "5433:5432"
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE}
       - POSTGRES_USER=${POSTGRES_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - linn-postgres-data:/var/lib/postgresql/data
+      - ./docker/common/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql:ro
     networks:
       - linn-network
     healthcheck:

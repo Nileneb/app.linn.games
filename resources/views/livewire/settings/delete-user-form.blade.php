@@ -28,12 +28,12 @@ new class extends Component {
         <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Delete your account and all of its resources') }}</p>
     </div>
 
-    <div x-data="{ showDeleteModal: false }">
+    <div x-data="{ showDeleteModal: {{ $errors->isNotEmpty() ? 'true' : 'false' }} }">
         <button @click="showDeleteModal = true" data-test="delete-user-button" class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
             {{ __('Delete account') }}
         </button>
 
-        <div x-show="showDeleteModal || {{ $errors->isNotEmpty() ? 'true' : 'false' }}" x-cloak class="fixed inset-0 z-50 flex items-center justify-center" @keydown.escape.window="showDeleteModal = false">
+        <div x-show="showDeleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center" @keydown.escape.window="showDeleteModal = false">
             <div class="fixed inset-0 bg-black/50" @click="showDeleteModal = false"></div>
             <div class="relative z-10 w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
                 <form method="POST" wire:submit="deleteUser" class="space-y-6">

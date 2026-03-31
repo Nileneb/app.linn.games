@@ -19,8 +19,9 @@ GRANT CONNECT ON DATABASE linn_games TO langdock_agent;
 -- 3. Schema usage
 GRANT USAGE ON SCHEMA public TO langdock_agent;
 
--- 4. Read-only on user / auth tables
-GRANT SELECT ON users TO langdock_agent;
+-- 4. Read-only on user / auth tables and migrations (needed for MCP health check)
+GRANT SELECT ON users, migrations, chat_messages, webhooks TO langdock_agent;
+GRANT USAGE, SELECT ON SEQUENCE migrations_id_seq TO langdock_agent;
 
 -- 5. Full CRUD on all Recherche tables
 GRANT SELECT, INSERT, UPDATE, DELETE ON
