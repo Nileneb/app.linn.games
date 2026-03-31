@@ -21,6 +21,7 @@
                 </div>
             </div>
         </div>
-        @fluxScripts
+        @include('cookie-consent::index')
+        @livewireScriptConfig
     </body>
 </html>

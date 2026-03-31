@@ -10,19 +10,15 @@
         <form method="POST" action="{{ route('password.confirm.store') }}" class="flex flex-col gap-6">
             @csrf
 
-            <flux:input
-                name="password"
-                :label="__('Password')"
-                type="password"
-                required
-                autocomplete="current-password"
-                :placeholder="__('Password')"
-                viewable
-            />
+            <div>
+                <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('Password') }}</label>
+                <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="{{ __('Password') }}" class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500" />
+                @error('password') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
 
-            <flux:button variant="primary" type="submit" class="w-full" data-test="confirm-password-button">
+            <button type="submit" data-test="confirm-password-button" class="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                 {{ __('Confirm') }}
-            </flux:button>
+            </button>
         </form>
     </div>
 </x-layouts.auth>

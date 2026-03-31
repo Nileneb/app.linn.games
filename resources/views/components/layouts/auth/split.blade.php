@@ -20,8 +20,8 @@
 
                 <div class="relative z-20 mt-auto">
                     <blockquote class="space-y-2">
-                        <flux:heading size="lg">&ldquo;{{ trim($message) }}&rdquo;</flux:heading>
-                        <footer><flux:heading>{{ trim($author) }}</flux:heading></footer>
+                        <p class="text-lg font-semibold text-white">&ldquo;{{ trim($message) }}&rdquo;</p>
+                        <footer><p class="text-sm font-medium text-white">{{ trim($author) }}</p></footer>
                     </blockquote>
                 </div>
             </div>
@@ -38,6 +38,7 @@
                 </div>
             </div>
         </div>
-        @fluxScripts
+        @include('cookie-consent::index')
+        @livewireScriptConfig
     </body>
 </html>

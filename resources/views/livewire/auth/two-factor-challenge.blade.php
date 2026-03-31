@@ -43,43 +43,58 @@
                 <div class="space-y-5 text-center">
                     <div x-show="!showRecoveryInput">
                         <div class="flex items-center justify-center my-5">
-                            <flux:otp
-                                x-model="code"
-                                length="6"
-                                name="code"
-                                label="OTP Code"
-                                label:sr-only
-                                class="mx-auto"
-                             />
+                            <div class="mx-auto flex gap-2" x-data="{
+                                digits: ['','','','','',''],
+                                focusNext(i) {
+                                    if (i < 5) this.$refs['otp'+(i+1)].focus();
+                                },
+                                handleInput(i, e) {
+                                    this.digits[i] = e.target.value.slice(-1);
+                                    this.code = this.digits.join('');
+                                    if (e.target.value) this.focusNext(i);
+                                },
+                                handleKeydown(i, e) {
+                                    if (e.key === 'Backspace' && !this.digits[i] && i > 0) {
+                                        this.$refs['otp'+(i-1)].focus();
+                                    }
+                                },
+                                handlePaste(e) {
+                                    const text = (e.clipboardData || window.clipboardData).getData('text').slice(0,6);
+                                    text.split('').forEach((c, i) => { if (i < 6) this.digits[i] = c; });
+                                    this.code = this.digits.join('');
+                                    e.preventDefault();
+                                    if (text.length >= 6) this.$refs.otp5.focus();
+                                }
+                            }" @clear-2fa-auth-code.window="digits=['','','','','','']; code=''" @focus-2fa-auth-code.window="$refs.otp0.focus()">
+                                <template x-for="(d, i) in digits" :key="i">
+                                    <input :x-ref="'otp'+i" type="text" inputmode="numeric" maxlength="1" :value="digits[i]" @input="handleInput(i, $event)" @keydown="handleKeydown(i, $event)" @paste="handlePaste($event)" class="h-12 w-10 rounded-md border border-zinc-300 bg-white text-center text-lg text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                                </template>
+                                <input type="hidden" name="code" x-model="code" />
+                            </div>
                         </div>
                     </div>
 
                     <div x-show="showRecoveryInput">
                         <div class="my-5">
-                            <flux:input
+                            <input
                                 type="text"
                                 name="recovery_code"
                                 x-ref="recovery_code"
                                 x-bind:required="showRecoveryInput"
                                 autocomplete="one-time-code"
                                 x-model="recovery_code"
+                                class="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                             />
                         </div>
 
                         @error('recovery_code')
-                            <flux:text color="red">
-                                {{ $message }}
-                            </flux:text>
+                            <p class="text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <flux:button
-                        variant="primary"
-                        type="submit"
-                        class="w-full"
-                    >
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                         {{ __('Continue') }}
-                    </flux:button>
+                    </button>
                 </div>
 
                 <div class="mt-5 space-x-0.5 text-sm leading-5 text-center">
