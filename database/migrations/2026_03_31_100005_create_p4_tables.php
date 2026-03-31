@@ -13,46 +13,52 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('p4_suchstrings', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
-            $table->uuid('projekt_id');
-            $table->text('datenbank');
-            $table->text('suchstring');
-            $table->text('feldeinschraenkung')->nullable();
-            $table->jsonb('gesetzte_filter')->nullable();
-            $table->integer('treffer_anzahl')->nullable();
-            $table->text('einschaetzung')->nullable();
-            $table->text('anpassung')->nullable();
-            $table->text('version')->default('v1.0');
-            $table->date('suchdatum')->nullable();
-            $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
-            $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
-        });
+        if (! Schema::hasTable('p4_suchstrings')) {
+            Schema::create('p4_suchstrings', function (Blueprint $table) {
+                $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
+                $table->uuid('projekt_id');
+                $table->text('datenbank');
+                $table->text('suchstring');
+                $table->text('feldeinschraenkung')->nullable();
+                $table->jsonb('gesetzte_filter')->nullable();
+                $table->integer('treffer_anzahl')->nullable();
+                $table->text('einschaetzung')->nullable();
+                $table->text('anpassung')->nullable();
+                $table->text('version')->default('v1.0');
+                $table->date('suchdatum')->nullable();
+                $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
+                $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
+            });
+        }
 
-        Schema::create('p4_thesaurus_mapping', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
-            $table->uuid('projekt_id');
-            $table->text('freitext_de')->nullable();
-            $table->text('freitext_en')->nullable();
-            $table->text('mesh_term')->nullable();
-            $table->text('emtree_term')->nullable();
-            $table->text('psycinfo_term')->nullable();
-            $table->text('anmerkung')->nullable();
-            $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
-        });
+        if (! Schema::hasTable('p4_thesaurus_mapping')) {
+            Schema::create('p4_thesaurus_mapping', function (Blueprint $table) {
+                $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
+                $table->uuid('projekt_id');
+                $table->text('freitext_de')->nullable();
+                $table->text('freitext_en')->nullable();
+                $table->text('mesh_term')->nullable();
+                $table->text('emtree_term')->nullable();
+                $table->text('psycinfo_term')->nullable();
+                $table->text('anmerkung')->nullable();
+                $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
+            });
+        }
 
-        Schema::create('p4_anpassungsprotokoll', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
-            $table->uuid('suchstring_id');
-            $table->text('version');
-            $table->date('datum')->nullable();
-            $table->text('aenderung')->nullable();
-            $table->text('grund')->nullable();
-            $table->integer('treffer_vorher')->nullable();
-            $table->integer('treffer_nachher')->nullable();
-            $table->text('entscheidung')->nullable();
-            $table->foreign('suchstring_id')->references('id')->on('p4_suchstrings')->cascadeOnDelete();
-        });
+        if (! Schema::hasTable('p4_anpassungsprotokoll')) {
+            Schema::create('p4_anpassungsprotokoll', function (Blueprint $table) {
+                $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
+                $table->uuid('suchstring_id');
+                $table->text('version');
+                $table->date('datum')->nullable();
+                $table->text('aenderung')->nullable();
+                $table->text('grund')->nullable();
+                $table->integer('treffer_vorher')->nullable();
+                $table->integer('treffer_nachher')->nullable();
+                $table->text('entscheidung')->nullable();
+                $table->foreign('suchstring_id')->references('id')->on('p4_suchstrings')->cascadeOnDelete();
+            });
+        }
     }
 
     public function down(): void

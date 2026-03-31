@@ -13,33 +13,37 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('projekte', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->text('titel');
-            $table->text('forschungsfrage')->nullable();
-            $table->text('verantwortlich')->nullable();
-            $table->date('startdatum')->nullable();
-            $table->text('notizen')->nullable();
-            $table->timestampTz('letztes_update')->default(DB::raw('now()'));
-            $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
-        });
+        if (! Schema::hasTable('projekte')) {
+            Schema::create('projekte', function (Blueprint $table) {
+                $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
+                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->text('titel');
+                $table->text('forschungsfrage')->nullable();
+                $table->text('verantwortlich')->nullable();
+                $table->date('startdatum')->nullable();
+                $table->text('notizen')->nullable();
+                $table->timestampTz('letztes_update')->default(DB::raw('now()'));
+                $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
+            });
 
-        DB::statement("ALTER TABLE projekte ADD COLUMN review_typ review_typ");
+            DB::statement("ALTER TABLE projekte ADD COLUMN review_typ review_typ");
+        }
 
-        Schema::create('phasen', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
-            $table->uuid('projekt_id');
-            $table->smallInteger('phase_nr');
-            $table->text('titel');
-            $table->text('notizen')->nullable();
-            $table->timestampTz('abgeschlossen_am')->nullable();
+        if (! Schema::hasTable('phasen')) {
+            Schema::create('phasen', function (Blueprint $table) {
+                $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
+                $table->uuid('projekt_id');
+                $table->smallInteger('phase_nr');
+                $table->text('titel');
+                $table->text('notizen')->nullable();
+                $table->timestampTz('abgeschlossen_am')->nullable();
 
-            $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
-            $table->unique(['projekt_id', 'phase_nr']);
-        });
+                $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
+                $table->unique(['projekt_id', 'phase_nr']);
+            });
 
-        DB::statement("ALTER TABLE phasen ADD COLUMN status phase_status DEFAULT 'offen'");
+            DB::statement("ALTER TABLE phasen ADD COLUMN status phase_status DEFAULT 'offen'");
+        }
     }
 
     public function down(): void

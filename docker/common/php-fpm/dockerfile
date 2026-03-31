@@ -76,9 +76,7 @@ RUN chown -R www-data:www-data /var/www
 COPY ./docker/common/php-fpm/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Switch to the non-privileged user to run the application
-USER www-data
-
+# Entrypoint runs as root for volume setup; php-fpm drops to www-data via pool config
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["php-fpm"]
 
