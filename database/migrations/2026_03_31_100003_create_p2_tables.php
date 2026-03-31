@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::create('p2_review_typ_entscheidung', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
             $table->uuid('projekt_id');
@@ -56,6 +60,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::dropIfExists('p2_cluster');
         Schema::dropIfExists('p2_trefferlisten');
         Schema::dropIfExists('p2_mapping_suchstring_komponenten');

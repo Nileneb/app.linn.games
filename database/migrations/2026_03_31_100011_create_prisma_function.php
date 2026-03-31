@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement("
             CREATE OR REPLACE FUNCTION berechne_prisma_zahlen(p_projekt_id UUID)
             RETURNS TABLE (
@@ -70,6 +74,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('DROP FUNCTION IF EXISTS berechne_prisma_zahlen(UUID)');
     }
 };

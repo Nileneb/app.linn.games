@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
         DB::statement('CREATE EXTENSION IF NOT EXISTS "pg_trgm"');
 
@@ -26,6 +30,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $types = [
             'tool_empfehlung', 'studientyp', 'grade_urteil', 'synthese_methode',
             'rob_urteil', 'rob_tool', 'screening_entscheidung', 'screening_level',

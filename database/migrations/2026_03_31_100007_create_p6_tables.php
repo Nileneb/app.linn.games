@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // p6_qualitaetsbewertung – uses studientyp, rob_tool, rob_urteil ENUMs
         Schema::create('p6_qualitaetsbewertung', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
@@ -38,6 +42,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::dropIfExists('p6_luckenanalyse');
         Schema::dropIfExists('p6_qualitaetsbewertung');
     }

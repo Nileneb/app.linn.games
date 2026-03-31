@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::create('p8_suchprotokoll', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
             $table->uuid('suchstring_id')->nullable();
@@ -56,6 +60,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::dropIfExists('p8_update_plan');
         Schema::dropIfExists('p8_reproduzierbarkeitspruefung');
         Schema::dropIfExists('p8_limitationen');

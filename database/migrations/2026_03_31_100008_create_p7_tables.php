@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // p7_synthese_methode – uses synthese_methode ENUM
         Schema::create('p7_synthese_methode', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
@@ -66,6 +70,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::dropIfExists('p7_grade_einschaetzung');
         Schema::dropIfExists('p7_muster_konsistenz');
         Schema::dropIfExists('p7_datenextraktion');

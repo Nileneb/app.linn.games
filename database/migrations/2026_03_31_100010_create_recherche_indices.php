@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // Projekt-FK on phase tables
         DB::statement('CREATE INDEX idx_phasen_projekt ON phasen(projekt_id)');
         DB::statement('CREATE INDEX idx_p1_komp_projekt ON p1_komponenten(projekt_id)');
@@ -28,6 +32,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('DROP INDEX IF EXISTS idx_p5_treffer_titel_fts');
         DB::statement('DROP INDEX IF EXISTS idx_p5_treffer_abstract_fts');
         DB::statement('DROP INDEX IF EXISTS idx_p7_extraktion_treffer');
