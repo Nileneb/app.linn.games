@@ -52,8 +52,12 @@ return new class extends Migration
             $table->uuid('duplikat_von')->nullable();
             $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
             $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
-            $table->foreign('duplikat_von')->references('id')->on('p5_treffer');
             $table->unique(['projekt_id', 'record_id']);
+        });
+
+        // Self-referencing FK must be added after table creation
+        Schema::table('p5_treffer', function (Blueprint $table) {
+            $table->foreign('duplikat_von')->references('id')->on('p5_treffer');
         });
 
         // p5_screening_entscheidungen – uses screening_level and screening_entscheidung ENUMs

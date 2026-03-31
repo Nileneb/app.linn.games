@@ -12,7 +12,7 @@ services:
     networks:
       - linn-network
     ports:
-      - "6479:80"
+      - "6481:80"
     depends_on:
       - php-fpm
 
@@ -103,8 +103,8 @@ services:
     image: postgres:16
     restart: unless-stopped
     user: postgres
-    ports:
-      - "5433:5432"
+    # ports:
+    #   - "5433:5432"
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE}
       - POSTGRES_USER=${POSTGRES_USERNAME}
@@ -136,8 +136,8 @@ services:
     command: ["--access-mode=unrestricted", "--transport=sse"]
     environment:
       - DATABASE_URI=postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
-    ports:
-      - "8200:8000"
+    # ports:
+    #   - "8200:8000"
     networks:
       - linn-network
     depends_on:
