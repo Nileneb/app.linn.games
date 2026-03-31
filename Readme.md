@@ -11,7 +11,7 @@
 ## ✅ PHASE 1: Laravel-Projekt Setup & Architektur
 
 ### 1.1 Projekt-Initialisierung
-- [ ] Laravel 11 installieren (`composer create-project laravel/laravel linn-games`)
+- [ ] Laravel 12 installieren (`composer create-project laravel/laravel linn-games`)
 - [ ] `.env` konfigurieren (DB, APP_URL, MAIL, etc.)
 - [ ] PostgreSQL Datenbank erstellen: `linn_games_production`
 - [ ] Git-Repository initialisieren + `.gitignore` anpassen
@@ -635,20 +635,70 @@ Route::domain('mau.linn.games')->group(function () {
 ## 🛠️ TOOLS & STACK
 
 ### Backend
-- **Framework:** Laravel 11
-- **Database:** PostgreSQL 15+
+- **Framework:** Laravel 12
+- **Database:** PostgreSQL 16
 - **Cache/Queue:** Redis
 - **Admin:** Filament v3
 
 ### Frontend
-- **Main Site:** React (bestehend, via API)
-- **MAU Site:** Blade + Alpine.js (oder React)
-- **CSS:** Tailwind CSS
+- **Main Site:** Livewire 3 + Flux UI (proprietäre Lizenz!)
+- **MAU Site:** Eigener Service (wird später integriert)
+- **CSS:** Tailwind CSS 4
 
 ### DevOps
-- **Hosting:** TBD (Synology / Hetzner / Forge)
+- **Hosting:** Synology NAS (lokal, Reverse Proxy)
 - **CI/CD:** GitHub Actions
 - **Monitoring:** Sentry + Laravel Telescope
+- **Port:** 6479 (Docker → Nginx)
+
+---
+
+## 🔑 FLUX-LIZENZ
+
+Das UI-Paket `livewire/flux` steht unter einer **proprietären Lizenz**.
+Für den Produktivbetrieb ist ein bezahlter Lizenzschlüssel erforderlich.
+
+1. Lizenz erwerben unter https://flux.livewire.com
+2. `FLUX_LICENSE_KEY=dein-schlüssel` in `.env` setzen
+3. In der CI/CD-Pipeline als GitHub Secret hinterlegen
+
+---
+
+## 🛠️ LOKALE EINRICHTUNG
+
+```bash
+# 1. Repository klonen
+git clone git@github.com:Nileneb/app.linn.games.git
+cd app.linn.games
+
+# 2. .env erstellen und konfigurieren
+cp .env.example .env
+# → POSTGRES_DATABASE, POSTGRES_USERNAME, POSTGRES_PASSWORD ausfüllen
+# → FLUX_LICENSE_KEY setzen (für Flux-UI)
+
+# 3. Docker starten
+docker compose up -d postgres redis
+
+# 4. App-Container bauen
+docker compose build web php-fpm queue-worker php-cli
+
+# 5. Migrationen ausführen
+docker compose run --rm php-cli php artisan migrate
+
+# 6. Seeder ausführen (Admin-User + Rollen)
+docker compose run --rm php-cli php artisan db:seed
+
+# 7. Alle Services starten
+docker compose up -d
+
+# App erreichbar unter http://localhost:6479
+```
+
+Für Frontend-Entwicklung (Vite):
+```bash
+npm install
+npm run dev
+```
 
 ---
 
@@ -661,14 +711,14 @@ Route::domain('mau.linn.games')->group(function () {
 
 **Start-Kommando:**
 ```bash
-composer create-project laravel/laravel linn-games "11.*"
-cd linn-games
+git clone git@github.com:Nileneb/app.linn.games.git
+cd app.linn.games
 cp .env.example .env
-php artisan key:generate
+docker compose up -d
 ```
 
 ---
 
-**Last Updated:** $(date)
+**Last Updated:** 2026-03-31
 **Version:** 1.0
 **Author:** Linn Games Development Team

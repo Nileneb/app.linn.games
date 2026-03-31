@@ -1,14 +1,13 @@
 <?php
 
 use App\Http\Controllers\ContactController;
-use App\Models\PageView;
+use App\Http\Controllers\DsgvoController;
+use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 
 Route::get('/', function () {
-    PageView::firstOrCreate([], ['visits' => 0])->increment('visits');
-
     return view('welcome');
 })->name('home');
 
@@ -39,4 +38,10 @@ Route::middleware(['auth'])->group(function () {
             ),
         )
         ->name('two-factor.show');
+
+    Route::get('dsgvo/export', [DsgvoController::class, 'export'])->name('dsgvo.export');
+    Route::delete('dsgvo/delete-account', [DsgvoController::class, 'deleteAccount'])->name('dsgvo.delete-account');
+
+    Route::get('recherche', fn () => view('recherche.index'))->name('recherche');
+    Route::get('recherche/{projekt}', fn (Projekt $projekt) => view('recherche.show', ['projekt' => $projekt]))->name('recherche.projekt');
 });

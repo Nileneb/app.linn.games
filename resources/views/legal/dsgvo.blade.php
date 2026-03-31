@@ -68,7 +68,34 @@
   </ul>
 
   <h2 id="cookies">Cookies und Plugins</h2>
-  <p>Unsere Website verwendet Cookies ausschließlich in technisch notwendigem Umfang (Session-Cookies). Wir verwenden keine Tracking- oder Werbe-Cookies.</p>
+  <p>Unsere Website verwendet Cookies ausschließlich in technisch notwendigem Umfang. Wir verwenden keine Tracking- oder Werbe-Cookies.</p>
 
-  <p class="last-update"><strong>Stand dieser Datenschutzerklärung:</strong> April 2025</p>
+  <h3>Eingesetzte Cookies</h3>
+  <table>
+    <thead>
+      <tr><th>Cookie</th><th>Zweck</th><th>Laufzeit</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>laravel_session</code></td><td>Session-Verwaltung (technisch notwendig)</td><td>Sitzungsende / 120 Min.</td></tr>
+      <tr><td><code>XSRF-TOKEN</code></td><td>CSRF-Schutz (technisch notwendig)</td><td>Sitzungsende / 120 Min.</td></tr>
+      <tr><td><code>laravel_cookie_consent</code></td><td>Speicherung Ihrer Cookie-Einwilligung</td><td>12 Monate</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="hosting">Hosting und Infrastruktur</h2>
+  <p>Diese Website wird auf einem selbst betriebenen Server (Synology NAS) im Inland gehostet. Es werden keine externen Hosting-Provider eingesetzt.</p>
+
+  <h3>Eingebundene Drittdienste</h3>
+  <ul>
+    <li><strong>Langdock (KI-Recherche-Agent):</strong> Für eingeloggte Nutzer wird ein KI-gestützter Recherche-Dienst über Langdock bereitgestellt. Dabei werden Projekt- und Nutzerdaten via Webhook an Langdock übermittelt. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</li>
+  </ul>
+
+  <h2 id="dsgvo-rechte">Datenexport und Kontolöschung</h2>
+  <p>Eingeloggte Nutzer können jederzeit eine vollständige Kopie ihrer personenbezogenen Daten herunterladen oder ihr Konto samt aller verknüpften Daten löschen:</p>
+  <ul>
+    <li><strong>Datenexport:</strong> Über den Menüpunkt „DSGVO-Export" im eingeloggten Bereich können Sie alle Ihre Daten als JSON-Datei herunterladen.</li>
+    <li><strong>Kontolöschung:</strong> Über „Konto löschen" werden Ihr Konto und alle damit verknüpften Daten unwiderruflich gelöscht.</li>
+  </ul>
+
+  <p class="last-update"><strong>Stand dieser Datenschutzerklärung:</strong> März 2026</p>
 @endsection

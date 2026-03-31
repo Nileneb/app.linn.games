@@ -12,7 +12,7 @@ services:
     networks:
       - linn-network
     ports:
-      - "6478:80"
+      - "6479:80"
     depends_on:
       - php-fpm
 
@@ -52,6 +52,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  php-test:
+    build:
+      context: .
+      dockerfile: ./docker/common/php-fpm/dockerfile
+      target: testing
+    entrypoint: []
+    tty: true
+    stdin_open: true
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=testing
+    volumes:
+      - ./tests:/var/www/tests:ro
+      - ./phpunit.xml:/var/www/phpunit.xml:ro
+      - ./.env:/var/www/.env:ro
+    networks:
+      - linn-network
 
   queue-worker:
     build:
@@ -110,6 +129,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  postgres-mcp:
+    image: crystaldba/postgres-mcp
+    restart: unless-stopped
+    command: ["--access-mode=unrestricted", "--transport=sse"]
+    environment:
+      - DATABASE_URI=postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
+    ports:
+      - "8200:8000"
+    networks:
+      - linn-network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 networks:
   linn-network:

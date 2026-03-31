@@ -32,6 +32,10 @@ WORKDIR /var/www
 # Copy the entire Laravel application code into the container
 COPY . /var/www
 
+# Ensure storage directories exist (excluded by .dockerignore)
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # Install Composer and dependencies
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
@@ -77,3 +81,21 @@ USER www-data
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["php-fpm"]
+
+# Stage 3: Testing environment (includes dev dependencies)
+FROM production AS testing
+
+USER root
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copy full source including tests and dev config
+COPY --chown=www-data:www-data . /var/www
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# Install ALL dependencies (including dev/test)
+RUN composer install --optimize-autoloader --no-interaction --no-progress --prefer-dist
+
+USER www-data

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactConfirmationMail;
+use App\Mail\ContactInquiryMail;
 use App\Models\Contact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
@@ -19,7 +22,10 @@ class ContactController extends Controller
             'timeline' => 'nullable|string|max:255',
         ]);
 
-        Contact::create($validated);
+        $contact = Contact::create($validated);
+
+        Mail::to('info@linn.games')->queue(new ContactInquiryMail($contact));
+        Mail::to($contact->email)->queue(new ContactConfirmationMail($contact));
 
         return response()->json(['success' => true, 'message' => 'Anfrage erfolgreich gesendet.']);
     }

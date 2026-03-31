@@ -7,6 +7,7 @@ COPY . /var/www
 RUN rm -rf /var/www/tests /var/www/.git /var/www/.github \
     /var/www/.gitignore /var/www/.dockerignore /var/www/node_modules /var/www/.env* \
     || true
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 RUN apt-get update && apt-get install -y unzip git curl && \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin \
     --filename=composer && \

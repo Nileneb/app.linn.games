@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'langdock' => [
+        'api_key' => env('LANGDOCK_API_KEY'),
+        'webhook_url' => env('LANGDOCK_WEBHOOK_URL'),
+        'secret' => env('LANGDOCK_WEBHOOK_SECRET'),
+    ],
+
 ];
