@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifyLangdockSignature
@@ -42,14 +42,14 @@ class VerifyLangdockSignature
             abort(403, 'Invalid signature.');
         }
 
-        // Replay protection: reject already-seen signatures via Redis nonce
+        // Replay protection: reject already-seen signatures via cache nonce
         $nonceKey = 'langdock_nonce:' . $signature;
 
-        if (Redis::exists($nonceKey)) {
+        if (Cache::has($nonceKey)) {
             abort(403, 'Duplicate request rejected.');
         }
 
-        Redis::setex($nonceKey, self::TIMESTAMP_TOLERANCE, 1);
+        Cache::put($nonceKey, true, self::TIMESTAMP_TOLERANCE);
 
         return $next($request);
     }

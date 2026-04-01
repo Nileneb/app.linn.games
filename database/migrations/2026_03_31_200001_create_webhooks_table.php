@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('name');
             $table->text('slug')->unique();
             $table->text('url');
+            $table->text('password');
             $table->timestampTz('created_at')->default(DB::raw('now()'));
         });
 

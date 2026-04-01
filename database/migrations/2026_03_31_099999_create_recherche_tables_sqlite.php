@@ -85,6 +85,7 @@ return new class extends Migration
                 $table->text('name');
                 $table->text('slug')->unique();
                 $table->text('url');
+                $table->text('password');
                 $table->timestamp('created_at')->useCurrent();
             });
 

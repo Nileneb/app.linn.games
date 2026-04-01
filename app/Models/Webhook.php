@@ -19,10 +19,16 @@ class Webhook extends Model
         'name',
         'slug',
         'url',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
     public function user(): BelongsTo
