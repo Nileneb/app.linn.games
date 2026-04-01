@@ -43,7 +43,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE p7_datenextraktion ADD COLUMN qualitaetsurteil rob_urteil");
         }
 
-        // p7_muster_konsistenz – uses TEXT[] arrays
+        // p7_muster_konsistenz – uses jsonb arrays (compatible with Laravel array cast)
         if (! Schema::hasTable('p7_muster_konsistenz')) {
             Schema::create('p7_muster_konsistenz', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
@@ -53,8 +53,8 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p7_muster_konsistenz ADD COLUMN unterstuetzende_quellen TEXT[]");
-            DB::statement("ALTER TABLE p7_muster_konsistenz ADD COLUMN widersprechende_quellen TEXT[]");
+            DB::statement("ALTER TABLE p7_muster_konsistenz ADD COLUMN unterstuetzende_quellen jsonb");
+            DB::statement("ALTER TABLE p7_muster_konsistenz ADD COLUMN widersprechende_quellen jsonb");
         }
 
         // p7_grade_einschaetzung – uses rob_urteil, grade_urteil ENUMs

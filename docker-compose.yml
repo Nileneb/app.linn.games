@@ -14,7 +14,7 @@ services:
     networks:
       - linn-network
     ports:
-      - "6481:80"
+      - "${APP_PORT:-6481}:80"
     depends_on:
       - php-fpm
 

@@ -34,7 +34,7 @@ return new class extends Migration
                 $table->text('anmerkung')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p2_mapping_suchstring_komponenten ADD COLUMN suchbegriffe TEXT[]");
+            DB::statement("ALTER TABLE p2_mapping_suchstring_komponenten ADD COLUMN suchbegriffe jsonb");
         }
 
         if (! Schema::hasTable('p2_trefferlisten')) {

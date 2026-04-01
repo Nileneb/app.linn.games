@@ -38,7 +38,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
             DB::statement("ALTER TABLE p1_komponenten ADD COLUMN modell strukturmodell NOT NULL");
-            DB::statement("ALTER TABLE p1_komponenten ADD COLUMN synonyme TEXT[]");
+            DB::statement("ALTER TABLE p1_komponenten ADD COLUMN synonyme jsonb");
         }
 
         if (! Schema::hasTable('p1_kriterien')) {
