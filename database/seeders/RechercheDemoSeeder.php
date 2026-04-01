@@ -24,6 +24,8 @@ class RechercheDemoSeeder extends Seeder
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
 
+        $this->seedWebhooks($user);
+
         $projekt = $this->seedProjekt($user);
         $this->seedPhasen($projekt);
         $this->seedP1($projekt);
@@ -32,6 +34,20 @@ class RechercheDemoSeeder extends Seeder
         $treffer = $this->seedP5($projekt);
         $this->seedP6($treffer);
         $this->seedP7($treffer);
+    }
+
+    private function seedWebhooks(User $user): void
+    {
+        \App\Models\Webhook::firstOrCreate(
+            ['slug' => 'langdock-dashboard-demo01'],
+            [
+                'user_id'    => $user->id,
+                'name'       => 'Langdock Dashboard',
+                'url'        => 'https://app.langdock.com/api/hooks/workflows/demo-placeholder',
+                'password'   => 'demo-secret',
+                'created_at' => now(),
+            ]
+        );
     }
 
     private function seedProjekt(User $user): Projekt

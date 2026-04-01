@@ -82,6 +82,12 @@ Kommuniziere auf Deutsch, Code und Commits auf Englisch.
 - Commit Messages: Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`)
 - Migrations in separaten Commits vor Code-Änderungen
 
+## Arbeitsweise
+
+- Dokumentiere erledigte Änderungen gewissenhaft — trage relevante Architekturentscheidungen in die Copilot-Instructions ein
+- Pushe Änderungen regelmäßig nach GitHub (Conventional Commits, Feature-Branch → develop)
+- Nach jeder abgeschlossenen Aufgabe: kurzen Commit-Stand prüfen und ggf. committen
+
 ## Sicherheit
 
 - Webhooks: HMAC-SHA256 Signatur + Timestamp-Validierung (5 Min Toleranz) + Cache-Nonce (Replay-Schutz)

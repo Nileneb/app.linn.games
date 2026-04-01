@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - linn-storage-production:/var/www/storage:ro
-      - ./public:/var/www/public
+      - ./public:/var/www/public:ro
       - linn-build-assets:/var/www/public/build:ro
       - ./docker/common/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
     environment:

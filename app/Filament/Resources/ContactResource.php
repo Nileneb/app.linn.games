@@ -41,6 +41,7 @@ class ContactResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->actions([
                 \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ]);
     }
 
