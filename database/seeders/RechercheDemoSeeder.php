@@ -43,10 +43,14 @@ class RechercheDemoSeeder extends Seeder
             [
                 'name'       => 'Dashboard Chat',
                 'slug'       => 'dashboard-chat-' . substr(md5($user->id . 'dashboard_chat'), 0, 8),
-                'url'        => 'https://app.langdock.com/api/hooks/workflows/demo-placeholder',
+                'url'        => 'https://app.langdock.com/api/hooks/workflows/30781e00-a6df-4c6f-a2ad-fa8cf9b9826b',
+                'secret'     => 'Test123',
                 'created_at' => now(),
             ]
         );
+        // Aufruf: curl -X POST "https://app.langdock.com/api/hooks/workflows/30781e00-a6df-4c6f-a2ad-fa8cf9b9826b?secret=Test123" \
+        //   -H 'Content-Type: application/json' \
+        //   -d '{"prompt": "YOUR PROMPT HERE"}'}
 
         \App\Models\Webhook::firstOrCreate(
             ['user_id' => $user->id, 'frontend_object' => 'recherche_start'],

@@ -25,12 +25,33 @@ class Webhook extends Model
         'name',
         'slug',
         'url',
+        'secret',
         'frontend_object',
+    ];
+
+    protected $hidden = [
+        'secret',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'secret'     => 'encrypted',
     ];
+
+    /**
+     * Gibt die Webhook-URL zurück, ggf. mit ?secret=... Query-Parameter.
+     * Verwendung: curl -X POST "{{ $webhook->callUrl() }}"
+     */
+    public function callUrl(): string
+    {
+        if (! $this->secret) {
+            return $this->url;
+        }
+
+        $separator = str_contains($this->url, '?') ? '&' : '?';
+
+        return $this->url . $separator . 'secret=' . urlencode($this->secret);
+    }
 
     /** Findet den konfigurierten Webhook eines Users für ein Frontend-Objekt. */
     public static function forUser(int|string $userId, string $frontendObject): ?self

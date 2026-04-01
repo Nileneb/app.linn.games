@@ -53,7 +53,7 @@ new class extends Component {
 
         try {
             $response = Http::timeout(120)
-                ->post($webhook->url, [
+                ->post($webhook->callUrl(), [
                     'prompt' => $userMessage,
                 ]);
 

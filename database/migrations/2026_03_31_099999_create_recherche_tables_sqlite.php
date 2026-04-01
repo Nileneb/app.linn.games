@@ -92,6 +92,7 @@ return new class extends Migration
                 $table->text('slug')->unique();
                 $table->text('url');
                 $table->text('password')->nullable()->default('');
+                $table->text('secret')->nullable();
                 $table->string('frontend_object')->nullable();
                 $table->unique(['user_id', 'frontend_object']);
                 $table->timestamp('created_at')->useCurrent();

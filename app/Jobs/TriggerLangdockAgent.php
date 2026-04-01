@@ -33,7 +33,7 @@ class TriggerLangdockAgent implements ShouldQueue, ShouldBeUnique
     public function handle(): void
     {
         $webhook = \App\Models\Webhook::forUser($this->userId, 'recherche_start');
-        $webhookUrl = $webhook?->url ?? config('services.langdock.webhook_url');
+        $webhookUrl = $webhook?->callUrl() ?? config('services.langdock.webhook_url');
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . config('services.langdock.api_key'),
