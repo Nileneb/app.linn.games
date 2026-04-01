@@ -3,6 +3,7 @@
 use App\Models\Webhook;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -22,40 +23,50 @@ new class extends Component {
     public function addWebhook(): void
     {
         $this->validate([
-            'name' => ['required', 'string', 'max:100'],
+            'name' => [
+                'required', 'string', 'max:100',
+                Rule::unique('webhooks')->where('user_id', Auth::id()),
+            ],
             'url' => ['required', 'url', 'max:500'],
+        ], [
+            'name.unique' => __('Ein Webhook mit diesem Namen existiert bereits.'),
         ]);
 
         Webhook::create([
             'user_id' => Auth::id(),
-            'name' => $this->name,
-            'slug' => Str::slug($this->name) . '-' . Str::random(6),
-            'url' => $this->url,
+            'name'    => $this->name,
+            'slug'    => Str::slug($this->name) . '-' . Str::random(6),
+            'url'     => $this->url,
         ]);
 
         $this->name = '';
-        $this->url = '';
+        $this->url  = '';
     }
 
     public function startEdit(string $id): void
     {
         $webhook = Webhook::where('user_id', Auth::id())->findOrFail($id);
         $this->editingId = $id;
-        $this->editName = $webhook->name;
-        $this->editUrl = $webhook->url;
+        $this->editName  = $webhook->name;
+        $this->editUrl   = $webhook->url;
     }
 
     public function saveEdit(): void
     {
         $this->validate([
-            'editName' => ['required', 'string', 'max:100'],
+            'editName' => [
+                'required', 'string', 'max:100',
+                Rule::unique('webhooks')->where('user_id', Auth::id())->ignore($this->editingId),
+            ],
             'editUrl' => ['required', 'url', 'max:500'],
+        ], [
+            'editName.unique' => __('Ein Webhook mit diesem Namen existiert bereits.'),
         ]);
 
         $webhook = Webhook::where('user_id', Auth::id())->findOrFail($this->editingId);
         $webhook->update([
             'name' => $this->editName,
-            'url' => $this->editUrl,
+            'url'  => $this->editUrl,
         ]);
 
         $this->editingId = null;
@@ -112,6 +123,10 @@ new class extends Component {
                             <div class="min-w-0 flex-1">
                                 <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $webhook->name }}</div>
                                 <div class="mt-0.5 truncate text-xs text-zinc-400" title="{{ $webhook->url }}">{{ Str::limit($webhook->url, 60) }}</div>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <span class="inline-flex items-center rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">{{ $webhook->slug }}</span>
+                                    <span class="text-xs text-zinc-300 dark:text-zinc-600">{{ $webhook->created_at?->format('d.m.Y') }}</span>
+                                </div>
                             </div>
                             <div class="ml-3 flex shrink-0 gap-2">
                                 <button wire:click="startEdit('{{ $webhook->id }}')" class="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">{{ __('Bearbeiten') }}</button>

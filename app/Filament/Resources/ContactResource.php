@@ -40,7 +40,7 @@ class ContactResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                \Filament\Actions\ViewAction::make(),
             ]);
     }
 

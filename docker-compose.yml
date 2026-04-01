@@ -6,9 +6,9 @@ services:
     restart: unless-stopped
     volumes:
       - linn-storage-production:/var/www/storage:ro
+      - ./public:/var/www/public
       - linn-build-assets:/var/www/public/build:ro
       - ./docker/common/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
-      - ./public/images:/var/www/public/images:ro
     environment:
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
     networks:
