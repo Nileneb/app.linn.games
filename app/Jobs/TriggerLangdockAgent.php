@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -10,18 +11,24 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class TriggerLangdockAgent implements ShouldQueue
+class TriggerLangdockAgent implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
     public int $backoff = 30;
+    public int $uniqueFor = 300;
 
     public function __construct(
         public readonly int $userId,
         public readonly string $projektId,
         public readonly string $eingabe,
     ) {}
+
+    public function uniqueId(): string
+    {
+        return $this->projektId;
+    }
 
     public function handle(): void
     {

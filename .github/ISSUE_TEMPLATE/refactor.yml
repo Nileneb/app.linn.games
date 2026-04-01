@@ -1,0 +1,34 @@
+name: Refactoring
+description: Code-Verbesserung ohne funktionale Änderung
+labels: ["refactor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Refactoring-Vorschläge sollten keine funktionalen Änderungen enthalten.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was soll verbessert werden und warum?
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Betroffene Dateien / Bereiche
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Akzeptanzkriterien
+      description: Woran erkennt man, dass das Refactoring korrekt ist?
+      placeholder: |
+        - [ ] Bestehende Tests bleiben grün
+        - [ ] Keine funktionale Änderung
+    validations:
+      required: true

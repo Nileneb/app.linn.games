@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
 
         Schema::create('paper_embeddings', function (Blueprint $table) {
@@ -37,6 +41,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         Schema::dropIfExists('paper_embeddings');
     }
 };

@@ -3,14 +3,17 @@
 namespace App\Models\Recherche;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Projekt extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids, LogsActivity;
 
     protected $table = 'projekte';
     public $timestamps = false;
@@ -34,6 +37,13 @@ class Projekt extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['titel', 'forschungsfrage', 'review_typ'])
+            ->logOnlyDirty();
     }
 
     public function phasen(): HasMany

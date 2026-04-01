@@ -56,7 +56,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
     p8_suchprotokoll,
     p8_limitationen,
     p8_reproduzierbarkeitspruefung,
-    p8_update_plan
+    p8_update_plan,
+    paper_embeddings
 TO langdock_agent;
 
 -- 6. Allow calling the PRISMA helper function

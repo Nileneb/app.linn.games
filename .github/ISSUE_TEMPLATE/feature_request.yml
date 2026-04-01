@@ -1,0 +1,58 @@
+name: Feature Request
+description: Ein neues Feature vorschlagen
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Vorschlag. Bitte beschreibe das gewünschte Feature so konkret wie möglich.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Zusammenfassung
+      description: Was soll das Feature leisten?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Problem
+      description: Welches Problem wird damit gelöst?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Vorgeschlagene Lösung
+      description: Wie sollte es umgesetzt werden?
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Betroffene Bereiche
+      description: Welche Dateien, Routes, Services oder Models sind betroffen?
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Breaking Change?
+      options:
+        - "Nein"
+        - "Ja — Migration nötig"
+        - "Ja — API-Änderung"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Akzeptanzkriterien
+      description: Wann gilt das Feature als fertig?
+      placeholder: |
+        - [ ] Kriterium 1
+        - [ ] Kriterium 2
+    validations:
+      required: true

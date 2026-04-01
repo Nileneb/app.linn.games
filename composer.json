@@ -1,13 +1,13 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "nileneb/app-linn-games",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "Research-Management-Plattform mit KI-gestützter systematischer Literaturrecherche.",
     "keywords": [
         "laravel",
         "framework"
     ],
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.2",
         "filament/filament": "^4.9",

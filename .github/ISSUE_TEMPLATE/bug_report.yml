@@ -1,0 +1,57 @@
+name: Bug Report
+description: Einen Fehler melden
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für das Melden des Fehlers. Bitte fülle die folgenden Felder aus.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problembeschreibung
+      description: Was passiert? Was wird stattdessen erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Wie kann der Fehler nachgestellt werden?
+      placeholder: |
+        1. Gehe zu …
+        2. Klicke auf …
+        3. Fehler erscheint
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Schweregrad
+      options:
+        - Kritisch (Datenverlust / Security)
+        - Hoch (Kernfunktion betroffen)
+        - Mittel (Workaround vorhanden)
+        - Niedrig (Kosmetik / Edge-Case)
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Betroffene Bereiche
+      description: Welche Dateien, Routes oder Services sind betroffen?
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Akzeptanzkriterien
+      description: Wann gilt der Fehler als behoben?
+      placeholder: |
+        - [ ] Kriterium 1
+        - [ ] Kriterium 2
+    validations:
+      required: true

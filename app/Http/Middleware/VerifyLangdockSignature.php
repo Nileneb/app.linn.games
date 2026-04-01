@@ -4,10 +4,13 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifyLangdockSignature
 {
+    private const TIMESTAMP_TOLERANCE = 300; // 5 minutes
+
     public function handle(Request $request, Closure $next): Response
     {
         $secret = config('services.langdock.secret');
@@ -22,11 +25,31 @@ class VerifyLangdockSignature
             abort(403, 'Missing signature.');
         }
 
-        $expectedSignature = hash_hmac('sha256', $request->getContent(), $secret);
+        // Replay protection: validate timestamp
+        $timestamp = $request->header('X-Langdock-Timestamp');
+
+        if (! $timestamp || ! is_numeric($timestamp)) {
+            abort(403, 'Missing or invalid timestamp.');
+        }
+
+        if (abs(time() - (int) $timestamp) > self::TIMESTAMP_TOLERANCE) {
+            abort(403, 'Request timestamp too old.');
+        }
+
+        $expectedSignature = hash_hmac('sha256', $timestamp . '.' . $request->getContent(), $secret);
 
         if (! hash_equals($expectedSignature, $signature)) {
             abort(403, 'Invalid signature.');
         }
+
+        // Replay protection: reject already-seen signatures via Redis nonce
+        $nonceKey = 'langdock_nonce:' . $signature;
+
+        if (Redis::exists($nonceKey)) {
+            abort(403, 'Duplicate request rejected.');
+        }
+
+        Redis::setex($nonceKey, self::TIMESTAMP_TOLERANCE, 1);
 
         return $next($request);
     }
