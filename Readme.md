@@ -20,17 +20,25 @@
 ```
 ┌──────────────┐     ┌───────────┐     ┌──────────┐
 │    Nginx     │────▸│  PHP-FPM  │────▸│ Postgres │
-│  (Port 6481) │     └───────────┘     └──────────┘
-└──────────────┘     ┌───────────┐     ┌──────────┐
-                     │Queue-Worker│────▸│  Redis   │
-                     └───────────┘     └──────────┘
-                     ┌────────────────┐
+│  (Port 6481) │     └───────────┘     │ + pgvector│
+└──────────────┘     ┌───────────┐     └──────────┘
+                     │Queue-Worker│────▸┌──────────┐
+                     └───────────┘     │  Redis   │
+                     ┌────────────────┐└──────────┘
                      │ Postgres-MCP   │  (KI-Datenbankzugriff via SSE)
                      │ /mcp/sse       │
                      └────────────────┘
+                     ┌────────────────┐
+                     │ Paper-Search   │  (Literatursuche + Embedding)
+                     │ /paper-mcp/    │
+                     └────────────────┘
+                     ┌────────────────┐
+                     │   Ollama       │  (Embedding-Modell: nomic-embed-text)
+                     │ /ollama/       │
+                     └────────────────┘
 ```
 
-**Docker-Services:** `web` (nginx), `php-fpm`, `php-cli`, `php-test`, `queue-worker`, `postgres`, `redis`, `postgres-mcp`
+**Docker-Services:** `web` (nginx), `php-fpm`, `php-cli`, `php-test`, `queue-worker`, `postgres`, `redis`, `postgres-mcp`, `ollama`, `mcp-paper-search`
 
 ## Features
 
@@ -46,7 +54,9 @@
 - **ProjektListe** — Alle Recherche-Projekte des Benutzers (sortiert nach Erstellungsdatum)
 - **ProjektDetail** — Einzelprojekt mit Phasen (P1–P8) und Trefferliste (P5)
 - 32 Eloquent-Models für 8 Phasen eines systematischen Reviews
-- KI-Integration: `TriggerLangdockAgent` Job → Langdock Webhook
+- KI-Integration: `TriggerLangdockAgent` Job → Langdock Webhook (dedupliziert via `ShouldBeUnique`)
+- Vektor-Embeddings: `paper_embeddings`-Tabelle mit pgvector (IVFFlat-Index)
+- Activity-Logging: Änderungen an `Projekt` und `User` via `spatie/laravel-activitylog`
 
 ### Admin-Panel (Filament)
 - `ContactResource` — Kontaktanfragen verwalten
@@ -68,6 +78,20 @@
 - Langdock-KI-Zugriff auf die Datenbank via SSE (`/mcp/sse`)
 - Authentifizierung: Bearer-Token, X-API-Key oder Query-Parameter
 - Eingeschränkter DB-Benutzer (`langdock_agent`)
+
+### Ollama Embedding Endpoint
+- Lokales Embedding-Modell (`nomic-embed-text`) via Ollama
+- Nginx-Proxy unter `/ollama/` mit Token-Authentifizierung
+- Genutzt von Langdock für Vektor-Suche in Recherche-Treffern
+
+### Paper-Search MCP
+- Literatursuche und Paper-Ingestion via MCP-Protokoll (`/paper-mcp/`)
+- Automatischer Paper-Download und Embedding-Erzeugung
+
+### Webhook-Sicherheit
+- HMAC-SHA256-Signaturprüfung (`X-Langdock-Signature`)
+- Replay-Schutz: Timestamp-Validierung (`X-Langdock-Timestamp`, max. 5 Min.)
+- Nonce-Deduplizierung via Cache (bereits gesehene Signaturen werden abgelehnt)
 
 ## Routes
 
@@ -96,9 +120,10 @@
 
 **21 Migrationen** — Users, Cache, Jobs, 2FA, Contacts, PageViews, Permissions, Consents, Recherche P1–P8, Indices, Prisma-Funktion.
 
-**36 Models:**
-- Core: `User`, `Contact`, `PageView`, `Consent`
+**36+ Models:**
+- Core: `User`, `Contact`, `PageView`, `Consent`, `Webhook`, `ChatMessage`
 - Recherche: `Projekt`, `Phase`, `P5Treffer` + 29 Phasen-Models (P1–P8)
+- Embeddings: `PaperEmbedding` (pgvector)
 
 ## Lokale Entwicklung
 
@@ -140,6 +165,20 @@ Umgebungsvariablen in `.env`:
 # Via Docker (SQLite in-memory)
 docker compose run --rm php-test vendor/bin/pest
 ```
+
+**68 Tests** — Unit, Auth, Kontakt, Recherche, Webhook-Sicherheit, ProjektPolicy.
+
+| Testsuite | Abdeckung |
+|---|---|
+| Auth (Login, Register, 2FA, Passwort) | ✅ |
+| Kontaktformular (Validierung, Submission) | ✅ |
+| Recherche (Projekt erstellen, Liste, Detail, Zugriff) | ✅ |
+| Webhook (Signatur, Timestamp, Replay, Valid) | ✅ |
+| ProjektPolicy (Owner-Zugriff CRUD) | ✅ |
+
+## Contributing
+
+Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Branch-Konventionen, Merge-Fluss und Arbeitsablauf.
 
 ## Lizenz
 

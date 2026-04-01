@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 
 test('webhook rejects request without signature', function () {
     Config::set('services.langdock.secret', 'test-secret');
@@ -58,6 +59,7 @@ test('webhook rejects request with expired timestamp', function () {
 });
 
 test('webhook accepts request with valid signature and timestamp', function () {
+    Queue::fake();
     Config::set('services.langdock.secret', 'test-secret');
 
     $user = \App\Models\User::factory()->withoutTwoFactor()->create();
