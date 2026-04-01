@@ -22,6 +22,15 @@ class UserResource extends Resource
         return $schema->schema([
             Forms\Components\TextInput::make('name')->required(),
             Forms\Components\TextInput::make('email')->email()->required(),
+            Forms\Components\Select::make('status')
+                ->required()
+                ->options([
+                    'trial'     => 'Trial',
+                    'active'    => 'Aktiv',
+                    'suspended' => 'Gesperrt',
+                    'cancelled' => 'Gekündigt',
+                ])
+                ->default('trial'),
         ]);
     }
 
@@ -31,10 +40,33 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('email')->sortable()->searchable(),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
+                    ->colors([
+                        'warning' => 'trial',
+                        'success' => 'active',
+                        'danger'  => 'suspended',
+                        'gray'    => 'cancelled',
+                    ])
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('Rolle')
+                    ->badge()
+                    ->separator(',')
+                    ->sortable(false),
                 Tables\Columns\TextColumn::make('email_verified_at')->dateTime('d.m.Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime('d.m.Y H:i')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'trial'     => 'Trial',
+                        'active'    => 'Aktiv',
+                        'suspended' => 'Gesperrt',
+                        'cancelled' => 'Gekündigt',
+                    ]),
+            ])
             ->actions([
                 \Filament\Actions\EditAction::make(),
             ]);

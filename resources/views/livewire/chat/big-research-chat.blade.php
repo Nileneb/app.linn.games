@@ -8,24 +8,12 @@ use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string $webhookSlug = '';
     public string $message = '';
     public bool $loading = false;
 
-    public function mount(string $webhookSlug = ''): void
-    {
-        $this->webhookSlug = $webhookSlug;
-    }
-
     protected function getWebhook(): ?Webhook
     {
-        if (! $this->webhookSlug) {
-            return null;
-        }
-
-        return Webhook::where('user_id', Auth::id())
-            ->where('slug', $this->webhookSlug)
-            ->first();
+        return Webhook::forUser(Auth::id(), 'dashboard_chat');
     }
 
     public function getMessages(): Collection

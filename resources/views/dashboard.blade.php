@@ -44,11 +44,8 @@
         </div>
 
         {{-- Right: Chat --}}
-        @php
-            $dashboardWebhook = \App\Models\Webhook::where('user_id', auth()->id())->orderBy('created_at')->first();
-        @endphp
         <div class="flex w-full flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 lg:w-1/2" style="min-height: calc(100vh - 10rem);">
-            <livewire:chat.big-research-chat :webhook-slug="$dashboardWebhook?->slug ?? ''" />
+            <livewire:chat.big-research-chat />
         </div>
     </div>
 </x-layouts.app>

@@ -144,8 +144,8 @@ services:
     command: ["--access-mode=unrestricted", "--transport=sse"]
     environment:
       - DATABASE_URI=postgresql://${LANGDOCK_DB_USERNAME}:${LANGDOCK_DB_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
-    # ports:
-    #   - "8200:8000"
+    ports:
+      - "8200:8000"
     networks:
       - linn-network
     depends_on:

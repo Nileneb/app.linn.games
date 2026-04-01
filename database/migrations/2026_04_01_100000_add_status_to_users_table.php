@@ -10,13 +10,23 @@ return new class extends Migration
     public function up(): void
     {
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement("CREATE TYPE user_status AS ENUM ('trial', 'active', 'suspended', 'cancelled')");
+            // Idempotent: ignore if type already exists after migrate:fresh
+            DB::statement("
+                DO \$body\$ BEGIN
+                    CREATE TYPE user_status AS ENUM ('trial', 'active', 'suspended', 'cancelled');
+                EXCEPTION WHEN duplicate_object THEN NULL;
+                END \$body\$
+            ");
 
-            Schema::table('users', function (Blueprint $table) {
-                $table->string('status')->default('trial')->after('email');
-            });
+            if (! Schema::hasColumn('users', 'status')) {
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('status')->default('trial')->after('email');
+                });
 
-            DB::statement("ALTER TABLE users ALTER COLUMN status TYPE user_status USING status::user_status");
+                DB::statement('ALTER TABLE users ALTER COLUMN status DROP DEFAULT');
+                DB::statement('ALTER TABLE users ALTER COLUMN status TYPE user_status USING status::user_status');
+                DB::statement("ALTER TABLE users ALTER COLUMN status SET DEFAULT 'trial'::user_status");
+            }
         } else {
             // SQLite fallback for tests
             Schema::table('users', function (Blueprint $table) {

@@ -39,12 +39,21 @@ class RechercheDemoSeeder extends Seeder
     private function seedWebhooks(User $user): void
     {
         \App\Models\Webhook::firstOrCreate(
-            ['slug' => 'langdock-dashboard-demo01'],
+            ['user_id' => $user->id, 'frontend_object' => 'dashboard_chat'],
             [
-                'user_id'    => $user->id,
-                'name'       => 'Langdock Dashboard',
+                'name'       => 'Dashboard Chat',
+                'slug'       => 'dashboard-chat-' . substr(md5($user->id . 'dashboard_chat'), 0, 8),
                 'url'        => 'https://app.langdock.com/api/hooks/workflows/demo-placeholder',
-                'password'   => 'demo-secret',
+                'created_at' => now(),
+            ]
+        );
+
+        \App\Models\Webhook::firstOrCreate(
+            ['user_id' => $user->id, 'frontend_object' => 'recherche_start'],
+            [
+                'name'       => 'Recherche starten',
+                'slug'       => 'recherche-start-' . substr(md5($user->id . 'recherche_start'), 0, 8),
+                'url'        => 'https://app.langdock.com/api/hooks/workflows/demo-placeholder',
                 'created_at' => now(),
             ]
         );
