@@ -355,8 +355,8 @@ Volt::test('recherche.research-input')
 | Kontaktformular | ✅ vollständig |
 | ProjektPolicy | ✅ vollständig |
 | Webhook-Sicherheit | ✅ vollständig |
-| Recherche-Kernlogik (Livewire) | ❌ fehlend (Issue #17) |
-| KI-Integration (Langdock-Flow) | ❌ fehlend (Issue #17) |
+| Recherche P1–P4 (Livewire CRUD) | ✅ vollständig |
+| Recherche P5–P8 (Livewire CRUD) | ✅ vollständig |
 | Admin-Panel | ❌ fehlend |
 
 ### 10.4 Lokal ausführen
@@ -424,7 +424,7 @@ feature/* / fix/*  →  develop  →  main (manuelles Deploy via deploy.sh)
 ## 13. Deployment
 
 ```bash
-./deploy.sh                    # Vollständiges Deployment (Docker auf Synology NAS)
+./deploy.sh                    # Vollständiges Deployment 
 ./deploy.sh --skip-build       # Ohne Docker-Rebuild
 ./deploy.sh --skip-migrate     # Ohne Migrationen
 ```
@@ -434,25 +434,7 @@ Keine `deploy.yml` GitHub Actions erstellen.
 
 ---
 
-## 14. Offene Issues (Stand: April 2026)
-
-| # | Titel | Priorität |
-|---|---|---|
-| #14 | Security: Langdock-Webhook Replay-Schutz | ~~bereits implementiert~~ (siehe VerifyLangdockSignature) |
-| #15 | Bug: composer.json Projektname/Lizenz | niedrig |
-| #16 | Bug: TriggerLangdockAgent Job-Deduplication | ~~bereits implementiert~~ (ShouldBeUnique) |
-| #17 | Testing: Fehlende Feature-Tests Recherche + Livewire UI | hoch |
-| #18 | Maintenance: spatie/laravel-activitylog nicht eingebunden | mittel |
-| #19 | Feature: Ollama Embedding-Integration vollständig aufbauen | hoch |
-| #20 | Docs: Fehlende API-Dokumentation | mittel |
-| #21 | DevOps: deploy.sh ohne Rollback-Mechanismus | mittel |
-| #22 | Security: Kein Rate-Limiting am MCP-Endpoint | mittel |
-
-> **Hinweis zu #14 und #16:** Diese Issues beschreiben Probleme, die im Code **bereits korrekt gelöst** sind. `VerifyLangdockSignature` hat vollständigen Replay-Schutz (Timestamp + Cache-Nonce). `TriggerLangdockAgent` implementiert `ShouldBeUnique` mit `uniqueFor = 300s`. Vor der Bearbeitung dieser Issues den aktuellen Code lesen.
-
----
-
-## 15. Kommunikationssprache
+## 14. Kommunikationssprache
 
 - **Deutsch:** Kommentare, Commit-Messages-Beschreibungen, Issue-Texte, Kommunikation
 - **Englisch:** Code (Variablen, Methoden, Klassen), Git-Commit-Präfixe (`feat:`, `fix:` etc.)
