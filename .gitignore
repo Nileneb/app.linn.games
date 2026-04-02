@@ -24,3 +24,4 @@ yarn-error.log
 /.zed
 docker-compose.override.yml
 /paper-search-mcp
+*.sql
