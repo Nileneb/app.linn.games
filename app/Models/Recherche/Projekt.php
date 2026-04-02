@@ -75,4 +75,111 @@ class Projekt extends Model
     {
         return $this->hasMany(P5Treffer::class, 'projekt_id');
     }
+
+    // P2 — Review-Typ & Suchstrategie
+    public function p2ReviewTypEntscheidungen(): HasMany
+    {
+        return $this->hasMany(P2ReviewTypEntscheidung::class, 'projekt_id');
+    }
+
+    public function p2Cluster(): HasMany
+    {
+        return $this->hasMany(P2Cluster::class, 'projekt_id');
+    }
+
+    public function p2MappingSuchstringKomponenten(): HasMany
+    {
+        return $this->hasMany(P2MappingSuchstringKomponente::class, 'projekt_id');
+    }
+
+    public function p2Trefferlisten(): HasMany
+    {
+        return $this->hasMany(P2Trefferliste::class, 'projekt_id');
+    }
+
+    // P3 — Quellenauswahl
+    public function p3Datenbankmatrix(): HasMany
+    {
+        return $this->hasMany(P3Datenbankmatrix::class, 'projekt_id');
+    }
+
+    public function p3Disziplinen(): HasMany
+    {
+        return $this->hasMany(P3Disziplin::class, 'projekt_id');
+    }
+
+    public function p3GeografischeFilter(): HasMany
+    {
+        return $this->hasMany(P3GeografischerFilter::class, 'projekt_id');
+    }
+
+    public function p3GraueLiteratur(): HasMany
+    {
+        return $this->hasMany(P3GraueLiteratur::class, 'projekt_id');
+    }
+
+    // P4 — Suchstrings
+    public function p4Suchstrings(): HasMany
+    {
+        return $this->hasMany(P4Suchstring::class, 'projekt_id');
+    }
+
+    public function p4ThesaurusMapping(): HasMany
+    {
+        return $this->hasMany(P4ThesaurusMapping::class, 'projekt_id');
+    }
+
+    // P5 — Screening (Treffer already defined above)
+    public function p5PrismaZahlen(): HasMany
+    {
+        return $this->hasMany(P5PrismaZahlen::class, 'projekt_id');
+    }
+
+    public function p5ScreeningKriterien(): HasMany
+    {
+        return $this->hasMany(P5ScreeningKriterium::class, 'projekt_id');
+    }
+
+    public function p5ToolEntscheidung(): HasMany
+    {
+        return $this->hasMany(P5ToolEntscheidung::class, 'projekt_id');
+    }
+
+    // P6 — Qualitätsbewertung
+    public function p6Luckenanalyse(): HasMany
+    {
+        return $this->hasMany(P6Luckenanalyse::class, 'projekt_id');
+    }
+
+    // P7 — Synthese
+    public function p7SyntheseMethode(): HasMany
+    {
+        return $this->hasMany(P7SyntheseMethode::class, 'projekt_id');
+    }
+
+    public function p7GradeEinschaetzung(): HasMany
+    {
+        return $this->hasMany(P7GradeEinschaetzung::class, 'projekt_id');
+    }
+
+    public function p7MusterKonsistenz(): HasMany
+    {
+        return $this->hasMany(P7MusterKonsistenz::class, 'projekt_id');
+    }
+
+    // P8 — Dokumentation
+    public function p8Limitationen(): HasMany
+    {
+        return $this->hasMany(P8Limitation::class, 'projekt_id');
+    }
+
+    public function p8Reproduzierbarkeitspruefung(): HasMany
+    {
+        return $this->hasMany(P8Reproduzierbarkeitspruefung::class, 'projekt_id');
+    }
+
+    public function p8UpdatePlan(): HasMany
+    {
+        return $this->hasMany(P8UpdatePlan::class, 'projekt_id');
+    }
 }

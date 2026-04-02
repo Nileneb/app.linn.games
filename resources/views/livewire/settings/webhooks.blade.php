@@ -6,6 +6,8 @@ use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    private const SECRET_MASK = '********';
+
     // Dashboard Chat Slot
     public string $dashboardUrl = '';
     public string $dashboardSecret = '';
@@ -25,10 +27,12 @@ new class extends Component {
         $dashboardWebhook = Webhook::forUser($userId, 'dashboard_chat');
         $this->dashboardUrl       = $dashboardWebhook?->url ?? '';
         $this->dashboardHasSecret = (bool) $dashboardWebhook?->secret;
+        $this->dashboardSecret    = $this->dashboardHasSecret ? self::SECRET_MASK : '';
 
         $rechercheWebhook = Webhook::forUser($userId, 'recherche_start');
         $this->rechercheUrl       = $rechercheWebhook?->url ?? '';
         $this->rechercheHasSecret = (bool) $rechercheWebhook?->secret;
+        $this->rechercheSecret    = $this->rechercheHasSecret ? self::SECRET_MASK : '';
     }
 
     public function saveDashboard(): void
@@ -40,11 +44,18 @@ new class extends Component {
 
         $userId = Auth::id();
         $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'dashboard_chat')->first();
-        $data = ['url' => $this->dashboardUrl, 'secret' => $this->dashboardSecret ?: null];
+        $data = ['url' => $this->dashboardUrl];
+
+        if ($this->dashboardSecret !== '' && $this->dashboardSecret !== self::SECRET_MASK) {
+            $data['secret'] = $this->dashboardSecret;
+        }
 
         if ($webhook) {
             $webhook->update($data);
         } else {
+            if (! isset($data['secret'])) {
+                $data['secret'] = null;
+            }
             Webhook::create(array_merge($data, [
                 'user_id'         => $userId,
                 'frontend_object' => 'dashboard_chat',
@@ -55,8 +66,8 @@ new class extends Component {
 
         $refreshed = Webhook::forUser($userId, 'dashboard_chat');
         $this->dashboardUrl       = $refreshed?->url ?? $this->dashboardUrl;
-        $this->dashboardSecret    = '';
         $this->dashboardHasSecret = (bool) $refreshed?->secret;
+        $this->dashboardSecret    = $this->dashboardHasSecret ? self::SECRET_MASK : '';
         $this->dashboardSaved     = true;
         $this->dispatch('dashboard-saved');
     }
@@ -70,11 +81,18 @@ new class extends Component {
 
         $userId = Auth::id();
         $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'recherche_start')->first();
-        $data = ['url' => $this->rechercheUrl, 'secret' => $this->rechercheSecret ?: null];
+        $data = ['url' => $this->rechercheUrl];
+
+        if ($this->rechercheSecret !== '' && $this->rechercheSecret !== self::SECRET_MASK) {
+            $data['secret'] = $this->rechercheSecret;
+        }
 
         if ($webhook) {
             $webhook->update($data);
         } else {
+            if (! isset($data['secret'])) {
+                $data['secret'] = null;
+            }
             Webhook::create(array_merge($data, [
                 'user_id'         => $userId,
                 'frontend_object' => 'recherche_start',
@@ -85,8 +103,8 @@ new class extends Component {
 
         $refreshed = Webhook::forUser($userId, 'recherche_start');
         $this->rechercheUrl       = $refreshed?->url ?? $this->rechercheUrl;
-        $this->rechercheSecret    = '';
         $this->rechercheHasSecret = (bool) $refreshed?->secret;
+        $this->rechercheSecret    = $this->rechercheHasSecret ? self::SECRET_MASK : '';
         $this->rechercheSaved     = true;
         $this->dispatch('recherche-saved');
     }
@@ -134,7 +152,7 @@ new class extends Component {
                     <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         {{ __('Secret') }}
                         @if($dashboardHasSecret)
-                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('leer lassen um beizubehalten') }})</span>
+                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('Feld leeren und neuen Wert eingeben um zu ändern') }})</span>
                         @else
                             <span class="ml-1 font-normal text-zinc-400">{{ __('optional') }}</span>
                         @endif
@@ -143,7 +161,7 @@ new class extends Component {
                         wire:model="dashboardSecret"
                         type="password"
                         autocomplete="new-password"
-                        placeholder="{{ $dashboardHasSecret ? '••••••••' : __('z.B. Test123') }}"
+                        placeholder="{{ $dashboardHasSecret ? '' : __('z.B. Test123') }}"
                         class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     />
                     <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
@@ -192,7 +210,7 @@ new class extends Component {
                     <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         {{ __('Secret') }}
                         @if($rechercheHasSecret)
-                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('leer lassen um beizubehalten') }})</span>
+                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('Feld leeren und neuen Wert eingeben um zu ändern') }})</span>
                         @else
                             <span class="ml-1 font-normal text-zinc-400">{{ __('optional') }}</span>
                         @endif
@@ -201,7 +219,7 @@ new class extends Component {
                         wire:model="rechercheSecret"
                         type="password"
                         autocomplete="new-password"
-                        placeholder="{{ $rechercheHasSecret ? '••••••••' : __('z.B. Test123') }}"
+                        placeholder="{{ $rechercheHasSecret ? '' : __('z.B. Test123') }}"
                         class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     />
                     <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">

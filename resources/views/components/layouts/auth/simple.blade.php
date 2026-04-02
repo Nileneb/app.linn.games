@@ -18,6 +18,6 @@
             </div>
         </div>
         @include('cookie-consent::index')
-        @livewireScriptConfig
+        @livewireScripts
     </body>
 </html>

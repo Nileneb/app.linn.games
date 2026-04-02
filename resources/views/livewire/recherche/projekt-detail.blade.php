@@ -2,105 +2,118 @@
 
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Projekt $projekt;
 
+    #[Url(as: 'tab')]
+    public int $activeTab = 1;
+
     public function mount(Projekt $projekt): void
     {
         abort_unless($projekt->user_id === Auth::id(), 403);
+        $this->projekt = $projekt->load('phasen');
+    }
 
-        $this->projekt = $projekt->load([
-            'phasen',
-            'p5Treffer' => fn ($q) => $q->where('ist_duplikat', false)->orderBy('record_id'),
-        ]);
+    public function switchTab(int $tab): void
+    {
+        $this->activeTab = max(1, min(8, $tab));
+    }
+
+    public function getPhaseStatus(int $nr): ?string
+    {
+        return $this->projekt->phasen->firstWhere('phase_nr', $nr)?->status;
     }
 }; ?>
 
 <section class="space-y-6">
     {{-- Header --}}
     <div>
-        <h2 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-            {{ $projekt->titel }}
-        </h2>
-        <p class="mt-1 text-sm text-neutral-500">
-            {{ __('Erstellt') }}: {{ $projekt->erstellt_am?->format('d.m.Y H:i') }}
-            @if ($projekt->review_typ)
-                &middot; {{ $projekt->review_typ }}
-            @endif
-        </p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                    {{ $projekt->titel }}
+                </h2>
+                <p class="mt-1 text-sm text-neutral-500">
+                    {{ __('Erstellt') }}: {{ $projekt->erstellt_am?->format('d.m.Y H:i') }}
+                    @if ($projekt->review_typ)
+                        &middot; {{ $projekt->review_typ }}
+                    @endif
+                </p>
+            </div>
+            <a href="{{ route('recherche') }}" wire:navigate
+               class="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                &larr; {{ __('Zurück') }}
+            </a>
+        </div>
+
+        @if ($projekt->forschungsfrage)
+            <div class="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">
+                <h3 class="text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{{ __('Forschungsfrage') }}</h3>
+                <p class="mt-1 text-neutral-900 dark:text-neutral-100">{{ $projekt->forschungsfrage }}</p>
+            </div>
+        @endif
     </div>
 
-    {{-- Forschungsfrage --}}
-    @if ($projekt->forschungsfrage)
-        <div class="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
-            <h3 class="text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ __('Forschungsfrage') }}</h3>
-            <p class="mt-1 text-neutral-900 dark:text-neutral-100">{{ $projekt->forschungsfrage }}</p>
-        </div>
-    @endif
+    {{-- Tab Bar --}}
+    <div class="border-b border-neutral-200 dark:border-neutral-700">
+        <nav class="-mb-px flex space-x-1 overflow-x-auto">
+            @php
+                $tabLabels = [
+                    1 => 'Strukturierung',
+                    2 => 'Review-Typ',
+                    3 => 'Quellen',
+                    4 => 'Suchstrings',
+                    5 => 'Screening',
+                    6 => 'Qualität',
+                    7 => 'Synthese',
+                    8 => 'Dokumentation',
+                ];
+            @endphp
+            @for ($i = 1; $i <= 8; $i++)
+                @php $status = $this->getPhaseStatus($i); @endphp
+                <button
+                    wire:click="switchTab({{ $i }})"
+                    @class([
+                        'whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
+                        'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400' => $activeTab === $i,
+                        'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300' => $activeTab !== $i,
+                    ])
+                >
+                    <span class="flex items-center gap-1.5">
+                        P{{ $i }}
+                        <span class="hidden sm:inline">{{ $tabLabels[$i] }}</span>
+                        @if ($status === 'abgeschlossen')
+                            <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                        @elseif ($status === 'in_bearbeitung')
+                            <span class="h-2 w-2 rounded-full bg-yellow-500"></span>
+                        @endif
+                    </span>
+                </button>
+            @endfor
+        </nav>
+    </div>
 
-    {{-- Phasen --}}
-    @if ($projekt->phasen->isNotEmpty())
-        <div>
-            <h3 class="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ __('Phasen') }}</h3>
-            <div class="space-y-2">
-                @foreach ($projekt->phasen->sortBy('phase_nr') as $phase)
-                    <div class="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-700">
-                        <span class="text-neutral-900 dark:text-neutral-100">
-                            P{{ $phase->phase_nr }}: {{ $phase->titel }}
-                        </span>
-                        <span @class([
-                            'rounded px-2 py-0.5 text-xs',
-                            'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' => $phase->status === 'abgeschlossen',
-                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' => $phase->status === 'in_bearbeitung',
-                            'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300' => $phase->status === 'offen' || !$phase->status,
-                        ])>
-                            {{ $phase->status ?? 'offen' }}
-                        </span>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
-    {{-- Treffer (read-only) --}}
-    @if ($projekt->p5Treffer->isNotEmpty())
-        <div>
-            <h3 class="mb-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                {{ __('Treffer') }} ({{ $projekt->p5Treffer->count() }})
-            </h3>
-            <div class="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-                <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                    <thead class="bg-neutral-50 dark:bg-neutral-800">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">ID</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">{{ __('Titel') }}</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">{{ __('Autoren') }}</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">{{ __('Jahr') }}</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">{{ __('Quelle') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
-                        @foreach ($projekt->p5Treffer as $treffer)
-                            <tr>
-                                <td class="whitespace-nowrap px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300">{{ $treffer->record_id }}</td>
-                                <td class="px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100">{{ str()->limit($treffer->titel, 80) }}</td>
-                                <td class="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300">{{ str()->limit($treffer->autoren, 50) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300">{{ $treffer->jahr }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300">{{ $treffer->datenbank_quelle }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    @endif
-
-    {{-- Back link --}}
+    {{-- Phase Content --}}
     <div>
-        <a href="{{ route('recherche') }}" wire:navigate class="text-sm text-blue-600 hover:underline dark:text-blue-400">
-            &larr; {{ __('Zurück zur Übersicht') }}
-        </a>
+        @if ($activeTab === 1)
+            <livewire:recherche.phase-p1 :projekt="$projekt" :key="'p1-'.$projekt->id" />
+        @elseif ($activeTab === 2)
+            <livewire:recherche.phase-p2 :projekt="$projekt" :key="'p2-'.$projekt->id" />
+        @elseif ($activeTab === 3)
+            <livewire:recherche.phase-p3 :projekt="$projekt" :key="'p3-'.$projekt->id" />
+        @elseif ($activeTab === 4)
+            <livewire:recherche.phase-p4 :projekt="$projekt" :key="'p4-'.$projekt->id" />
+        @elseif ($activeTab === 5)
+            <livewire:recherche.phase-p5 :projekt="$projekt" :key="'p5-'.$projekt->id" />
+        @elseif ($activeTab === 6)
+            <livewire:recherche.phase-p6 :projekt="$projekt" :key="'p6-'.$projekt->id" />
+        @elseif ($activeTab === 7)
+            <livewire:recherche.phase-p7 :projekt="$projekt" :key="'p7-'.$projekt->id" />
+        @elseif ($activeTab === 8)
+            <livewire:recherche.phase-p8 :projekt="$projekt" :key="'p8-'.$projekt->id" />
+        @endif
     </div>
 </section>

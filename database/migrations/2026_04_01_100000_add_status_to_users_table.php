@@ -29,9 +29,11 @@ return new class extends Migration
             }
         } else {
             // SQLite fallback for tests
-            Schema::table('users', function (Blueprint $table) {
-                $table->string('status')->default('trial')->after('email');
-            });
+            if (! Schema::hasColumn('users', 'status')) {
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('status')->default('trial')->after('email');
+                });
+            }
         }
     }
 

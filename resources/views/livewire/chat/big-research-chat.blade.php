@@ -16,7 +16,7 @@ new class extends Component {
         return Webhook::forUser(Auth::id(), 'dashboard_chat');
     }
 
-    public function getMessages(): Collection
+    public function getChatMessages(): Collection
     {
         $webhook = $this->getWebhook();
         if (! $webhook) {
@@ -110,7 +110,7 @@ new class extends Component {
         {{-- Header --}}
         <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
             <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ $webhook->name }}</h3>
-            @if($this->getMessages()->isNotEmpty())
+            @if($this->getChatMessages()->isNotEmpty())
                 <button wire:click="clearHistory" wire:confirm="{{ __('Chat-Verlauf wirklich löschen?') }}" class="text-xs text-zinc-400 hover:text-red-500 dark:hover:text-red-400">
                     {{ __('Verlauf löschen') }}
                 </button>
@@ -119,7 +119,7 @@ new class extends Component {
 
         {{-- Messages --}}
         <div x-ref="chatContainer" class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            @forelse($this->getMessages() as $msg)
+            @forelse($this->getChatMessages() as $msg)
                 <div class="flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }}">
                     <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm {{ $msg->role === 'user'
                         ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
