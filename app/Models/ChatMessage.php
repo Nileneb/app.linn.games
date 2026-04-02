@@ -17,6 +17,7 @@ class ChatMessage extends Model
         'user_id',
         'webhook_id',
         'role',
+        'langdock_execution_id',
         'content',
     ];
 

@@ -477,7 +477,8 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
                 $table->string('role', 20);
-                $table->text('content');
+                $table->string('langdock_execution_id', 100)->nullable();
+                $table->text('content')->nullable();
                 $table->timestamp('created_at')->useCurrent();
             });
         }

@@ -14,6 +14,24 @@ new class extends Component {
     public string $rechercheUrl = '';
     public bool $rechercheSaved = false;
 
+    /** Mapping: frontend_object → [property, label, slug-prefix, event] */
+    private const WEBHOOK_TYPES = [
+        'dashboard_chat' => [
+            'property' => 'dashboardUrl',
+            'saved'    => 'dashboardSaved',
+            'label'    => 'Dashboard Chat',
+            'slug'     => 'dashboard-chat',
+            'event'    => 'dashboard-saved',
+        ],
+        'recherche_start' => [
+            'property' => 'rechercheUrl',
+            'saved'    => 'rechercheSaved',
+            'label'    => 'Recherche starten',
+            'slug'     => 'recherche-start',
+            'event'    => 'recherche-saved',
+        ],
+    ];
+
     public function mount(): void
     {
         $userId = Auth::id();
@@ -21,68 +39,66 @@ new class extends Component {
         $this->rechercheUrl  = Webhook::forUser($userId, 'recherche_start')?->url ?? '';
     }
 
-    public function saveDashboard(): void
+    private function saveWebhook(string $frontendObject): void
     {
+        $config = self::WEBHOOK_TYPES[$frontendObject];
+        $urlProperty = $config['property'];
+
         $this->validate([
-            'dashboardUrl' => ['required', 'url', 'max:500'],
+            $urlProperty => ['required', 'url', 'max:500'],
         ]);
 
         $userId = Auth::id();
-        $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'dashboard_chat')->first();
+        $webhook = Webhook::where('user_id', $userId)
+            ->where('frontend_object', $frontendObject)
+            ->first();
 
         if ($webhook) {
-            $webhook->update(['url' => $this->dashboardUrl]);
+            $webhook->update(['url' => $this->{$urlProperty}]);
         } else {
             Webhook::create([
                 'user_id'         => $userId,
-                'frontend_object' => 'dashboard_chat',
-                'name'            => 'Dashboard Chat',
-                'slug'            => 'dashboard-chat-' . Str::random(8),
-                'url'             => $this->dashboardUrl,
+                'frontend_object' => $frontendObject,
+                'name'            => $config['label'],
+                'slug'            => $config['slug'] . '-' . Str::random(8),
+                'url'             => $this->{$urlProperty},
             ]);
         }
 
-        $this->dashboardSaved = true;
-        $this->dispatch('dashboard-saved');
+        $this->{$config['saved']} = true;
+        $this->dispatch($config['event']);
+    }
+
+    private function clearWebhook(string $frontendObject): void
+    {
+        $config = self::WEBHOOK_TYPES[$frontendObject];
+
+        Webhook::where('user_id', Auth::id())
+            ->where('frontend_object', $frontendObject)
+            ->delete();
+
+        $this->{$config['property']} = '';
+        $this->{$config['saved']} = false;
+    }
+
+    public function saveDashboard(): void
+    {
+        $this->saveWebhook('dashboard_chat');
     }
 
     public function saveRecherche(): void
     {
-        $this->validate([
-            'rechercheUrl' => ['required', 'url', 'max:500'],
-        ]);
-
-        $userId = Auth::id();
-        $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'recherche_start')->first();
-
-        if ($webhook) {
-            $webhook->update(['url' => $this->rechercheUrl]);
-        } else {
-            Webhook::create([
-                'user_id'         => $userId,
-                'frontend_object' => 'recherche_start',
-                'name'            => 'Recherche starten',
-                'slug'            => 'recherche-start-' . Str::random(8),
-                'url'             => $this->rechercheUrl,
-            ]);
-        }
-
-        $this->rechercheSaved = true;
-        $this->dispatch('recherche-saved');
+        $this->saveWebhook('recherche_start');
     }
 
     public function clearDashboard(): void
     {
-        Webhook::where('user_id', Auth::id())->where('frontend_object', 'dashboard_chat')->delete();
-        $this->dashboardUrl   = '';
-        $this->dashboardSaved = false;
+        $this->clearWebhook('dashboard_chat');
     }
 
     public function clearRecherche(): void
     {
-        Webhook::where('user_id', Auth::id())->where('frontend_object', 'recherche_start')->delete();
-        $this->rechercheUrl   = '';
-        $this->rechercheSaved = false;
+        $this->clearWebhook('recherche_start');
     }
 }; ?>
 

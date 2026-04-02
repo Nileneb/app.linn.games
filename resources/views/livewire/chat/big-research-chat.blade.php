@@ -5,6 +5,7 @@ use App\Models\Webhook;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -27,6 +28,28 @@ new class extends Component {
             ->where('webhook_id', $webhook->id)
             ->orderBy('created_at')
             ->get();
+    }
+
+    public function hasPendingMessage(): bool
+    {
+        $webhook = $this->getWebhook();
+        if (! $webhook) {
+            return false;
+        }
+
+        return ChatMessage::where('user_id', Auth::id())
+            ->where('webhook_id', $webhook->id)
+            ->where('role', 'assistant')
+            ->whereNull('content')
+            ->exists();
+    }
+
+    public function pollForResponse(): void
+    {
+        if (! $this->hasPendingMessage()) {
+            $this->loading = false;
+            $this->dispatch('chat-updated');
+        }
     }
 
     public function sendMessage(): void
@@ -52,31 +75,57 @@ new class extends Component {
         ]);
 
         try {
-            $response = Http::timeout(120)
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.langdock.api_key'),
+                'Content-Type'  => 'application/json',
+            ])->timeout(30)
                 ->post($webhook->callUrl(), [
                     'prompt' => $userMessage,
                 ]);
 
-            $assistantContent = $response->successful()
-                ? ($response->json('output') ?? $response->json('result') ?? $response->body())
-                : __('Fehler bei der Verarbeitung. Bitte versuche es erneut.');
+            $executionId = $response->json('_metadata.executionId')
+                ?? $response->json('executionId')
+                ?? $response->header('X-Execution-Id');
 
-            ChatMessage::create([
-                'user_id' => Auth::id(),
-                'webhook_id' => $webhook->id,
-                'role' => 'assistant',
-                'content' => $assistantContent,
-            ]);
+            if ($response->successful() || $response->status() === 202) {
+                // Langdock verarbeitet asynchron — pending Message erstellen
+                ChatMessage::create([
+                    'user_id' => Auth::id(),
+                    'webhook_id' => $webhook->id,
+                    'role' => 'assistant',
+                    'langdock_execution_id' => $executionId,
+                    'content' => null,
+                ]);
+            } else {
+                Log::error('Dashboard chat webhook failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'webhook_id' => $webhook->id,
+                ]);
+
+                ChatMessage::create([
+                    'user_id' => Auth::id(),
+                    'webhook_id' => $webhook->id,
+                    'role' => 'assistant',
+                    'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.'),
+                ]);
+                $this->loading = false;
+            }
         } catch (\Throwable $e) {
+            Log::error('Dashboard chat webhook connection failed', [
+                'message' => $e->getMessage(),
+                'webhook_id' => $webhook->id,
+            ]);
+
             ChatMessage::create([
                 'user_id' => Auth::id(),
                 'webhook_id' => $webhook->id,
                 'role' => 'assistant',
                 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.'),
             ]);
+            $this->loading = false;
         }
 
-        $this->loading = false;
         $this->dispatch('chat-updated');
     }
 
@@ -88,6 +137,7 @@ new class extends Component {
                 ->where('webhook_id', $webhook->id)
                 ->delete();
         }
+        $this->loading = false;
     }
 }; ?>
 
