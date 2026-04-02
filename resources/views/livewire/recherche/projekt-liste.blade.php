@@ -7,14 +7,24 @@ use Livewire\Volt\Component;
 new class extends Component {
     public function projekte()
     {
-        return Projekt::where('user_id', Auth::id())
+        $workspaceId = Auth::user()?->activeWorkspaceId();
+
+        if ($workspaceId === null) {
+            return collect();
+        }
+
+        return Projekt::where('workspace_id', $workspaceId)
             ->orderByDesc('erstellt_am')
             ->get();
     }
 
     public function deleteProjekt(string $id): void
     {
-        $projekt = Projekt::where('user_id', Auth::id())->findOrFail($id);
+        $workspaceId = Auth::user()?->activeWorkspaceId();
+
+        abort_unless($workspaceId !== null, 403);
+
+        $projekt = Projekt::where('workspace_id', $workspaceId)->findOrFail($id);
         $this->authorize('delete', $projekt);
         $projekt->delete();
     }

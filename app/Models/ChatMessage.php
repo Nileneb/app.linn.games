@@ -15,6 +15,7 @@ class ChatMessage extends Model
 
     protected $fillable = [
         'user_id',
+        'workspace_id',
         'role',
         'content',
     ];
@@ -27,5 +28,10 @@ class ChatMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
     }
 }

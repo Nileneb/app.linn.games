@@ -13,8 +13,11 @@ new class extends Component {
             'eingabe' => ['required', 'string', 'max:10000'],
         ]);
 
+        $workspace = Auth::user()?->ensureDefaultWorkspace();
+
         $projekt = Projekt::create([
             'user_id' => Auth::id(),
+            'workspace_id' => $workspace?->id,
             'titel' => str()->limit($this->eingabe, 120),
             'forschungsfrage' => $this->eingabe,
         ]);

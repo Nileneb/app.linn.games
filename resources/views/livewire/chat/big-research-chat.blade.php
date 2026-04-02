@@ -11,9 +11,21 @@ new class extends Component {
     public string $message = '';
     public bool $loading = false;
 
+    private function activeWorkspaceId(): ?string
+    {
+        return Auth::user()?->activeWorkspaceId();
+    }
+
     public function getChatMessages(): Collection
     {
-        return ChatMessage::where('user_id', Auth::id())
+        $workspaceId = $this->activeWorkspaceId();
+
+        if ($workspaceId === null) {
+            return collect();
+        }
+
+        return ChatMessage::where('workspace_id', $workspaceId)
+            ->where('user_id', Auth::id())
             ->orderBy('created_at')
             ->get();
     }
@@ -22,7 +34,14 @@ new class extends Component {
     {
         $messages = [];
 
-        $history = ChatMessage::where('user_id', Auth::id())
+        $workspaceId = $this->activeWorkspaceId();
+
+        if ($workspaceId === null) {
+            return $messages;
+        }
+
+        $history = ChatMessage::where('workspace_id', $workspaceId)
+            ->where('user_id', Auth::id())
             ->whereNotNull('content')
             ->orderBy('created_at')
             ->take(20)
@@ -47,8 +66,16 @@ new class extends Component {
         $this->message = '';
         $this->loading = true;
 
+        $workspaceId = $this->activeWorkspaceId();
+
+        if ($workspaceId === null) {
+            $this->loading = false;
+            return;
+        }
+
         ChatMessage::create([
             'user_id' => Auth::id(),
+            'workspace_id' => $workspaceId,
             'role' => 'user',
             'content' => $userMessage,
         ]);
@@ -68,18 +95,21 @@ new class extends Component {
 
             ChatMessage::create([
                 'user_id' => Auth::id(),
+                'workspace_id' => $workspaceId,
                 'role' => 'assistant',
                 'content' => $result['content'],
             ]);
         } catch (LangdockAgentException $e) {
             ChatMessage::create([
                 'user_id' => Auth::id(),
+                'workspace_id' => $workspaceId,
                 'role' => 'assistant',
                 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.'),
             ]);
         } catch (\Throwable $e) {
             ChatMessage::create([
                 'user_id' => Auth::id(),
+                'workspace_id' => $workspaceId,
                 'role' => 'assistant',
                 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.'),
             ]);
@@ -91,7 +121,14 @@ new class extends Component {
 
     public function clearHistory(): void
     {
-        ChatMessage::where('user_id', Auth::id())->delete();
+        $workspaceId = $this->activeWorkspaceId();
+
+        if ($workspaceId !== null) {
+            ChatMessage::where('workspace_id', $workspaceId)
+                ->where('user_id', Auth::id())
+                ->delete();
+        }
+
         $this->loading = false;
     }
 }; ?>

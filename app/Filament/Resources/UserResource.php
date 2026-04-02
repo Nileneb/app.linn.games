@@ -26,6 +26,8 @@ class UserResource extends Resource
                 ->label('Rolle')
                 ->relationship('roles', 'name')
                 ->multiple()
+                ->minItems(1)
+                ->maxItems(1)
                 ->preload(),
             Forms\Components\Select::make('status')
                 ->required()

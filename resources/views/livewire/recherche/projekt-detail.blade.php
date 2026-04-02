@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\Projekt;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
@@ -13,7 +12,7 @@ new class extends Component {
 
     public function mount(Projekt $projekt): void
     {
-        abort_unless($projekt->user_id === Auth::id(), 403);
+        $this->authorize('view', $projekt);
         $this->projekt = $projekt->load('phasen');
     }
 

@@ -51,7 +51,7 @@ new class extends Component {
 
     public function mount(Projekt $projekt): void
     {
-        abort_unless($projekt->user_id === Auth::id(), 403);
+        $this->authorize('view', $projekt);
         $this->projekt = $projekt;
     }
 

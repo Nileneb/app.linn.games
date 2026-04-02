@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Recherche\Projekt;
+use App\Models\User;
 use App\Policies\ProjektPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -27,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Projekt::class, ProjektPolicy::class);
+
+        User::created(static function (User $user): void {
+            $user->ensureDefaultWorkspace();
+        });
 
         RateLimiter::for('mcp', function (Request $request) {
             return Limit::perMinute(60)->by($request->bearerToken() ?: $request->ip());

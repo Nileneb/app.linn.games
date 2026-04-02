@@ -7,6 +7,11 @@ use App\Models\User;
 
 class ProjektPolicy
 {
+    private function roleForWorkspace(User $user, Projekt $projekt): ?string
+    {
+        return $user->workspaceRole($projekt->workspace_id);
+    }
+
     public function viewAny(User $user): bool
     {
         return true;
@@ -14,21 +19,21 @@ class ProjektPolicy
 
     public function view(User $user, Projekt $projekt): bool
     {
-        return $user->id === $projekt->user_id;
+        return in_array($this->roleForWorkspace($user, $projekt), ['owner', 'editor', 'viewer'], true);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->activeWorkspaceId() !== null;
     }
 
     public function update(User $user, Projekt $projekt): bool
     {
-        return $user->id === $projekt->user_id;
+        return in_array($this->roleForWorkspace($user, $projekt), ['owner', 'editor'], true);
     }
 
     public function delete(User $user, Projekt $projekt): bool
     {
-        return $user->id === $projekt->user_id;
+        return $this->roleForWorkspace($user, $projekt) === 'owner';
     }
 }

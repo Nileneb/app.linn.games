@@ -27,7 +27,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $admin->assignRole('admin');
+        $admin->ensureDefaultWorkspace();
+        $admin->syncRoles(['admin']);
 
         $user = User::firstOrCreate(
             ['email' => 'user@example.com'],
@@ -39,7 +40,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $user->assignRole('user');
+        $user->ensureDefaultWorkspace();
+        $user->syncRoles(['user']);
 
         $this->call(RechercheDemoSeeder::class);
     }

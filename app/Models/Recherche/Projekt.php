@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use App\Models\User;
+use App\Models\Workspace;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -21,6 +22,7 @@ class Projekt extends Model
 
     protected $fillable = [
         'user_id',
+        'workspace_id',
         'titel',
         'forschungsfrage',
         'review_typ',
@@ -38,6 +40,11 @@ class Projekt extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
     }
 
     public function getActivitylogOptions(): LogOptions

@@ -36,8 +36,11 @@ class RechercheDemoSeeder extends Seeder
 
     private function seedProjekt(User $user): Projekt
     {
+        $workspace = $user->ensureDefaultWorkspace();
+
         return Projekt::create([
             'user_id'          => $user->id,
+            'workspace_id'     => $workspace->id,
             'titel'            => 'Wirksamkeit von KI-gestützter Bildanalyse in der Radiologie',
             'forschungsfrage'  => 'Welche Evidenz besteht für den Einsatz von KI-Systemen zur Unterstützung radiologischer Bilddiagnosen im klinischen Alltag hinsichtlich Genauigkeit, Effizienz und Patientensicherheit im Vergleich zu rein menschlicher Beurteilung?',
             'review_typ'       => 'systematic_review',

@@ -23,10 +23,15 @@
 
             {{-- Recent projects --}}
             @php
-                $recentProjekte = \App\Models\Recherche\Projekt::where('user_id', auth()->id())
-                    ->orderByDesc('erstellt_am')
-                    ->limit(5)
-                    ->get();
+                $workspaceId = auth()->user()?->activeWorkspaceId();
+                $recentProjekte = collect();
+
+                if ($workspaceId) {
+                    $recentProjekte = \App\Models\Recherche\Projekt::where('workspace_id', $workspaceId)
+                        ->orderByDesc('erstellt_am')
+                        ->limit(5)
+                        ->get();
+                }
             @endphp
             @if($recentProjekte->isNotEmpty())
                 <div>

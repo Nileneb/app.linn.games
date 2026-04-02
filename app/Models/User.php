@@ -4,10 +4,13 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use RuntimeException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -82,5 +85,72 @@ class User extends Authenticatable
     public function isTrial(): bool
     {
         return $this->status === 'trial';
+    }
+
+    public function ownedWorkspaces(): HasMany
+    {
+        return $this->hasMany(Workspace::class, 'owner_id');
+    }
+
+    public function workspaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_users')
+            ->withPivot(['id', 'role'])
+            ->withTimestamps();
+    }
+
+    public function workspaceMemberships(): HasMany
+    {
+        return $this->hasMany(WorkspaceUser::class, 'user_id');
+    }
+
+    public function workspaceRole(string $workspaceId): ?string
+    {
+        return $this->workspaceMemberships()
+            ->where('workspace_id', $workspaceId)
+            ->value('role');
+    }
+
+    public function activeWorkspaceId(): ?string
+    {
+        return $this->workspaces()->orderBy('workspaces.created_at')->value('workspaces.id');
+    }
+
+    public function ensureDefaultWorkspace(): Workspace
+    {
+        $workspace = $this->ownedWorkspaces()->first();
+
+        if ($workspace !== null) {
+            $hasMembership = $this->workspaceMemberships()
+                ->where('workspace_id', $workspace->id)
+                ->exists();
+
+            if (! $hasMembership) {
+                WorkspaceUser::create([
+                    'workspace_id' => $workspace->id,
+                    'user_id' => $this->id,
+                    'role' => 'owner',
+                ]);
+            }
+
+            return $workspace;
+        }
+
+        $workspace = Workspace::create([
+            'owner_id' => $this->id,
+            'name' => trim($this->name ?: 'Workspace') . ' Workspace',
+        ]);
+
+        WorkspaceUser::create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $this->id,
+            'role' => 'owner',
+        ]);
+
+        if (! $workspace->exists) {
+            throw new RuntimeException('Default workspace could not be created.');
+        }
+
+        return $workspace;
     }
 }
