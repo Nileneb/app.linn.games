@@ -10,7 +10,7 @@ new class extends Component {
     // --- Synthese-Methode ---
     public bool $showSmForm = false;
     public ?string $editingSmId = null;
-    public string $smMethode = 'narrativ';
+    public string $smMethode = 'narrative_synthese';
     public bool $smGewaehlt = false;
     public string $smBegruendung = '';
 
@@ -76,7 +76,7 @@ new class extends Component {
     {
         $r = P7SyntheseMethode::where('projekt_id', $this->projekt->id)->findOrFail($id);
         $this->editingSmId = $id;
-        $this->smMethode = $r->methode ?? 'narrativ';
+        $this->smMethode = $r->methode ?? 'narrative_synthese';
         $this->smGewaehlt = (bool) $r->gewaehlt;
         $this->smBegruendung = $r->begruendung ?? '';
         $this->showSmForm = true;
@@ -92,7 +92,7 @@ new class extends Component {
         $this->showSmForm = false;
         $this->editingSmId = null;
         $this->reset(['smMethode', 'smGewaehlt', 'smBegruendung']);
-        $this->smMethode = 'narrativ';
+        $this->smMethode = 'narrative_synthese';
     }
 
     // ─── Datenextraktion CRUD ────────────────────────────────
@@ -293,10 +293,10 @@ new class extends Component {
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Methode *</label>
                         <select wire:model="smMethode" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="narrativ">Narrativ</option>
+                            <option value="narrative_synthese">Narrative Synthese</option>
                             <option value="meta_analyse">Meta-Analyse</option>
-                            <option value="thematisch">Thematisch</option>
-                            <option value="framework">Framework</option>
+                            <option value="thematische_synthese">Thematische Synthese</option>
+                            <option value="framework_synthesis">Framework Synthesis</option>
                         </select>
                     </div>
                     <div class="flex items-end gap-2 pb-0.5">

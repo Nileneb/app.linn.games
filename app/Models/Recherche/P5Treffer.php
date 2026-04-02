@@ -26,11 +26,19 @@ class P5Treffer extends Model
         'datenbank_quelle',
         'ist_duplikat',
         'duplikat_von',
+        'retrieval_downloaded',
+        'retrieval_source_url',
+        'retrieval_storage_path',
+        'retrieval_status',
+        'retrieval_last_response',
+        'retrieval_checked_at',
     ];
 
     protected $casts = [
         'jahr' => 'integer',
         'ist_duplikat' => 'boolean',
+        'retrieval_downloaded' => 'boolean',
+        'retrieval_checked_at' => 'datetime',
         'erstellt_am' => 'datetime',
     ];
 

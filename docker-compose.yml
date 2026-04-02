@@ -67,8 +67,9 @@ services:
       - .env
     environment:
       - APP_ENV=testing
-      - DB_CONNECTION=sqlite
-      - "DB_DATABASE=:memory:"
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
     volumes:
       - ./tests:/var/www/tests:ro
       - ./phpunit.xml:/var/www/phpunit.xml:ro

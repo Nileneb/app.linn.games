@@ -59,6 +59,12 @@ return new class extends Migration
                 $table->text('datenbank_quelle')->nullable();
                 $table->boolean('ist_duplikat')->default(false);
                 $table->uuid('duplikat_von')->nullable();
+                $table->boolean('retrieval_downloaded')->nullable();
+                $table->text('retrieval_source_url')->nullable();
+                $table->text('retrieval_storage_path')->nullable();
+                $table->text('retrieval_status')->nullable();
+                $table->text('retrieval_last_response')->nullable();
+                $table->timestampTz('retrieval_checked_at')->nullable();
                 $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
                 $table->unique(['projekt_id', 'record_id']);

@@ -70,7 +70,7 @@ DB::select('SELECT *, 1 - (embedding <=> ?::vector) FROM ...', [$queryVector]);
 - **No redirect() helper** — use `$this->redirect(route(...), navigate: true)`
 - **Volt routing** — always `Volt::route()`, never `Route::get()`
 - **Migrations** in separate commit before code changes
-- **Tests**: Pest syntax only, SQLite in-memory, `User::factory()->withoutTwoFactor()->create()`
+- **Tests**: Pest syntax only, PostgreSQL test database, `User::factory()->withoutTwoFactor()->create()`
 
 ### Git Flow
 ```

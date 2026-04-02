@@ -106,10 +106,15 @@ test('ingest paper job handles text shorter than chunk size', function () {
         'This is a very short text.', // weit unter 500 Wörtern
     );
 
-    // Ollama-Request geht durch, aber pgvector-INSERT schlägt in SQLite fehl (::vector)
-    // → RuntimeException vom DB-Layer wird erwartet
-    expect(fn () => $job->handle())->toThrow(\Exception::class);
+    $job->handle();
 
-    // Aber Ollama wurde genau einmal aufgerufen (1 Chunk)
+    // Ollama wurde genau einmal aufgerufen (1 Chunk)
     Http::assertSentCount(1);
+
+    $this->assertDatabaseHas('paper_embeddings', [
+        'paper_id' => 'paper-short',
+        'source' => 'pubmed',
+        'title' => 'Short Paper',
+        'chunk_index' => 0,
+    ]);
 });

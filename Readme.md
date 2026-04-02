@@ -158,7 +158,7 @@ Umgebungsvariablen in `.env`:
 ## Tests
 
 ```bash
-# Via Docker (SQLite in-memory)
+# Via Docker (PostgreSQL)
 docker compose run --rm php-test vendor/bin/pest
 ```
 

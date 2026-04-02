@@ -13,7 +13,7 @@ Kommuniziere auf Deutsch, Code und Commits auf Englisch.
 - **Kein Alpine.js** — nur Livewire-Direktiven (`wire:model`, `wire:click`)
 - **Kein CI/CD-Deploy** — nur manuell via `./deploy.sh`
 - **Keine `deploy.yml`** GitHub Actions erstellen
-- **Tests**: Pest-Syntax, SQLite in-memory, `User::factory()->withoutTwoFactor()->create()`
+- **Tests**: Pest-Syntax, PostgreSQL-Testdatenbank, `User::factory()->withoutTwoFactor()->create()`
 - **Docker**: `php-test` ist Baked Image → nach Code-Änderungen `docker compose build php-test`
 - **Port**: nginx auf `6481:80` (Dev: `6480:80` via override)
 - **Git**: `feature/*` → `develop` → `main`, Squash-Merge, Conventional Commits

@@ -76,7 +76,6 @@ resources/views/
     └── big-research-chat.blade.php      # Volt-Komponente: KI-Chat-Interface
 
 database/migrations/
-├── 2026_03_31_099999_create_recherche_tables_sqlite.php  # SQLite-Fallback für Tests
 ├── 2026_03_31_100000_*                  # pgvector Extensions + Custom Enums
 ├── 2026_03_31_100001_*                  # projekte + phasen Tabellen
 └── 2026_03_31_1000{02–09}_*            # P1–P8 Phasentabellen
@@ -288,7 +287,7 @@ new class extends Component {
        // ...
    }
    ```
-3. **SQLite-Fallback** für Tests existiert in `2026_03_31_099999_*` — dort neue Test-Tabellen ergänzen wenn nötig
+3. **Tests laufen auf PostgreSQL** — Migrationen und Testdaten immer gegen PostgreSQL prüfen
 4. **`langdock_agent`-User** bei neuen Tabellen: SELECT-Berechtigung prüfen (`database/sql/create_langdock_agent_user.sql`)
 5. **Foreign Keys**: `foreignId('user_id')->constrained()->cascadeOnDelete()`
 
@@ -309,9 +308,9 @@ test('ein user kann sein projekt sehen', function () {
 // FALSCH — niemals PHPUnit-Klassen-Stil in diesem Projekt
 ```
 
-### 10.2 SQLite in Tests
+### 10.2 PostgreSQL in Tests
 
-Tests laufen mit **SQLite in-memory** — pgvector und PostgreSQL-Enums sind nicht verfügbar.
+Tests laufen mit **PostgreSQL** — dadurch werden Enums, Constraints und pgvector-kompatible SQL-Pfade realistisch getestet.
 
 ```php
 // Config überschreiben:
@@ -378,7 +377,7 @@ Nur `Projekt` und `User` nutzen Activity-Logging. Für neue Models: `LogsActivit
 
 ### 11.5 composer.json setup-Script
 
-`composer setup` führt `php artisan migrate --force` aus — das ist für die lokale Entwicklung mit SQLite ausgelegt. In Produktionsumgebung nur `./deploy.sh` verwenden.
+`composer setup` führt `php artisan migrate --force` aus. In Produktionsumgebung nur `./deploy.sh` verwenden.
 
 ---
 

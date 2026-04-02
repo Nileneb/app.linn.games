@@ -33,7 +33,7 @@ test('P7: kann synthese-methode bearbeiten', function () {
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
     $sm = P7SyntheseMethode::create([
         'projekt_id' => $projekt->id,
-        'methode' => 'narrativ',
+        'methode' => 'narrative_synthese',
         'gewaehlt' => false,
     ]);
 
@@ -41,7 +41,7 @@ test('P7: kann synthese-methode bearbeiten', function () {
 
     Volt::test('recherche.phase-p7', ['projekt' => $projekt])
         ->call('editSm', $sm->id)
-        ->assertSet('smMethode', 'narrativ')
+        ->assertSet('smMethode', 'narrative_synthese')
         ->set('smGewaehlt', true)
         ->call('saveSm');
 
@@ -51,7 +51,7 @@ test('P7: kann synthese-methode bearbeiten', function () {
 test('P7: kann synthese-methode löschen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
-    $sm = P7SyntheseMethode::create(['projekt_id' => $projekt->id, 'methode' => 'narrativ']);
+    $sm = P7SyntheseMethode::create(['projekt_id' => $projekt->id, 'methode' => 'narrative_synthese']);
 
     $this->actingAs($user);
 

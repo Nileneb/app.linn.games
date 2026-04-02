@@ -17,8 +17,9 @@ return new class extends Migration
             $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('role', 20); // 'user' or 'assistant'
-            $table->text('content');
+            $table->text('content')->nullable();
             $table->timestampTz('created_at')->default(DB::raw('now()'));
+            $table->timestampTz('updated_at')->nullable();
         });
 
         DB::statement("ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_role_check CHECK (role IN ('user', 'assistant'))");

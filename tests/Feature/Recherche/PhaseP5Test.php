@@ -2,6 +2,8 @@
 
 use App\Models\Recherche\{Projekt, P5PrismaZahlen, P5ScreeningKriterium, P5ToolEntscheidung, P5Treffer, P5ScreeningEntscheidung};
 use App\Models\User;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Volt;
 
 // ─── PRISMA Zahlen ───────────────────────────────────────────
@@ -225,6 +227,50 @@ test('P5: screening-entscheidung validiert pflichtfelder', function () {
         ->set('screenEntscheidung', '')
         ->call('saveScreen')
         ->assertHasErrors(['screenEntscheidung']);
+});
+
+test('P5: kann retrieval-agent triggern und ergebnis speichern', function () {
+    Config::set('services.langdock.api_key', 'test-api-key');
+    Config::set('services.langdock.retrieval_agent', 'retrieval-uuid');
+
+    Http::fake([
+        'app.langdock.com/*' => Http::response([
+            'content' => json_encode([
+                'downloaded' => true,
+                'source_url' => 'https://publisher.example/studie-123',
+                'storage_path' => '/data/papers/studie-123.pdf',
+                'note' => 'Download erfolgreich',
+            ]),
+        ], 200),
+    ]);
+
+    $user = User::factory()->withoutTwoFactor()->create();
+    $projekt = Projekt::factory()->create(['user_id' => $user->id]);
+    $treffer = P5Treffer::create([
+        'projekt_id' => $projekt->id,
+        'record_id' => 'REC-RTR-001',
+        'titel' => 'Retrieval-Studie',
+        'doi' => '10.1000/test-doi',
+    ]);
+
+    $this->actingAs($user);
+
+    Volt::test('recherche.phase-p5', ['projekt' => $projekt])
+        ->call('triggerRetrieval', $treffer->id)
+        ->assertSet('retrievalLoadingTrefferId', null);
+
+    $this->assertDatabaseHas('p5_treffer', [
+        'id' => $treffer->id,
+        'retrieval_downloaded' => true,
+        'retrieval_source_url' => 'https://publisher.example/studie-123',
+        'retrieval_storage_path' => '/data/papers/studie-123.pdf',
+        'retrieval_status' => 'heruntergeladen',
+    ]);
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'retrieval-uuid/completions')
+            && $request->hasHeader('Authorization', 'Bearer test-api-key');
+    });
 });
 
 // ─── Auth ────────────────────────────────────────────────────
