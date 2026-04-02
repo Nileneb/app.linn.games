@@ -12,6 +12,11 @@ function mcpHeaders(): array
     return ['Authorization' => 'Bearer test-mcp-token'];
 }
 
+function ollamaUrl(): string
+{
+    return config('services.ollama.url') . '/api/embeddings';
+}
+
 // --- Ingest ---
 
 test('ingest rejects request without bearer token', function () {
@@ -192,7 +197,7 @@ test('search requires q parameter', function () {
 
 test('search rejects max_results above 50', function () {
     Http::fake([
-        'http://ollama:11434/api/embeddings' => Http::response(
+        ollamaUrl() => Http::response(
             ['embedding' => array_fill(0, 768, 0.1)],
             200
         ),
@@ -213,7 +218,7 @@ test('search rejects max_results below 1', function () {
 
 test('search returns 503 when ollama is unavailable', function () {
     Http::fake([
-        'http://ollama:11434/api/embeddings' => Http::response(null, 503),
+        ollamaUrl() => Http::response(null, 503),
     ]);
 
     $response = $this->getJson('/api/papers/rag-search?q=test', mcpHeaders());
@@ -224,7 +229,7 @@ test('search returns 503 when ollama is unavailable', function () {
 
 test('search returns 503 when ollama connection fails', function () {
     Http::fake([
-        'http://ollama:11434/api/embeddings' => Http::response(null, 500),
+        ollamaUrl() => Http::response(null, 500),
     ]);
 
     $response = $this->getJson('/api/papers/rag-search?q=test', mcpHeaders());

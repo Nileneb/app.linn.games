@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class VerifyLangdockSignature
 {
     private const TIMESTAMP_TOLERANCE = 300; // 5 minutes
+    private const NONCE_TTL = 86_400; // 24 hours
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -49,7 +50,7 @@ class VerifyLangdockSignature
             abort(403, 'Duplicate request rejected.');
         }
 
-        Cache::put($nonceKey, true, self::TIMESTAMP_TOLERANCE);
+        Cache::put($nonceKey, true, self::NONCE_TTL);
 
         return $next($request);
     }

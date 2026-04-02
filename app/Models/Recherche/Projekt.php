@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use App\Models\User;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -30,8 +31,8 @@ class Projekt extends Model
 
     protected $casts = [
         'startdatum' => 'date',
-        'letztes_update' => 'datetime',
         'erstellt_am' => 'datetime',
+        'letztes_update' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -146,6 +147,16 @@ class Projekt extends Model
     }
 
     // P6 — Qualitätsbewertung
+    public function p6Qualitaetsbewertungen(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            P6Qualitaetsbewertung::class,
+            P5Treffer::class,
+            'projekt_id',
+            'treffer_id',
+        );
+    }
+
     public function p6Luckenanalyse(): HasMany
     {
         return $this->hasMany(P6Luckenanalyse::class, 'projekt_id');
@@ -168,6 +179,16 @@ class Projekt extends Model
     }
 
     // P8 — Dokumentation
+    public function p8Suchprotokolle(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            P8Suchprotokoll::class,
+            P4Suchstring::class,
+            'projekt_id',
+            'suchstring_id',
+        );
+    }
+
     public function p8Limitationen(): HasMany
     {
         return $this->hasMany(P8Limitation::class, 'projekt_id');

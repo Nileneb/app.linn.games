@@ -13,7 +13,7 @@ class PaperRagController extends Controller
     public function ingest(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'paper_id'   => ['required', 'string', 'max:500'],
+            'paper_id'   => ['required', 'string', 'max:255'],
             'source'     => ['required', 'string', 'max:50'],
             'title'      => ['required', 'string'],
             'text'       => ['required', 'string'],
@@ -44,7 +44,7 @@ class PaperRagController extends Controller
         $maxResults = $data['max_results'] ?? 5;
         $projektId  = $data['projekt_id'] ?? null;
 
-        $embeddingResponse = Http::timeout(30)->post('http://ollama:11434/api/embeddings', [
+        $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
             'model'  => 'nomic-embed-text',
             'prompt' => $data['q'],
         ]);

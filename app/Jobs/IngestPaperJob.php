@@ -36,7 +36,7 @@ class IngestPaperJob implements ShouldQueue
         $chunks = $this->chunkText($this->text);
 
         foreach ($chunks as $index => $chunk) {
-            $response = Http::timeout(30)->post('http://ollama:11434/api/embeddings', [
+            $response = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
                 'model' => 'nomic-embed-text',
                 'prompt' => $chunk,
             ]);

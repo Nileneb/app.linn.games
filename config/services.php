@@ -45,4 +45,8 @@ return [
         'auth_token' => env('MCP_AUTH_TOKEN'),
     ],
 
+    'ollama' => [
+        'url' => env('OLLAMA_URL', 'http://localhost:11434'),
+    ],
+
 ];

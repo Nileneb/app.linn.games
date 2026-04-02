@@ -156,16 +156,9 @@ DB::select(
 );
 ```
 
-### 4.5 Bekannte Lücke in Projekt.php
+### 4.5 Relationen in Projekt.php
 
-Das `Projekt`-Model definiert nur **P1 und P5** als HasMany-Relationen. P2–P4 und P6–P8 sind **nicht** im Model definiert, obwohl die Tabellen existieren. Bei Erweiterungen immer prüfen und ergänzen:
-
-```php
-// Fehlende Relationen (Stand: April 2026):
-public function p2ReviewTypEntscheidungen(): HasMany { ... }
-public function p3Datenbankmatrix(): HasMany { ... }
-// ... P4–P8 analog
-```
+Alle P1–P8 Relationen sind im `Projekt`-Model definiert. `P6Qualitaetsbewertungen` und `P8Suchprotokolle` nutzen `HasManyThrough` (via P5Treffer bzw. P4Suchstring), da diese Tabellen kein direktes `projekt_id` FK haben.
 
 ---
 
@@ -240,7 +233,7 @@ POST /paper-mcp/ingest
     → IngestPaperJob::dispatch(paperId, source, title, text, projektId, metadata)
     → Redis Queue
     → Text wird in Chunks aufgeteilt (500 Wörter, 100 Überlappung)
-    → Für jeden Chunk: HTTP POST → http://ollama:11434/api/embeddings
+    → Für jeden Chunk: HTTP POST → config('services.ollama.url')/api/embeddings
     → pgvector INSERT (Raw SQL)
 ```
 
@@ -251,6 +244,7 @@ LANGDOCK_API_KEY=...
 LANGDOCK_WEBHOOK_URL=...
 LANGDOCK_SECRET=...          # HMAC-Geheimnis für Webhook-Signatur
 MCP_AUTH_TOKEN=...           # Bearer-Token für /mcp/sse
+OLLAMA_URL=http://localhost:11434  # Ollama Embedding Service
 LANGDOCK_DB_HOST=...
 LANGDOCK_DB_USER=langdock_agent   # eingeschränkter DB-User
 LANGDOCK_DB_PASSWORD=...
@@ -370,13 +364,14 @@ docker compose run --rm php-test vendor/bin/pest       # Docker (empfohlen)
 
 ## 11. Bekannte Muster und Fallstricke
 
-### 11.1 Ollama-URL ist hardcoded
+### 11.1 Ollama-URL — konfigurierbar
 
-In `IngestPaperJob` und `PaperRagController` ist die Ollama-URL direkt als `http://ollama:11434` eingetragen. Wenn die URL angepasst werden muss, **beide** Dateien ändern. Besser: `config('services.ollama.url')` einführen.
+Die Ollama-URL wird über `config('services.ollama.url')` geladen (Default: `http://localhost:11434`).
+Umgebungsvariable: `OLLAMA_URL`.
 
 ### 11.2 Fehlende Relationen in Projekt.php
 
-`Projekt::p2*()` bis `Projekt::p4*()` und `p6*()` bis `p8*()` sind nicht definiert. Bei Abfragen auf Phasen P2–P4, P6–P8 muss derzeit direkt das jeweilige Model (`P2Cluster::where('projekt_id', ...)`) abgefragt werden.
+P2–P8 Relationen sind vollständig definiert. `P6Qualitaetsbewertungen` und `P8Suchprotokolle` nutzen `HasManyThrough` (via P5Treffer bzw. P4Suchstring), da diese Tabellen kein direktes `projekt_id` FK haben.
 
 ### 11.3 Raw SQL für pgvector ist Absicht
 
