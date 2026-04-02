@@ -15,23 +15,17 @@ class ChatMessage extends Model
 
     protected $fillable = [
         'user_id',
-        'webhook_id',
         'role',
-        'langdock_execution_id',
         'content',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function webhook(): BelongsTo
-    {
-        return $this->belongsTo(Webhook::class);
     }
 }

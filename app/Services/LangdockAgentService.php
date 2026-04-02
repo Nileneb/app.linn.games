@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
+class LangdockAgentService
+{
+    /**
+     * Ruft einen Langdock-Agenten synchron über die Agents Completions API auf.
+     *
+     * @param  string  $agentId  UUID des Langdock-Agenten
+     * @param  array<int, array{role: string, content: string}>  $messages  Nachrichtenverlauf
+     * @param  int  $timeout  HTTP-Timeout in Sekunden
+     * @return array{content: string, raw: array}
+     *
+     * @throws \App\Services\LangdockAgentException
+     */
+    public function call(string $agentId, array $messages, int $timeout = 120, array $context = []): array
+    {
+        $apiKey = config('services.langdock.api_key');
+        $logContext = $this->buildLogContext($agentId, $messages, $timeout, $context);
+
+        if (! $apiKey || ! $agentId) {
+            Log::error('Langdock agent configuration missing', $logContext + [
+                'has_api_key' => (bool) $apiKey,
+            ]);
+
+            throw new LangdockAgentException('Langdock API-Key oder Agent-ID nicht konfiguriert.');
+        }
+
+        $startedAt = microtime(true);
+
+        Log::info('Langdock agent request started', $logContext);
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout($timeout)
+                ->post("https://app.langdock.com/api/v1/agents/{$agentId}/completions", [
+                    'messages' => $messages,
+                    'stream' => false,
+                ]);
+
+            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+            if ($response->failed()) {
+                Log::error('Langdock agent request failed', $logContext + [
+                    'status' => $response->status(),
+                    'duration_ms' => $durationMs,
+                    'response_excerpt' => Str::limit($response->body(), 1000),
+                ]);
+
+                throw new LangdockAgentException(
+                    "Langdock API returned HTTP {$response->status()}",
+                    $response->status(),
+                );
+            }
+
+            $raw = $response->json() ?? [];
+            $content = $response->json('content')
+                ?? $response->json('output')
+                ?? $response->json('choices.0.message.content')
+                ?? $response->body();
+
+            Log::info('Langdock agent request succeeded', $logContext + [
+                'status' => $response->status(),
+                'duration_ms' => $durationMs,
+                'response_length' => mb_strlen((string) $content),
+            ]);
+
+            return [
+                'content' => (string) $content,
+                'raw' => $raw,
+            ];
+        } catch (LangdockAgentException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+            Log::error('Langdock agent request crashed', $logContext + [
+                'duration_ms' => $durationMs,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+
+            throw new LangdockAgentException(
+                'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
+                0,
+                $e,
+            );
+        }
+    }
+
+    /**
+     * Ruft einen Agenten über seinen config-Key auf.
+     * z.B. callByConfigKey('scoping_mapping_agent', $messages)
+     */
+    public function callByConfigKey(string $configKey, array $messages, int $timeout = 120, array $context = []): array
+    {
+        $agentId = config("services.langdock.{$configKey}");
+
+        if (! $agentId) {
+            throw new LangdockAgentException("Langdock Agent '{$configKey}' nicht in config/services.php konfiguriert.");
+        }
+
+        return $this->call($agentId, $messages, $timeout, $context + [
+            'config_key' => $configKey,
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    private function buildLogContext(string $agentId, array $messages, int $timeout, array $context): array
+    {
+        $lastMessage = $messages === [] ? null : $messages[array_key_last($messages)];
+
+        return array_filter($context + [
+            'request_id' => (string) Str::uuid(),
+            'agent_id' => $agentId,
+            'message_count' => count($messages),
+            'timeout_seconds' => $timeout,
+            'last_message_role' => $lastMessage['role'] ?? null,
+            'last_message_preview' => isset($lastMessage['content'])
+                ? Str::limit((string) preg_replace('/\s+/', ' ', $lastMessage['content']), 180)
+                : null,
+        ], static fn ($value) => $value !== null && $value !== '');
+    }
+}

@@ -300,6 +300,15 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    {{-- KI-Agent Button --}}
+    <livewire:recherche.agent-action-button
+        :projekt="$projekt"
+        agent-config-key="scoping_mapping_agent"
+        label="🎯 KI: Strukturierung starten"
+        :phase-nr="1"
+        :key="'agent-p1-'.$projekt->id"
+    />
+
     {{-- ═══ Strukturmodellwahl ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">

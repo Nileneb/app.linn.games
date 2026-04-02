@@ -16,6 +16,9 @@ return new class extends Migration
         Schema::table('chat_messages', function (Blueprint $table) {
             $table->text('content')->nullable()->change();
             $table->string('langdock_execution_id', 100)->nullable()->after('role');
+            $table->timestamp('updated_at')->nullable();
+
+            $table->index('langdock_execution_id');
         });
     }
 
@@ -26,8 +29,9 @@ return new class extends Migration
         }
 
         Schema::table('chat_messages', function (Blueprint $table) {
+            $table->dropIndex(['langdock_execution_id']);
+            $table->dropColumn(['langdock_execution_id', 'updated_at']);
             $table->text('content')->nullable(false)->change();
-            $table->dropColumn('langdock_execution_id');
         });
     }
 };

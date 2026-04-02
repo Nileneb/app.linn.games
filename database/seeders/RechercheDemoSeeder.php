@@ -24,8 +24,6 @@ class RechercheDemoSeeder extends Seeder
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
 
-        $this->seedWebhooks($user);
-
         $projekt = $this->seedProjekt($user);
         $this->seedPhasen($projekt);
         $this->seedP1($projekt);
@@ -34,32 +32,6 @@ class RechercheDemoSeeder extends Seeder
         $treffer = $this->seedP5($projekt);
         $this->seedP6($treffer);
         $this->seedP7($treffer);
-    }
-
-    private function seedWebhooks(User $user): void
-    {
-        \App\Models\Webhook::firstOrCreate(
-            ['user_id' => $user->id, 'frontend_object' => 'dashboard_chat'],
-            [
-                'name'       => 'Dashboard Chat',
-                'slug'       => 'dashboard-chat-' . substr(md5($user->id . 'dashboard_chat'), 0, 8),
-                'url'        => 'https://app.langdock.com/api/hooks/workflows/30781e00-a6df-4c6f-a2ad-fa8cf9b9826b',
-                'created_at' => now(),
-            ]
-        );
-        // Aufruf: curl -X POST "https://app.langdock.com/api/hooks/workflows/30781e00-a6df-4c6f-a2ad-fa8cf9b9826b?secret=Test123" \
-        //   -H 'Content-Type: application/json' \
-        //   -d '{"prompt": "YOUR PROMPT HERE"}'}
-
-        \App\Models\Webhook::firstOrCreate(
-            ['user_id' => $user->id, 'frontend_object' => 'recherche_start'],
-            [
-                'name'       => 'Recherche starten',
-                'slug'       => 'recherche-start-' . substr(md5($user->id . 'recherche_start'), 0, 8),
-                'url'        => 'https://app.langdock.com/api/hooks/workflows/demo-placeholder',
-                'created_at' => now(),
-            ]
-        );
     }
 
     private function seedProjekt(User $user): Projekt

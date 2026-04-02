@@ -261,6 +261,15 @@ new class extends Component {
 
 <div class="space-y-6">
 
+    {{-- KI-Agent Button --}}
+    <livewire:recherche.agent-action-button
+        :projekt="$projekt"
+        agent-config-key="review_agent"
+        label="🧹 KI: Screening durchführen"
+        :phase-nr="5"
+        :key="'agent-p5-'.$projekt->id"
+    />
+
     {{-- ═══ PRISMA Flowchart Zahlen ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">

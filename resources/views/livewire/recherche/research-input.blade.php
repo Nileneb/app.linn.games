@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\TriggerLangdockAgent;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
@@ -19,12 +18,6 @@ new class extends Component {
             'titel' => str()->limit($this->eingabe, 120),
             'forschungsfrage' => $this->eingabe,
         ]);
-
-        TriggerLangdockAgent::dispatch(
-            Auth::id(),
-            $projekt->id,
-            $this->eingabe,
-        );
 
         $this->eingabe = '';
 

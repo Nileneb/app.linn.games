@@ -37,8 +37,11 @@ return [
 
     'langdock' => [
         'api_key' => env('LANGDOCK_API_KEY'),
-        'webhook_url' => env('LANGDOCK_WEBHOOK_URL'),
-        'secret' => env('LANGDOCK_WEBHOOK_SECRET'),
+        'agent_id' => env('LANGDOCK_AGENT_ID'),
+        'scoping_mapping_agent' => env('SCOPING_MAPPING_AGENT'),
+        'search_agent' => env('SEARCH_AGENT'),
+        'review_agent' => env('REVIEW_AGENT'),
+        'retrieval_agent' => env('RESEARCH_RETRIEVAL_AGENT'),
     ],
 
     'mcp' => [

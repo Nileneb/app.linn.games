@@ -52,6 +52,11 @@ class Projekt extends Model
         return $this->hasMany(Phase::class, 'projekt_id');
     }
 
+    public function papers(): HasMany
+    {
+        return $this->hasMany(Paper::class, 'projekt_id');
+    }
+
     public function p1Strukturmodellwahl(): HasMany
     {
         return $this->hasMany(P1Strukturmodellwahl::class, 'projekt_id');

@@ -45,13 +45,13 @@ docker compose exec php-fpm php artisan filament:assets # Filament-Assets neu pu
 
 **Data Flow (KI-Agent)**:
 ```
-User input → Volt component → TriggerLangdockAgent (ShouldBeUnique, 300s) → Redis Queue
-→ Langdock Webhook → VerifyLangdockSignature (HMAC + Timestamp ±5min + Nonce-Replay)
+User clicks phase button → Volt component → LangdockAgentService::call(agentId, messages)
+→ Agents Completions API (POST /api/v1/agents/{id}/completions)
 → Agent reads DB via /mcp/sse (VerifyMcpToken Bearer auth)
+→ Response displayed in modal
 ```
 
 **Security Layers**:
-- `VerifyLangdockSignature`: HMAC-SHA256, timestamp validation, Redis nonce cache
 - `VerifyMcpToken`: Bearer token for MCP endpoints
 - `ProjektPolicy`: Owner-only access (never bypass `$this->authorize()`)
 

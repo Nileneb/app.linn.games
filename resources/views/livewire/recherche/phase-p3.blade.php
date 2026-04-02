@@ -258,6 +258,14 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    <livewire:recherche.agent-action-button
+        :projekt="$projekt"
+        agent-config-key="scoping_mapping_agent"
+        label="🗂️ KI: Datenbankauswahl schärfen"
+        :phase-nr="3"
+        :key="'agent-p3-'.$projekt->id"
+    />
+
     {{-- ═══ Datenbankmatrix ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">

@@ -54,7 +54,7 @@
 - **ProjektListe** — Alle Recherche-Projekte des Benutzers (sortiert nach Erstellungsdatum)
 - **ProjektDetail** — Einzelprojekt mit Phasen (P1–P8) und Trefferliste (P5)
 - 32 Eloquent-Models für 8 Phasen eines systematischen Reviews
-- KI-Integration: `TriggerLangdockAgent` Job → Langdock Webhook (dedupliziert via `ShouldBeUnique`)
+- KI-Integration: `LangdockAgentService` → Langdock Agents Completions API (phasenweise Agent-Calls)
 - Vektor-Embeddings: `paper_embeddings`-Tabelle mit pgvector (IVFFlat-Index)
 - Activity-Logging: Änderungen an `Projekt` und `User` via `spatie/laravel-activitylog`
 
@@ -88,11 +88,6 @@
 - Literatursuche und Paper-Ingestion via MCP-Protokoll (`/paper-mcp/`)
 - Automatischer Paper-Download und Embedding-Erzeugung
 
-### Webhook-Sicherheit
-- HMAC-SHA256-Signaturprüfung (`X-Langdock-Signature`)
-- Replay-Schutz: Timestamp-Validierung (`X-Langdock-Timestamp`, max. 5 Min.)
-- Nonce-Deduplizierung via Cache (bereits gesehene Signaturen werden abgelehnt)
-
 ## Routes
 
 ### Web (`routes/web.php`)
@@ -114,14 +109,15 @@
 | Methode | Pfad | Beschreibung |
 |---|---|---|
 | GET | `/api/user` | Authentifizierter Benutzer (Sanctum) |
-| POST | `/api/webhooks/langdock` | Langdock Webhook (signaturgeprüft) |
+| POST | `/api/papers/ingest` | Paper-Ingestion (MCP-Token) |
+| GET | `/api/papers/rag-search` | Vektor-Suche (MCP-Token) |
 
 ## Datenbank
 
 **21 Migrationen** — Users, Cache, Jobs, 2FA, Contacts, PageViews, Permissions, Consents, Recherche P1–P8, Indices, Prisma-Funktion.
 
 **36+ Models:**
-- Core: `User`, `Contact`, `PageView`, `Consent`, `Webhook`, `ChatMessage`
+- Core: `User`, `Contact`, `PageView`, `Consent`, `ChatMessage`
 - Recherche: `Projekt`, `Phase`, `P5Treffer` + 29 Phasen-Models (P1–P8)
 - Embeddings: `PaperEmbedding` (pgvector)
 
@@ -166,15 +162,16 @@ Umgebungsvariablen in `.env`:
 docker compose run --rm php-test vendor/bin/pest
 ```
 
-**68 Tests** — Unit, Auth, Kontakt, Recherche, Webhook-Sicherheit, ProjektPolicy.
+**247 Tests** — Unit, Auth, Kontakt, Dashboard-Chat, Recherche P1–P8, ProjektPolicy, Agent-Integration.
 
 | Testsuite | Abdeckung |
 |---|---|
 | Auth (Login, Register, 2FA, Passwort) | ✅ |
 | Kontaktformular (Validierung, Submission) | ✅ |
+| Dashboard-Chat (Agent API, Multi-Turn, Fehler) | ✅ |
 | Recherche (Projekt erstellen, Liste, Detail, Zugriff) | ✅ |
-| Webhook (Signatur, Timestamp, Replay, Valid) | ✅ |
 | ProjektPolicy (Owner-Zugriff CRUD) | ✅ |
+| Agent-Buttons (P1–P7 Phasen) | ✅ |
 
 ## Contributing
 

@@ -16,7 +16,7 @@ return new class extends Migration
 
         DB::statement("
             DO \$body\$ BEGIN
-                CREATE TYPE webhook_frontend_object AS ENUM ('dashboard_chat', 'recherche_start');
+                CREATE TYPE webhook_frontend_object AS ENUM ('dashboard_chat');
             EXCEPTION WHEN duplicate_object THEN NULL;
             END \$body\$
         ");

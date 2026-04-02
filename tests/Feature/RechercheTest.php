@@ -2,13 +2,9 @@
 
 use App\Models\Recherche\Projekt;
 use App\Models\User;
-use Illuminate\Support\Facades\Queue;
-use App\Jobs\TriggerLangdockAgent;
 use Livewire\Volt\Volt;
 
 test('authenticated user can create a research project', function () {
-    Queue::fake();
-
     $user = User::factory()->withoutTwoFactor()->create();
 
     $this->actingAs($user);
@@ -25,20 +21,18 @@ test('authenticated user can create a research project', function () {
     ]);
 });
 
-test('research project creation dispatches TriggerLangdockAgent job', function () {
-    Queue::fake();
-
+test('research project creation redirects to project detail', function () {
     $user = User::factory()->withoutTwoFactor()->create();
 
     $this->actingAs($user);
 
     Volt::test('recherche.research-input')
-        ->set('eingabe', 'Testfrage für die Queue')
-        ->call('starteRecherche');
+        ->set('eingabe', 'Testfrage für Redirect')
+        ->call('starteRecherche')
+        ->assertRedirect();
 
-    Queue::assertPushed(TriggerLangdockAgent::class, function ($job) {
-        return $job->eingabe === 'Testfrage für die Queue';
-    });
+    $projekt = Projekt::where('user_id', $user->id)->first();
+    expect($projekt)->not->toBeNull();
 });
 
 test('research input requires eingabe field', function () {

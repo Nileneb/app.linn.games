@@ -47,16 +47,13 @@ app/
 │   ├── Controllers/
 │   │   ├── ContactController.php        # Kontaktformular
 │   │   ├── DsgvoController.php          # DSGVO-Export & Account-Löschung
-│   │   ├── LangdockWebhookController.php # Eingehende Langdock-Webhooks
 │   │   └── PaperRagController.php       # Paper ingest + Vektorsuche
 │   └── Middleware/
-│       ├── VerifyLangdockSignature.php  # HMAC + Timestamp + Nonce-Replay-Schutz
 │       └── VerifyMcpToken.php           # Bearer-Token-Auth für /mcp/sse
 ├── Jobs/
-│   ├── TriggerLangdockAgent.php         # Langdock-Agent auslösen (ShouldBeUnique)
 │   └── IngestPaperJob.php               # Ollama-Embedding + pgvector-Insert
 ├── Models/
-│   ├── User.php, Contact.php, Webhook.php, ChatMessage.php, Consent.php, PageView.php
+│   ├── User.php, Contact.php, ChatMessage.php, Consent.php, PageView.php
 │   └── Recherche/
 │       ├── Projekt.php                  # Kernmodell (user_id, titel, forschungsfrage)
 │       ├── Phase.php                    # Phasen-Tracking (phase_nr 1–8)
@@ -64,6 +61,9 @@ app/
 │       └── PaperEmbedding.php           # pgvector Embeddings
 ├── Policies/
 │   └── ProjektPolicy.php                # Owner-basiert: nur eigene Projekte
+├── Services/
+│   ├── LangdockAgentService.php         # Zentrale Langdock Agents Completions API
+│   └── LangdockAgentException.php       # Custom Exception
 └── Providers/
     └── Filament/AdminPanelProvider.php  # Filament Admin-Konfiguration
 
@@ -177,7 +177,6 @@ Alle P1–P8 Relationen sind im `Projekt`-Model definiert. `P6Qualitaetsbewertun
 | `auth` | Eingeloggter User | Alle `/dashboard`, `/recherche/*`, `/settings/*` |
 | `verified` | E-Mail verifiziert | `/dashboard` |
 | `password.confirm` | Passwort-Bestätigung | 2FA-Einstellungen |
-| `VerifyLangdockSignature` | HMAC + Replay-Schutz | `POST /api/webhooks/langdock` |
 | `VerifyMcpToken` | Bearer-Token | `/mcp/sse` (Nginx-Proxy) |
 
 ### 5.3 ProjektPolicy (Owner-Only)
@@ -193,39 +192,25 @@ $this->authorize('delete', $projekt);
 
 ## 6. KI-Integration (kritischer Pfad)
 
-### 6.1 Langdock-Agent auslösen
+### 6.1 Langdock-Agent auslösen (Agents Completions API)
 
 ```
-User gibt Forschungsfrage ein
-    → Volt-Komponente (research-input.blade.php)
-    → TriggerLangdockAgent::dispatch($userId, $projektId, $eingabe)
-    → Redis Queue
-    → HTTP POST an config('services.langdock.webhook_url')
-    → Langdock-Agent liest DB via /mcp/sse
+User klickt Phasen-Button oder sendet Chat-Nachricht
+    → Volt-Komponente
+    → LangdockAgentService::call($agentId, $messages)
+    → POST https://app.langdock.com/api/v1/agents/{id}/completions
+    → Agent liest DB via /mcp/sse
+    → Antwort wird im Modal/Chat angezeigt
 ```
 
-**Wichtig:** `TriggerLangdockAgent` implementiert `ShouldBeUnique` mit `uniqueId() = $projektId`.
-Das bedeutet: Pro Projekt kann nur **ein** Job gleichzeitig in der Queue sein (`uniqueFor = 300s`).
+**5 Langdock-Agents** (konfiguriert in `config/services.php`):
+- `agent_id` — Dashboard-Chat
+- `scoping_mapping_agent` — P1–P3 (Scoping & Mapping)
+- `search_agent` — P4 (Suchstrategie)
+- `review_agent` — P5–P8 (Screening, Coding, Synthese)
+- `retrieval_agent` — Paper-Downloads
 
-### 6.2 Eingehende Langdock-Webhooks
-
-```
-Langdock sendet Ergebnis via POST /api/webhooks/langdock
-    → VerifyLangdockSignature (HMAC-SHA256 + Timestamp ±5min + Cache-Nonce)
-    → LangdockWebhookController::handle()
-    → Validierung: user_id, projekt_id, eingabe
-    → TriggerLangdockAgent::dispatch() (erneut in Queue)
-```
-
-### 6.3 Webhook-Sicherheit (NICHT verändern ohne Rücksprache)
-
-Die `VerifyLangdockSignature`-Middleware implementiert drei Schutzebenen:
-
-1. **HMAC-SHA256** — `hash_hmac('sha256', $timestamp . '.' . $body, $secret)`
-2. **Timestamp-Validierung** — max. 5 Minuten Toleranz (`X-Langdock-Timestamp`)
-3. **Cache-Nonce** — jede Signatur wird einmalig in Redis gespeichert (verhindert Replay-Angriffe)
-
-### 6.4 Paper-Ingestion (Ollama)
+### 6.2 Paper-Ingestion (Ollama)
 
 ```
 POST /paper-mcp/ingest
@@ -241,12 +226,15 @@ POST /paper-mcp/ingest
 
 ```env
 LANGDOCK_API_KEY=...
-LANGDOCK_WEBHOOK_URL=...
-LANGDOCK_SECRET=...          # HMAC-Geheimnis für Webhook-Signatur
-MCP_AUTH_TOKEN=...           # Bearer-Token für /mcp/sse
+LANGDOCK_AGENT_ID=...              # Dashboard-Chat Agent UUID
+SCOPING_MAPPING_AGENT=...         # P1–P3 Agent UUID
+SEARCH_AGENT=...                   # P4 Agent UUID
+REVIEW_AGENT=...                   # P5–P8 Agent UUID
+RESEARCH_RETRIEVAL_AGENT=...       # Paper-Download Agent UUID
+MCP_AUTH_TOKEN=...                 # Bearer-Token für /mcp/sse
 OLLAMA_URL=http://localhost:11434  # Ollama Embedding Service
 LANGDOCK_DB_HOST=...
-LANGDOCK_DB_USER=langdock_agent   # eingeschränkter DB-User
+LANGDOCK_DB_USER=langdock_agent    # eingeschränkter DB-User
 LANGDOCK_DB_PASSWORD=...
 ```
 
@@ -326,19 +314,18 @@ test('ein user kann sein projekt sehen', function () {
 Tests laufen mit **SQLite in-memory** — pgvector und PostgreSQL-Enums sind nicht verfügbar.
 
 ```php
-// Queue testen:
-Queue::fake();
-// Dann: prüfen ob Job dispatched wurde:
-Queue::assertPushed(TriggerLangdockAgent::class);
-
 // Config überschreiben:
-Config::set('services.langdock.secret', 'test-secret');
+Config::set('services.langdock.api_key', 'test-api-key');
+Config::set('services.langdock.agent_id', 'test-agent-id');
 
 // Volt-Komponenten:
 Volt::test('recherche.research-input')
-    ->set('forschungsfrage', 'Meine Frage')
-    ->call('submit')
-    ->assertRedirect(route('recherche'));
+    ->set('eingabe', 'Meine Frage')
+    ->call('starteRecherche')
+    ->assertRedirect();
+
+// LangdockAgentService mocken:
+Http::fake(['app.langdock.com/*' => Http::response(['content' => 'KI-Antwort'])]);
 ```
 
 ### 10.3 Testabdeckung (Stand: April 2026)
@@ -348,7 +335,7 @@ Volt::test('recherche.research-input')
 | Auth (Login, Register, 2FA, Passwort) | ✅ vollständig |
 | Kontaktformular | ✅ vollständig |
 | ProjektPolicy | ✅ vollständig |
-| Webhook-Sicherheit | ✅ vollständig |
+| Dashboard-Chat (Agent API) | ✅ vollständig |
 | Recherche P1–P4 (Livewire CRUD) | ✅ vollständig |
 | Recherche P5–P8 (Livewire CRUD) | ✅ vollständig |
 | Admin-Panel | ❌ fehlend |

@@ -477,29 +477,31 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
                 $table->string('role', 20);
-                $table->string('langdock_execution_id', 100)->nullable();
                 $table->text('content')->nullable();
                 $table->timestamp('created_at')->useCurrent();
+                $table->timestamp('updated_at')->nullable();
             });
         }
 
-        if (! Schema::hasTable('webhooks')) {
-            Schema::create('webhooks', function (Blueprint $table) {
+        if (! Schema::hasTable('papers')) {
+            Schema::create('papers', function (Blueprint $table) {
                 $table->uuid('id')->primary();
-                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-                $table->text('name');
-                $table->text('slug')->unique();
-                $table->text('url');
-                $table->string('frontend_object')->nullable();
-                $table->unique(['user_id', 'frontend_object']);
-                $table->timestamp('created_at')->useCurrent();
-            });
+                $table->uuid('projekt_id')->nullable();
+                $table->string('source', 50);
+                $table->string('paper_id', 255);
+                $table->text('title');
+                $table->text('abstract')->nullable();
+                $table->text('authors')->nullable();
+                $table->string('doi', 255)->nullable();
+                $table->string('url', 2048)->nullable();
+                $table->integer('year')->nullable();
+                $table->text('metadata')->nullable();
+                $table->timestamp('erstellt_am')->useCurrent();
 
-            if (Schema::hasTable('chat_messages')) {
-                Schema::table('chat_messages', function (Blueprint $table) {
-                    $table->uuid('webhook_id')->nullable();
-                });
-            }
+                $table->foreign('projekt_id')->references('id')->on('projekte')->nullOnDelete();
+                $table->index('projekt_id');
+                $table->index(['source', 'paper_id']);
+            });
         }
     }
 
@@ -509,7 +511,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::dropIfExists('webhooks');
+        Schema::dropIfExists('papers');
         Schema::dropIfExists('chat_messages');
         Schema::dropIfExists('p8_update_plan');
         Schema::dropIfExists('p8_reproduzierbarkeitspruefung');

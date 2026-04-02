@@ -233,6 +233,15 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    {{-- KI-Agent Button --}}
+    <livewire:recherche.agent-action-button
+        :projekt="$projekt"
+        agent-config-key="search_agent"
+        label="🔍 KI: Suchstrings generieren"
+        :phase-nr="4"
+        :key="'agent-p4-'.$projekt->id"
+    />
+
     {{-- ═══ Suchstrings ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">

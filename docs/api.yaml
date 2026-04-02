@@ -4,7 +4,7 @@ info:
   version: "1.0.0"
   description: |
     API-Endpunkte der Research-Management-Plattform app.linn.games.
-    Umfasst Webhooks, Paper-Ingestion, Vektorsuche und User-Info.
+    Umfasst Paper-Ingestion, Vektorsuche und User-Info.
 
 servers:
   - url: https://app.linn.games
@@ -30,67 +30,6 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Nicht authentifiziert
-
-  /api/webhooks/langdock:
-    post:
-      summary: Langdock-Agent Webhook
-      description: |
-        Eingehender Webhook vom Langdock-KI-Agent. Startet einen
-        TriggerLangdockAgent-Job in der Redis-Queue.
-        Gesichert durch HMAC-SHA256 Signatur + Timestamp + Nonce.
-      operationId: handleLangdockWebhook
-      tags: [Webhooks]
-      security:
-        - langdockHmac: []
-      parameters:
-        - name: X-Langdock-Signature
-          in: header
-          required: true
-          schema:
-            type: string
-          description: "HMAC-SHA256 Signatur: hash_hmac('sha256', timestamp.'.'.body, secret)"
-        - name: X-Langdock-Timestamp
-          in: header
-          required: true
-          schema:
-            type: integer
-          description: Unix-Timestamp (max. 5 Min. Toleranz)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_id, projekt_id, eingabe]
-              properties:
-                user_id:
-                  type: integer
-                  description: ID des auslösenden Users
-                projekt_id:
-                  type: string
-                  format: uuid
-                  description: UUID des Recherche-Projekts
-                eingabe:
-                  type: string
-                  maxLength: 10000
-                  description: Freitext-Eingabe / Forschungsfrage
-      responses:
-        "200":
-          description: Job erfolgreich in Queue eingereiht
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: queued
-        "403":
-          description: Ungültige Signatur
-        "422":
-          description: Validierungsfehler
-        "429":
-          description: Rate-Limit überschritten (max. 30/min)
 
   /api/papers/ingest:
     post:
@@ -210,11 +149,6 @@ components:
       type: http
       scheme: bearer
       description: MCP Bearer-Token (MCP_AUTH_TOKEN in .env)
-    langdockHmac:
-      type: apiKey
-      in: header
-      name: X-Langdock-Signature
-      description: HMAC-SHA256 Signatur mit LANGDOCK_SECRET
 
   schemas:
     User:

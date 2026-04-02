@@ -18,7 +18,7 @@ Kommuniziere auf Deutsch, Code und Commits auf Englisch.
 - **Port**: nginx auf `6481:80` (Dev: `6480:80` via override)
 - **Git**: `feature/*` → `develop` → `main`, Squash-Merge, Conventional Commits
 - **Migrations** immer in separatem Commit vor Code-Änderungen
-- **Sicherheit**: Webhook HMAC+Nonce, MCP Bearer-Token, pgvector Raw SQL ist Absicht
+- **Sicherheit**: MCP Bearer-Token, pgvector Raw SQL ist Absicht
 
 ## Arbeitsweise
 
