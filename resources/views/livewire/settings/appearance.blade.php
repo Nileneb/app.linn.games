@@ -65,6 +65,7 @@ new class extends Component {
 
                 // Initialen Zustand setzen
                 var saved = localStorage.getItem('appearance') || 'system';
+                applyTheme(saved);
                 highlightButtons(saved);
             })();
         </script>

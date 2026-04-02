@@ -22,11 +22,24 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => 'password',
+                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
 
         $admin->assignRole('admin');
+
+        $user = User::firstOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Standard User',
+                'password' => 'password',
+                'status' => 'trial',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $user->assignRole('user');
 
         $this->call(RechercheDemoSeeder::class);
     }
