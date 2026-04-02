@@ -320,34 +320,78 @@ new class extends Component {
 
         @if ($prismaZahlen)
             <div class="p-4">
-                {{-- PRISMA Funnel Visualization --}}
-                <div class="flex flex-col items-center gap-1">
-                    @php
-                        $steps = [
-                            ['label' => 'Identifiziert', 'value' => $prismaZahlen->identifiziert_gesamt, 'color' => 'bg-blue-500'],
-                            ['label' => 'Datenbank-Treffer', 'value' => $prismaZahlen->davon_datenbank_treffer, 'color' => 'bg-blue-400'],
-                            ['label' => 'Graue Literatur', 'value' => $prismaZahlen->davon_graue_literatur, 'color' => 'bg-blue-300'],
-                            ['label' => 'Nach Deduplizierung', 'value' => $prismaZahlen->nach_deduplizierung, 'color' => 'bg-indigo-500'],
-                            ['label' => 'Ausgeschlossen L1', 'value' => $prismaZahlen->ausgeschlossen_l1, 'color' => 'bg-red-400'],
-                            ['label' => 'Volltext geprüft', 'value' => $prismaZahlen->volltext_geprueft, 'color' => 'bg-amber-500'],
-                            ['label' => 'Ausgeschlossen L2', 'value' => $prismaZahlen->ausgeschlossen_l2, 'color' => 'bg-red-400'],
-                            ['label' => 'Eingeschlossen', 'value' => $prismaZahlen->eingeschlossen_final, 'color' => 'bg-green-500'],
-                        ];
-                        $maxVal = max(array_filter(array_column($steps, 'value'), fn($v) => $v !== null) ?: [1]);
-                    @endphp
-                    @foreach ($steps as $step)
-                        @if ($step['value'] !== null)
-                            <div class="flex w-full items-center gap-3">
-                                <span class="w-40 text-right text-xs text-neutral-600 dark:text-neutral-400">{{ $step['label'] }}</span>
-                                <div class="relative h-6 flex-1 overflow-hidden rounded bg-neutral-100 dark:bg-neutral-800">
-                                    <div class="{{ $step['color'] }} flex h-full items-center justify-end rounded pr-2 text-xs font-medium text-white transition-all duration-500" style="width: {{ $maxVal > 0 ? max(($step['value'] / $maxVal) * 100, 3) : 3 }}%">
-                                        {{ number_format($step['value']) }}
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
+                {{-- PRISMA 2020 Flow Diagram (SVG) --}}
+                @php
+                    $pz = $prismaZahlen;
+                    $fmt = fn($v) => $v !== null ? number_format($v) : 'n/a';
+                @endphp
+                <svg viewBox="0 0 720 520" class="mx-auto w-full max-w-2xl" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" class="fill-neutral-400 dark:fill-neutral-500" />
+                        </marker>
+                    </defs>
+
+                    {{-- ── Stufe 1: Identifikation ── --}}
+                    <rect x="10" y="10" width="280" height="56" rx="6" class="fill-blue-50 stroke-blue-400 dark:fill-blue-950/40 dark:stroke-blue-600" stroke-width="1.5" />
+                    <text x="150" y="32" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:11px;font-weight:600">Datenbank-Treffer</text>
+                    <text x="150" y="52" text-anchor="middle" class="fill-blue-600 dark:fill-blue-400" style="font-size:13px;font-weight:700">{{ $fmt($pz->davon_datenbank_treffer) }}</text>
+
+                    <rect x="430" y="10" width="280" height="56" rx="6" class="fill-blue-50 stroke-blue-400 dark:fill-blue-950/40 dark:stroke-blue-600" stroke-width="1.5" />
+                    <text x="570" y="32" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:11px;font-weight:600">Andere Quellen (graue Lit.)</text>
+                    <text x="570" y="52" text-anchor="middle" class="fill-blue-600 dark:fill-blue-400" style="font-size:13px;font-weight:700">{{ $fmt($pz->davon_graue_literatur) }}</text>
+
+                    {{-- Pfeile nach unten zur Zusammenführung --}}
+                    <line x1="150" y1="66" x2="150" y2="100" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+                    <line x1="570" y1="66" x2="570" y2="100" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+
+                    {{-- Zusammenführungsbox --}}
+                    <rect x="130" y="102" width="460" height="56" rx="6" class="fill-blue-50 stroke-blue-500 dark:fill-blue-950/40 dark:stroke-blue-500" stroke-width="1.5" />
+                    <text x="360" y="124" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:11px;font-weight:600">Identifiziert gesamt</text>
+                    <text x="360" y="146" text-anchor="middle" class="fill-blue-600 dark:fill-blue-400" style="font-size:15px;font-weight:700">{{ $fmt($pz->identifiziert_gesamt) }}</text>
+
+                    {{-- Pfeil nach unten --}}
+                    <line x1="360" y1="158" x2="360" y2="192" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+
+                    {{-- ── Stufe 2: Screening ── --}}
+                    <rect x="130" y="194" width="460" height="56" rx="6" class="fill-indigo-50 stroke-indigo-400 dark:fill-indigo-950/40 dark:stroke-indigo-500" stroke-width="1.5" />
+                    <text x="360" y="216" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:11px;font-weight:600">Nach Deduplizierung (Screening-Pool)</text>
+                    <text x="360" y="236" text-anchor="middle" class="fill-indigo-600 dark:fill-indigo-400" style="font-size:15px;font-weight:700">{{ $fmt($pz->nach_deduplizierung) }}</text>
+
+                    {{-- Pfeil nach unten + Pfeil nach rechts (Ausschluss L1) --}}
+                    <line x1="360" y1="250" x2="360" y2="310" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+                    <line x1="590" y1="222" x2="660" y2="222" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+
+                    {{-- Ausschluss L1 Box (rechts) --}}
+                    <rect x="662" y="194" width="50" height="56" rx="6" class="fill-red-50 stroke-red-400 dark:fill-red-950/30 dark:stroke-red-500" stroke-width="1.5" />
+                    <text x="687" y="214" text-anchor="middle" class="fill-neutral-600 dark:fill-neutral-300" style="font-size:9px">Aus L1</text>
+                    <text x="687" y="234" text-anchor="middle" class="fill-red-600 dark:fill-red-400" style="font-size:12px;font-weight:700">{{ $fmt($pz->ausgeschlossen_l1) }}</text>
+
+                    {{-- ── Stufe 3: Eligibility ── --}}
+                    <rect x="130" y="312" width="460" height="56" rx="6" class="fill-amber-50 stroke-amber-400 dark:fill-amber-950/30 dark:stroke-amber-500" stroke-width="1.5" />
+                    <text x="360" y="334" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:11px;font-weight:600">Volltext geprüft (Eligibility)</text>
+                    <text x="360" y="354" text-anchor="middle" class="fill-amber-600 dark:fill-amber-400" style="font-size:15px;font-weight:700">{{ $fmt($pz->volltext_geprueft) }}</text>
+
+                    {{-- Pfeil nach unten + Pfeil nach rechts (Ausschluss L2) --}}
+                    <line x1="360" y1="368" x2="360" y2="428" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+                    <line x1="590" y1="340" x2="660" y2="340" class="stroke-neutral-400 dark:stroke-neutral-500" stroke-width="1.5" marker-end="url(#arrow)" />
+
+                    {{-- Ausschluss L2 Box (rechts) --}}
+                    <rect x="662" y="312" width="50" height="56" rx="6" class="fill-red-50 stroke-red-400 dark:fill-red-950/30 dark:stroke-red-500" stroke-width="1.5" />
+                    <text x="687" y="332" text-anchor="middle" class="fill-neutral-600 dark:fill-neutral-300" style="font-size:9px">Aus L2</text>
+                    <text x="687" y="352" text-anchor="middle" class="fill-red-600 dark:fill-red-400" style="font-size:12px;font-weight:700">{{ $fmt($pz->ausgeschlossen_l2) }}</text>
+
+                    {{-- ── Stufe 4: Einschluss ── --}}
+                    <rect x="180" y="430" width="360" height="60" rx="6" class="fill-green-50 stroke-green-500 dark:fill-green-950/30 dark:stroke-green-500" stroke-width="2" />
+                    <text x="360" y="454" text-anchor="middle" class="fill-neutral-700 dark:fill-neutral-200" style="font-size:12px;font-weight:600">Eingeschlossen (final)</text>
+                    <text x="360" y="478" text-anchor="middle" class="fill-green-600 dark:fill-green-400" style="font-size:17px;font-weight:700">{{ $fmt($pz->eingeschlossen_final) }}</text>
+
+                    {{-- Stufen-Labels links --}}
+                    <text x="5" y="38" class="fill-neutral-400 dark:fill-neutral-500" style="font-size:9px;font-style:italic" transform="rotate(-90 5 38)">Identifikation</text>
+                    <text x="5" y="222" class="fill-neutral-400 dark:fill-neutral-500" style="font-size:9px;font-style:italic" transform="rotate(-90 5 222)">Screening</text>
+                    <text x="5" y="340" class="fill-neutral-400 dark:fill-neutral-500" style="font-size:9px;font-style:italic" transform="rotate(-90 5 340)">Eligibility</text>
+                    <text x="5" y="460" class="fill-neutral-400 dark:fill-neutral-500" style="font-size:9px;font-style:italic" transform="rotate(-90 5 460)">Einschluss</text>
+                </svg>
                 <div class="mt-3 flex justify-end gap-2">
                     <button wire:click="editPrisma('{{ $prismaZahlen->id }}')" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Bearbeiten</button>
                     <button wire:click="deletePrisma('{{ $prismaZahlen->id }}')" wire:confirm="PRISMA-Zahlen löschen?" class="text-sm text-red-500 hover:underline dark:text-red-400">Löschen</button>

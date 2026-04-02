@@ -403,13 +403,67 @@ new class extends Component {
             </div>
         @endif
 
+        {{-- Evidence Map Heatmap (Länder × Outcomes) --}}
         @if ($datenextraktionen->isNotEmpty())
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/30">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Studie</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Land</th>
+            @php
+                $laender = $datenextraktionen->pluck('land')->filter()->unique()->sort()->values();
+                $outcomes = $datenextraktionen->pluck('outcome_ergebnis')->filter()->unique()->sort()->values();
+                $pivot = [];
+                foreach ($datenextraktionen as $de) {
+                    if ($de->land && $de->outcome_ergebnis) {
+                        $pivot[$de->land][$de->outcome_ergebnis] = ($pivot[$de->land][$de->outcome_ergebnis] ?? 0) + 1;
+                    }
+                }
+                $showHeatmap = $laender->count() >= 2 || $outcomes->count() >= 2;
+                $hmColors = [1 => 'bg-blue-100 dark:bg-blue-900/30', 2 => 'bg-blue-200 dark:bg-blue-900/50', 3 => 'bg-blue-300 dark:bg-blue-800/60', 4 => 'bg-blue-400 dark:bg-blue-700/70'];
+            @endphp
+            @if ($showHeatmap && count($pivot) > 0)
+                <div class="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <p class="mb-2 text-xs font-semibold text-neutral-600 dark:text-neutral-300">Evidence Map — Länder × Outcomes</p>
+                    <div class="overflow-x-auto">
+                        <table class="text-xs">
+                            <thead>
+                                <tr>
+                                    <th class="px-2 py-1 text-left font-medium text-neutral-500 dark:text-neutral-400"></th>
+                                    @foreach ($outcomes as $o)
+                                        <th class="max-w-[100px] truncate px-2 py-1 text-center font-medium text-neutral-500 dark:text-neutral-400" title="{{ $o }}">{{ str()->limit($o, 18) }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($laender as $land)
+                                    <tr>
+                                        <td class="whitespace-nowrap px-2 py-1 font-medium text-neutral-700 dark:text-neutral-300">{{ $land }}</td>
+                                        @foreach ($outcomes as $o)
+                                            @php $val = $pivot[$land][$o] ?? 0; @endphp
+                                            <td class="px-1 py-1 text-center">
+                                                @if ($val > 0)
+                                                    <span class="{{ $hmColors[min($val, 4)] }} inline-flex h-7 w-7 items-center justify-center rounded text-xs font-semibold text-blue-800 dark:text-blue-200" title="{{ $land }} × {{ $o }}: {{ $val }}">{{ $val }}</span>
+                                                @else
+                                                    <span class="inline-flex h-7 w-7 items-center justify-center rounded bg-neutral-50 text-neutral-300 dark:bg-neutral-800 dark:text-neutral-600">·</span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    {{-- Farbskala --}}
+                    <div class="mt-1.5 flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
+                        <span>0</span>
+                        <span class="h-2.5 w-4 rounded bg-neutral-100 dark:bg-neutral-800"></span>
+                        <span class="h-2.5 w-4 rounded bg-blue-100 dark:bg-blue-900/30"></span>
+                        <span class="h-2.5 w-4 rounded bg-blue-200 dark:bg-blue-900/50"></span>
+                        <span class="h-2.5 w-4 rounded bg-blue-300 dark:bg-blue-800/60"></span>
+                        <span class="h-2.5 w-4 rounded bg-blue-400 dark:bg-blue-700/70"></span>
+                        <span>4+</span>
+                    </div>
+                </div>
+            @endif
+        @endif
+
+        @if ($datenextraktionen->isNotEmpty())
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Hauptbefund</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Qualität</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Akt.</th>

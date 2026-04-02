@@ -275,6 +275,57 @@ new class extends Component {
             </div>
         @endif
 
+        {{-- RoB Traffic-Light Matrix --}}
+        @if ($bewertungen->isNotEmpty())
+            <div class="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <p class="mb-2 text-xs font-semibold text-neutral-600 dark:text-neutral-300">Risk-of-Bias Traffic-Light</p>
+                @php
+                    $tlColors = [
+                        'niedrig'        => 'bg-green-500',
+                        'moderat'        => 'bg-amber-400',
+                        'hoch'           => 'bg-orange-500',
+                        'kritisch'       => 'bg-red-500',
+                        'nicht_bewertet' => 'bg-neutral-300 dark:bg-neutral-600',
+                    ];
+                    $tlLabels = [
+                        'niedrig'        => 'Niedrig',
+                        'moderat'        => 'Moderat',
+                        'hoch'           => 'Hoch',
+                        'kritisch'       => 'Kritisch',
+                        'nicht_bewertet' => 'N/A',
+                    ];
+                @endphp
+                <div class="space-y-1">
+                    @foreach ($bewertungen as $qb)
+                        <div class="flex items-center gap-2">
+                            <span class="w-44 truncate text-xs text-neutral-700 dark:text-neutral-300" title="{{ $qb->treffer?->titel ?? '—' }}">{{ str()->limit($qb->treffer?->titel ?? '—', 35) }}</span>
+                            <span class="{{ $tlColors[$qb->gesamturteil] ?? 'bg-neutral-300' }} inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" title="{{ $tlLabels[$qb->gesamturteil] ?? $qb->gesamturteil }}">
+                                @if ($qb->gesamturteil === 'niedrig')
+                                    <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                @elseif ($qb->gesamturteil === 'kritisch' || $qb->gesamturteil === 'hoch')
+                                    <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                @elseif ($qb->gesamturteil === 'moderat')
+                                    <span class="text-[10px] font-bold text-white">~</span>
+                                @else
+                                    <span class="text-[10px] font-bold text-white">?</span>
+                                @endif
+                            </span>
+                            <span class="text-[10px] text-neutral-400">{{ $tlLabels[$qb->gesamturteil] ?? $qb->gesamturteil }}</span>
+                        </div>
+                    @endforeach
+                </div>
+                {{-- Legende --}}
+                <div class="mt-2 flex flex-wrap gap-3 text-[10px] text-neutral-500 dark:text-neutral-400">
+                    @foreach ($tlColors as $key => $color)
+                        <span class="flex items-center gap-1">
+                            <span class="{{ $color }} inline-block h-2.5 w-2.5 rounded-full"></span>
+                            {{ $tlLabels[$key] }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($bewertungen->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">

@@ -318,6 +318,47 @@ new class extends Component {
             </div>
         @endif
 
+        {{-- Treffer-pro-Datenbank Balkendiagramm --}}
+        @if ($suchprotokolle->isNotEmpty())
+            @php
+                $dbGroups = $suchprotokolle->groupBy('datenbank')->map(function ($items, $db) {
+                    return [
+                        'gesamt'    => $items->sum('treffer_gesamt'),
+                        'eindeutig' => $items->sum('treffer_eindeutig'),
+                    ];
+                })->sortByDesc('gesamt');
+                $barMax = max($dbGroups->max('gesamt'), 1);
+            @endphp
+            <div class="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <div class="mb-2 flex items-center justify-between">
+                    <p class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Treffer pro Datenbank</p>
+                    <div class="flex items-center gap-3 text-[10px] text-neutral-400 dark:text-neutral-500">
+                        <span class="flex items-center gap-1"><span class="inline-block h-2 w-4 rounded bg-blue-500"></span>Gesamt</span>
+                        <span class="flex items-center gap-1"><span class="inline-block h-2 w-4 rounded bg-indigo-400"></span>Eindeutig</span>
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    @foreach ($dbGroups as $db => $vals)
+                        <div class="flex items-center gap-2">
+                            <span class="w-28 truncate text-right text-xs text-neutral-600 dark:text-neutral-400" title="{{ $db }}">{{ $db }}</span>
+                            <div class="flex-1 space-y-0.5">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="h-3.5 rounded bg-blue-500 transition-all" style="width: {{ max(($vals['gesamt'] / $barMax) * 100, 2) }}%"></div>
+                                    <span class="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{{ number_format($vals['gesamt']) }}</span>
+                                </div>
+                                @if ($vals['eindeutig'])
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="h-3.5 rounded bg-indigo-400 transition-all" style="width: {{ max(($vals['eindeutig'] / $barMax) * 100, 2) }}%"></div>
+                                        <span class="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{{ number_format($vals['eindeutig']) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($suchprotokolle->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
