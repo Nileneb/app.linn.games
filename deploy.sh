@@ -8,11 +8,13 @@ set -euo pipefail
 
 SKIP_BUILD=false
 SKIP_MIGRATE=false
+RUN_SEED=false
 
 for arg in "$@"; do
   case "$arg" in
     --skip-build)   SKIP_BUILD=true ;;
     --skip-migrate) SKIP_MIGRATE=true ;;
+    --seed)         RUN_SEED=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -77,6 +79,14 @@ if [ "$SKIP_MIGRATE" = false ]; then
   fi
 else
   echo "==> Skipping migrations (--skip-migrate)"
+fi
+
+# ── Seed ───────────────────────────────────────
+if [ "$RUN_SEED" = true ]; then
+  echo "==> Seeding database (admin user + roles)..."
+  docker compose run --rm php-cli php artisan db:seed --force
+else
+  echo "==> Skipping seed (use --seed for first deploy)"
 fi
 
 # ── Cache optimisation ─────────────────────────

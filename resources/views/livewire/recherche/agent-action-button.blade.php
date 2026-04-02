@@ -11,7 +11,6 @@ new class extends Component {
     public string $label;
     public int $phaseNr;
 
-    public bool $loading = false;
     public bool $showModal = false;
     public string $result = '';
     public string $error = '';
@@ -20,7 +19,6 @@ new class extends Component {
     {
         $this->error = '';
         $this->result = '';
-        $this->loading = true;
         $this->showModal = true;
 
         $messages = $this->buildContextMessages();
@@ -41,8 +39,6 @@ new class extends Component {
         } catch (\Throwable $e) {
             $this->error = __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.');
         }
-
-        $this->loading = false;
     }
 
     public function acceptResult(): void
@@ -107,15 +103,7 @@ new class extends Component {
 
                 {{-- Body --}}
                 <div class="max-h-[60vh] overflow-y-auto px-6 py-4">
-                    @if ($loading)
-                        <div class="flex items-center justify-center py-12">
-                            <svg class="h-8 w-8 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                            </svg>
-                            <span class="ml-3 text-sm text-neutral-600 dark:text-neutral-400">{{ __('KI-Agent verarbeitet die Anfrage…') }}</span>
-                        </div>
-                    @elseif ($error)
+                    @if ($error)
                         <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
                             <p class="text-sm text-red-700 dark:text-red-400">{{ $error }}</p>
                         </div>

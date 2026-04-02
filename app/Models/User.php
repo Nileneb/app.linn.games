@@ -22,6 +22,9 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, LogsActivity, Notifiable, TwoFactorAuthenticatable;
 
+    private bool $workspaceIdLoaded = false;
+    private ?string $cachedWorkspaceId = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -120,7 +123,14 @@ class User extends Authenticatable implements FilamentUser
 
     public function activeWorkspaceId(): ?string
     {
-        return $this->workspaces()->orderBy('workspaces.created_at')->value('workspaces.id');
+        if (! $this->workspaceIdLoaded) {
+            $this->cachedWorkspaceId = $this->workspaces()
+                ->orderBy('workspaces.created_at')
+                ->value('workspaces.id');
+            $this->workspaceIdLoaded = true;
+        }
+
+        return $this->cachedWorkspaceId;
     }
 
     public function ensureDefaultWorkspace(): Workspace

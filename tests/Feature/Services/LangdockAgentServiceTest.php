@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    Config::set('services.langdock.base_url', 'https://api.langdock.com/agent/v1/chat/completions');
     Config::set('services.langdock.api_key', 'test-api-key');
     Config::set('services.langdock.agent_id', 'test-agent-uuid');
     Config::set('services.langdock.scoping_mapping_agent', 'scoping-uuid');
@@ -16,8 +17,8 @@ beforeEach(function () {
 
 test('call sends request to langdock api and returns content', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'content' => 'Hier ist dein Strukturmodell.',
+        '*' => Http::response([
+            'messages' => [['id' => 'r-1', 'role' => 'assistant', 'content' => 'Hier ist dein Strukturmodell.']],
         ], 200),
     ]);
 
@@ -30,17 +31,19 @@ test('call sends request to langdock api and returns content', function () {
     expect($result['raw'])->toBeArray();
 
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'test-agent-uuid/completions')
+        return $request->url() === 'https://api.langdock.com/agent/v1/chat/completions'
             && $request->hasHeader('Authorization', 'Bearer test-api-key')
-            && $request['stream'] === false
-            && $request['messages'][0]['role'] === 'user';
+            && $request['agentId'] === 'test-agent-uuid'
+            && $request['messages'][0]['role'] === 'user'
+            && $request['messages'][0]['parts'][0]['type'] === 'text'
+            && $request['messages'][0]['parts'][0]['text'] === 'Analysiere diese Forschungsfrage.';
     });
 });
 
-test('call falls back to output field when content is missing', function () {
+test('call falls back to result array when messages content is missing', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'output' => 'Fallback-Output.',
+        '*' => Http::response([
+            'result' => [['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'Fallback-Output.']]]],
         ], 200),
     ]);
 
@@ -52,26 +55,9 @@ test('call falls back to output field when content is missing', function () {
     expect($result['content'])->toBe('Fallback-Output.');
 });
 
-test('call falls back to choices array when content and output are missing', function () {
-    Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'choices' => [
-                ['message' => ['content' => 'Aus Choices.']],
-            ],
-        ], 200),
-    ]);
-
-    $service = new LangdockAgentService();
-    $result = $service->call('test-agent-uuid', [
-        ['role' => 'user', 'content' => 'Test'],
-    ]);
-
-    expect($result['content'])->toBe('Aus Choices.');
-});
-
 test('call throws LangdockAgentException on http error', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response('Server Error', 500),
+        '*' => Http::response('Server Error', 500),
     ]);
 
     $service = new LangdockAgentService();
@@ -91,8 +77,8 @@ test('call throws LangdockAgentException when api key is missing', function () {
 
 test('callByConfigKey resolves agent id from config', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'content' => 'Suchstring generiert.',
+        '*' => Http::response([
+            'messages' => [['id' => 'r-2', 'role' => 'assistant', 'content' => 'Suchstring generiert.']],
         ], 200),
     ]);
 
@@ -104,7 +90,7 @@ test('callByConfigKey resolves agent id from config', function () {
     expect($result['content'])->toBe('Suchstring generiert.');
 
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'search-uuid/completions');
+        return $request['agentId'] === 'search-uuid';
     });
 });
 

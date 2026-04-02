@@ -3,8 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,34 +16,36 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
 
-        // User::factory(10)->create();
+        $adminEmail = env('MAIL_FROM_ADDRESS', 'admin@example.com');
 
         $admin = User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => $adminEmail],
             [
-                'name' => 'Test User',
-                'password' => 'password',
-                'status' => 'active',
-                'email_verified_at' => now(),
+                'name'               => 'Admin',
+                'password'           => Str::random(32),
+                'status'             => 'active',
+                'email_verified_at'  => now(),
             ]
         );
 
         $admin->ensureDefaultWorkspace();
         $admin->syncRoles(['admin']);
 
-        $user = User::firstOrCreate(
-            ['email' => 'user@example.com'],
-            [
-                'name' => 'Standard User',
-                'password' => 'password',
-                'status' => 'trial',
-                'email_verified_at' => now(),
-            ]
-        );
+        if ($admin->wasRecentlyCreated) {
+            $this->command?->info("Admin erstellt: {$adminEmail}");
 
-        $user->ensureDefaultWorkspace();
-        $user->syncRoles(['user']);
+            try {
+                Password::sendResetLink(['email' => $adminEmail]);
+                $this->command?->info("Passwort-Reset-Link gesendet an: {$adminEmail}");
+            } catch (\Throwable $e) {
+                $this->command?->warn("Reset-Link konnte nicht gesendet werden: {$e->getMessage()}");
+            }
+        } else {
+            $this->command?->info("Admin bereits vorhanden: {$adminEmail}");
+        }
 
-        $this->call(RechercheDemoSeeder::class);
+        if (app()->isLocal()) {
+            $this->call(RechercheDemoSeeder::class);
+        }
     }
 }

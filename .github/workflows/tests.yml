@@ -18,6 +18,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: Testing
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: change-me
+          POSTGRES_DB: linn_games
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,4 +69,10 @@ jobs:
         run: npm run build
 
       - name: Run Tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: linn_games
+          DB_USERNAME: postgres
+          DB_PASSWORD: change-me
         run: ./vendor/bin/pest

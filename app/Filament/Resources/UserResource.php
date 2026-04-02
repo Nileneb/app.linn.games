@@ -77,7 +77,7 @@ class UserResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ]);
     }
 

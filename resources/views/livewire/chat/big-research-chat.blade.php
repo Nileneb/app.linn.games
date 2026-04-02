@@ -27,6 +27,7 @@ new class extends Component {
         return ChatMessage::where('workspace_id', $workspaceId)
             ->where('user_id', Auth::id())
             ->orderBy('created_at')
+            ->limit(50)
             ->get();
     }
 
@@ -34,18 +35,13 @@ new class extends Component {
     {
         $messages = [];
 
-        $workspaceId = $this->activeWorkspaceId();
-
-        if ($workspaceId === null) {
+        if ($this->activeWorkspaceId() === null) {
             return $messages;
         }
 
-        $history = ChatMessage::where('workspace_id', $workspaceId)
-            ->where('user_id', Auth::id())
-            ->whereNotNull('content')
-            ->orderBy('created_at')
-            ->take(20)
-            ->get();
+        $history = $this->getChatMessages()
+            ->filter(fn ($msg) => $msg->content !== null)
+            ->take(-20);
 
         foreach ($history as $msg) {
             $messages[] = ['role' => $msg->role, 'content' => $msg->content];
@@ -80,11 +76,9 @@ new class extends Component {
             'content' => $userMessage,
         ]);
 
-        $agentId = config('services.langdock.agent_id');
-
         try {
-            $result = app(LangdockAgentService::class)->call(
-                $agentId,
+            $result = app(LangdockAgentService::class)->callByConfigKey(
+                'agent_id',
                 $this->buildMessages($userMessage),
                 120,
                 [

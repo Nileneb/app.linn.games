@@ -36,6 +36,7 @@ return [
     ],
 
     'langdock' => [
+        'base_url' => env('LANGDOCK_BASE_URL', 'https://api.langdock.com/agent/v1/chat/completions'),
         'api_key' => env('LANGDOCK_API_KEY'),
         'agent_id' => env('LANGDOCK_AGENT_ID'),
         'scoping_mapping_agent' => env('SCOPING_MAPPING_AGENT'),

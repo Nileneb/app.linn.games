@@ -5,7 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 return new class extends Migration
 {
@@ -56,11 +55,11 @@ return new class extends Migration
         }
 
         if (DB::table('projekte')->whereNull('workspace_id')->exists()) {
-            throw new RuntimeException('workspace_id backfill for projekte failed.');
+            throw new \RuntimeException('workspace_id backfill for projekte failed.');
         }
 
         if (DB::table('chat_messages')->whereNull('workspace_id')->exists()) {
-            throw new RuntimeException('workspace_id backfill for chat_messages failed.');
+            throw new \RuntimeException('workspace_id backfill for chat_messages failed.');
         }
 
         if (DB::getDriverName() === 'pgsql') {
