@@ -19,7 +19,8 @@ return new class extends Migration
             $table->text('name');
             $table->text('slug')->unique();
             $table->text('url');
-            $table->text('password');
+            $table->string('frontend_object')->nullable();
+            $table->unique(['user_id', 'frontend_object']);
             $table->timestampTz('created_at')->default(DB::raw('now()'));
         });
 

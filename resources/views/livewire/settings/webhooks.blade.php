@@ -6,125 +6,83 @@ use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    private const SECRET_MASK = '********';
-
     // Dashboard Chat Slot
     public string $dashboardUrl = '';
-    public string $dashboardSecret = '';
-    public bool $dashboardHasSecret = false;
     public bool $dashboardSaved = false;
 
     // Recherche starten Slot
     public string $rechercheUrl = '';
-    public string $rechercheSecret = '';
-    public bool $rechercheHasSecret = false;
     public bool $rechercheSaved = false;
 
     public function mount(): void
     {
         $userId = Auth::id();
-
-        $dashboardWebhook = Webhook::forUser($userId, 'dashboard_chat');
-        $this->dashboardUrl       = $dashboardWebhook?->url ?? '';
-        $this->dashboardHasSecret = (bool) $dashboardWebhook?->secret;
-        $this->dashboardSecret    = $this->dashboardHasSecret ? self::SECRET_MASK : '';
-
-        $rechercheWebhook = Webhook::forUser($userId, 'recherche_start');
-        $this->rechercheUrl       = $rechercheWebhook?->url ?? '';
-        $this->rechercheHasSecret = (bool) $rechercheWebhook?->secret;
-        $this->rechercheSecret    = $this->rechercheHasSecret ? self::SECRET_MASK : '';
+        $this->dashboardUrl  = Webhook::forUser($userId, 'dashboard_chat')?->url ?? '';
+        $this->rechercheUrl  = Webhook::forUser($userId, 'recherche_start')?->url ?? '';
     }
 
     public function saveDashboard(): void
     {
         $this->validate([
-            'dashboardUrl'    => ['required', 'url', 'max:500'],
-            'dashboardSecret' => ['nullable', 'string', 'max:500'],
+            'dashboardUrl' => ['required', 'url', 'max:500'],
         ]);
 
         $userId = Auth::id();
         $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'dashboard_chat')->first();
-        $data = ['url' => $this->dashboardUrl];
-
-        if ($this->dashboardSecret !== '' && $this->dashboardSecret !== self::SECRET_MASK) {
-            $data['secret'] = $this->dashboardSecret;
-        }
 
         if ($webhook) {
-            $webhook->update($data);
+            $webhook->update(['url' => $this->dashboardUrl]);
         } else {
-            if (! isset($data['secret'])) {
-                $data['secret'] = null;
-            }
-            Webhook::create(array_merge($data, [
+            Webhook::create([
                 'user_id'         => $userId,
                 'frontend_object' => 'dashboard_chat',
                 'name'            => 'Dashboard Chat',
                 'slug'            => 'dashboard-chat-' . Str::random(8),
-            ]));
+                'url'             => $this->dashboardUrl,
+            ]);
         }
 
-        $refreshed = Webhook::forUser($userId, 'dashboard_chat');
-        $this->dashboardUrl       = $refreshed?->url ?? $this->dashboardUrl;
-        $this->dashboardHasSecret = (bool) $refreshed?->secret;
-        $this->dashboardSecret    = $this->dashboardHasSecret ? self::SECRET_MASK : '';
-        $this->dashboardSaved     = true;
+        $this->dashboardSaved = true;
         $this->dispatch('dashboard-saved');
     }
 
     public function saveRecherche(): void
     {
         $this->validate([
-            'rechercheUrl'    => ['required', 'url', 'max:500'],
-            'rechercheSecret' => ['nullable', 'string', 'max:500'],
+            'rechercheUrl' => ['required', 'url', 'max:500'],
         ]);
 
         $userId = Auth::id();
         $webhook = Webhook::where('user_id', $userId)->where('frontend_object', 'recherche_start')->first();
-        $data = ['url' => $this->rechercheUrl];
-
-        if ($this->rechercheSecret !== '' && $this->rechercheSecret !== self::SECRET_MASK) {
-            $data['secret'] = $this->rechercheSecret;
-        }
 
         if ($webhook) {
-            $webhook->update($data);
+            $webhook->update(['url' => $this->rechercheUrl]);
         } else {
-            if (! isset($data['secret'])) {
-                $data['secret'] = null;
-            }
-            Webhook::create(array_merge($data, [
+            Webhook::create([
                 'user_id'         => $userId,
                 'frontend_object' => 'recherche_start',
                 'name'            => 'Recherche starten',
                 'slug'            => 'recherche-start-' . Str::random(8),
-            ]));
+                'url'             => $this->rechercheUrl,
+            ]);
         }
 
-        $refreshed = Webhook::forUser($userId, 'recherche_start');
-        $this->rechercheUrl       = $refreshed?->url ?? $this->rechercheUrl;
-        $this->rechercheHasSecret = (bool) $refreshed?->secret;
-        $this->rechercheSecret    = $this->rechercheHasSecret ? self::SECRET_MASK : '';
-        $this->rechercheSaved     = true;
+        $this->rechercheSaved = true;
         $this->dispatch('recherche-saved');
     }
 
     public function clearDashboard(): void
     {
         Webhook::where('user_id', Auth::id())->where('frontend_object', 'dashboard_chat')->delete();
-        $this->dashboardUrl       = '';
-        $this->dashboardSecret    = '';
-        $this->dashboardHasSecret = false;
-        $this->dashboardSaved     = false;
+        $this->dashboardUrl   = '';
+        $this->dashboardSaved = false;
     }
 
     public function clearRecherche(): void
     {
         Webhook::where('user_id', Auth::id())->where('frontend_object', 'recherche_start')->delete();
-        $this->rechercheUrl       = '';
-        $this->rechercheSecret    = '';
-        $this->rechercheHasSecret = false;
-        $this->rechercheSaved     = false;
+        $this->rechercheUrl   = '';
+        $this->rechercheSaved = false;
     }
 }; ?>
 
@@ -147,27 +105,6 @@ new class extends Component {
                         class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     />
                     @error('dashboardUrl') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        {{ __('Secret') }}
-                        @if($dashboardHasSecret)
-                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('Feld leeren und neuen Wert eingeben um zu ändern') }})</span>
-                        @else
-                            <span class="ml-1 font-normal text-zinc-400">{{ __('optional') }}</span>
-                        @endif
-                    </label>
-                    <input
-                        wire:model="dashboardSecret"
-                        type="password"
-                        autocomplete="new-password"
-                        placeholder="{{ $dashboardHasSecret ? '' : __('z.B. Test123') }}"
-                        class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                    />
-                    <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        {{ __('Wird als') }} <code class="font-mono">?secret=...</code> {{ __('an die URL angehängt.') }}
-                    </p>
-                    @error('dashboardSecret') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="submit" class="inline-flex items-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
@@ -205,27 +142,6 @@ new class extends Component {
                         class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     />
                     @error('rechercheUrl') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        {{ __('Secret') }}
-                        @if($rechercheHasSecret)
-                            <span class="ml-1 font-normal text-green-600 dark:text-green-400">({{ __('gesetzt') }} — {{ __('Feld leeren und neuen Wert eingeben um zu ändern') }})</span>
-                        @else
-                            <span class="ml-1 font-normal text-zinc-400">{{ __('optional') }}</span>
-                        @endif
-                    </label>
-                    <input
-                        wire:model="rechercheSecret"
-                        type="password"
-                        autocomplete="new-password"
-                        placeholder="{{ $rechercheHasSecret ? '' : __('z.B. Test123') }}"
-                        class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                    />
-                    <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        {{ __('Wird als') }} <code class="font-mono">?secret=...</code> {{ __('an die URL angehängt.') }}
-                    </p>
-                    @error('rechercheSecret') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="submit" class="inline-flex items-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
