@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P1Strukturmodellwahl, P1Komponente, P1Kriterium, P1Warnsignal};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {

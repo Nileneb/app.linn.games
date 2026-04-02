@@ -9,7 +9,7 @@
 
             {{-- Quick links --}}
             <div class="grid gap-4 sm:grid-cols-2">
-                <a href="{{ route('recherche') }}" class="group rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
+                <a href="{{ route('recherche') }}" wire:navigate class="group rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
                     <div class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Recherche') }}</div>
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('Neue systematische Recherche starten oder bestehende Projekte verwalten') }}</p>
                 </a>
@@ -39,7 +39,7 @@
                     <h2 class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Letzte Projekte') }}</h2>
                     <div class="space-y-2">
                         @foreach($recentProjekte as $projekt)
-                            <a href="{{ route('recherche.projekt', $projekt) }}" class="block rounded-md border border-zinc-200 px-3 py-2 text-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <a href="{{ route('recherche.projekt', $projekt) }}" wire:navigate class="block rounded-md border border-zinc-200 px-3 py-2 text-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                                 <span class="text-zinc-900 dark:text-zinc-100">{{ str()->limit($projekt->titel, 80) }}</span>
                                 <span class="ml-2 text-xs text-zinc-400">{{ $projekt->erstellt_am->diffForHumans() }}</span>
                             </a>

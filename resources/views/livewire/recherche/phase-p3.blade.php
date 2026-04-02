@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {

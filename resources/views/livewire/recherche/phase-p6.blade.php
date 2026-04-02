@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P5Treffer, P6Qualitaetsbewertung, P6Luckenanalyse};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {

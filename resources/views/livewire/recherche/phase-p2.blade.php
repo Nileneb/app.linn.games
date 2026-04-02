@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {

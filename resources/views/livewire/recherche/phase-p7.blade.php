@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
