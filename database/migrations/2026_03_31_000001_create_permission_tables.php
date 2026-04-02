@@ -13,6 +13,9 @@ return new class extends Migration
         $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
         $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
 
+        // Bewusster throw_if: Wenn config/permission.php nicht geladen ist,
+        // würden alle folgenden Schema::create() mit leeren Tabellennamen
+        // fehlschlagen. Frühzeitiger Abbruch mit klarer Fehlermeldung.
         throw_if(empty($tableNames), 'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
 
         Schema::create($tableNames['permissions'], static function (Blueprint $table) {

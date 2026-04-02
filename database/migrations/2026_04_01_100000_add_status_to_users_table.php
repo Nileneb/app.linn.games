@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    // Bewusst ohne DB::transaction(): CREATE TYPE + ALTER TABLE ... TYPE USING
+    // sind PostgreSQL-DDL (auto-commit). ALTER TYPE ADD VALUE ist in Transaktionen
+    // nicht erlaubt. Idempotenz durch PL/pgSQL EXCEPTION WHEN duplicate_object.
     public function up(): void
     {
         if (DB::getDriverName() === 'pgsql') {

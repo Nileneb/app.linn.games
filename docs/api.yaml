@@ -1,0 +1,264 @@
+openapi: "3.0.3"
+info:
+  title: app.linn.games API
+  version: "1.0.0"
+  description: |
+    API-Endpunkte der Research-Management-Plattform app.linn.games.
+    Umfasst Webhooks, Paper-Ingestion, Vektorsuche und User-Info.
+
+servers:
+  - url: https://app.linn.games
+    description: Produktion
+  - url: http://localhost:6479
+    description: Lokale Entwicklung
+
+paths:
+  /api/user:
+    get:
+      summary: Aktueller Benutzer
+      description: Gibt den authentifizierten Benutzer zurück.
+      operationId: getUser
+      tags: [Auth]
+      security:
+        - sanctum: []
+      responses:
+        "200":
+          description: Benutzer-Objekt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Nicht authentifiziert
+
+  /api/webhooks/langdock:
+    post:
+      summary: Langdock-Agent Webhook
+      description: |
+        Eingehender Webhook vom Langdock-KI-Agent. Startet einen
+        TriggerLangdockAgent-Job in der Redis-Queue.
+        Gesichert durch HMAC-SHA256 Signatur + Timestamp + Nonce.
+      operationId: handleLangdockWebhook
+      tags: [Webhooks]
+      security:
+        - langdockHmac: []
+      parameters:
+        - name: X-Langdock-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: "HMAC-SHA256 Signatur: hash_hmac('sha256', timestamp.'.'.body, secret)"
+        - name: X-Langdock-Timestamp
+          in: header
+          required: true
+          schema:
+            type: integer
+          description: Unix-Timestamp (max. 5 Min. Toleranz)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, projekt_id, eingabe]
+              properties:
+                user_id:
+                  type: integer
+                  description: ID des auslösenden Users
+                projekt_id:
+                  type: string
+                  format: uuid
+                  description: UUID des Recherche-Projekts
+                eingabe:
+                  type: string
+                  maxLength: 10000
+                  description: Freitext-Eingabe / Forschungsfrage
+      responses:
+        "200":
+          description: Job erfolgreich in Queue eingereiht
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: queued
+        "403":
+          description: Ungültige Signatur
+        "422":
+          description: Validierungsfehler
+        "429":
+          description: Rate-Limit überschritten (max. 30/min)
+
+  /api/papers/ingest:
+    post:
+      summary: Paper-Text aufnehmen
+      description: |
+        Nimmt einen Paper-Text entgegen, teilt ihn in Chunks auf und
+        dispatcht einen IngestPaperJob. Die Chunks werden via Ollama
+        (nomic-embed-text) als Vektoren in pgvector gespeichert.
+      operationId: ingestPaper
+      tags: [Paper-RAG]
+      security:
+        - mcpBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paper_id, source, title, text]
+              properties:
+                paper_id:
+                  type: string
+                  maxLength: 500
+                  description: Eindeutige Paper-Kennung (z. B. DOI)
+                source:
+                  type: string
+                  maxLength: 50
+                  description: Herkunft (z. B. "pubmed", "arxiv")
+                title:
+                  type: string
+                  description: Titel des Papers
+                text:
+                  type: string
+                  description: Volltext des Papers
+                projekt_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Optionale Projekt-Zuordnung
+                metadata:
+                  type: object
+                  nullable: true
+                  description: Zusätzliche Metadaten (frei strukturiert)
+      responses:
+        "200":
+          description: Job erfolgreich in Queue eingereiht
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: queued
+        "401":
+          description: Ungültiger Bearer-Token
+        "422":
+          description: Validierungsfehler
+        "429":
+          description: Rate-Limit überschritten (max. 60/min)
+
+  /api/papers/rag-search:
+    get:
+      summary: Vektor-Ähnlichkeitssuche
+      description: |
+        Sucht in den paper_embeddings via Cosine Distance.
+        Die Suchanfrage wird zuerst durch Ollama (nomic-embed-text)
+        als Vektor eingebettet und dann gegen pgvector abgeglichen.
+      operationId: ragSearch
+      tags: [Paper-RAG]
+      security:
+        - mcpBearer: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Suchanfrage (natürliche Sprache)
+        - name: projekt_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Einschränkung auf ein Projekt
+        - name: max_results
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 5
+          description: Maximale Anzahl Ergebnisse
+      responses:
+        "200":
+          description: Liste ähnlicher Paper-Chunks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaperChunk"
+        "401":
+          description: Ungültiger Bearer-Token
+        "429":
+          description: Rate-Limit überschritten (max. 60/min)
+        "503":
+          description: Embedding-Service nicht verfügbar
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: Laravel Sanctum Bearer-Token
+    mcpBearer:
+      type: http
+      scheme: bearer
+      description: MCP Bearer-Token (MCP_AUTH_TOKEN in .env)
+    langdockHmac:
+      type: apiKey
+      in: header
+      name: X-Langdock-Signature
+      description: HMAC-SHA256 Signatur mit LANGDOCK_SECRET
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [trial, active, suspended, cancelled]
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaperChunk:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projekt_id:
+          type: string
+          format: uuid
+          nullable: true
+        source:
+          type: string
+        paper_id:
+          type: string
+        title:
+          type: string
+        chunk_index:
+          type: integer
+        text_chunk:
+          type: string
+        metadata:
+          type: object
+          nullable: true
+        similarity:
+          type: number
+          format: float
+          description: Cosine Similarity (0–1)

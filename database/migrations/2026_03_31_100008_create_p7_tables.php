@@ -13,6 +13,9 @@ return new class extends Migration
             return;
         }
 
+        // hasTable-Guards sind bewusst gesetzt: Ermöglicht idempotente Ausführung
+        // bei migrate:fresh und verhindert Fehler bei wiederholtem Migrationslauf.
+
         // p7_synthese_methode – uses synthese_methode ENUM
         if (! Schema::hasTable('p7_synthese_methode')) {
             Schema::create('p7_synthese_methode', function (Blueprint $table) {

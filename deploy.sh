@@ -53,10 +53,28 @@ docker compose exec postgres pg_isready -q --timeout=30 || {
 echo "==> Ensuring required Postgres extensions..."
 docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
 
+# ── Backup ─────────────────────────────────────
+BACKUP_DIR="./backups"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).sql"
+
+echo "==> Creating database backup..."
+docker compose exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl' > "$BACKUP_FILE" 2>/dev/null || {
+  echo "ERROR: Database backup failed." >&2
+  exit 1
+}
+echo "    Backup saved to $BACKUP_FILE"
+
 # ── Migrate ────────────────────────────────────
 if [ "$SKIP_MIGRATE" = false ]; then
   echo "==> Running database migrations..."
-  docker compose run --rm php-cli php artisan migrate --force
+  if ! docker compose run --rm php-cli php artisan migrate --force; then
+    echo "ERROR: Migration failed. Rolling back from backup..." >&2
+    docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "$BACKUP_FILE" || {
+      echo "CRITICAL: Rollback also failed! Manual restore needed from: $BACKUP_FILE" >&2
+    }
+    exit 1
+  fi
 else
   echo "==> Skipping migrations (--skip-migrate)"
 fi

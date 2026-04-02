@@ -5,6 +5,16 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    /**
+     * Erstellt die PostgreSQL-Funktion berechne_prisma_zahlen(UUID).
+     *
+     * Diese serverseitige SQL-Funktion berechnet die PRISMA-2020-Kennzahlen
+     * für ein Recherche-Projekt direkt auf DB-Ebene. Sie zählt aus p5_treffer
+     * und p5_screening_entscheidungen die Werte für das PRISMA-Flussdiagramm:
+     * Identifiziert → Duplikate → L1-Ausschluss → Volltext → L2-Ausschluss → Final.
+     *
+     * Aufruf: SELECT * FROM berechne_prisma_zahlen('projekt-uuid');
+     */
     public function up(): void
     {
         if (DB::getDriverName() !== 'pgsql') {

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    // Bewusst ohne DB::transaction(): CREATE TYPE ist PostgreSQL-DDL (auto-commit).
+    // Idempotenz durch PL/pgSQL EXCEPTION WHEN duplicate_object.
     public function up(): void
     {
         if (DB::getDriverName() !== 'pgsql') {

@@ -13,9 +13,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/webhooks/langdock', [LangdockWebhookController::class, 'handle'])
-    ->middleware(VerifyLangdockSignature::class);
+    ->middleware([VerifyLangdockSignature::class, 'throttle:webhooks']);
 
-Route::middleware(VerifyMcpToken::class)->group(function () {
+Route::middleware([VerifyMcpToken::class, 'throttle:mcp'])->group(function () {
     Route::post('/papers/ingest', [PaperRagController::class, 'ingest']);
     Route::get('/papers/rag-search', [PaperRagController::class, 'search']);
 });

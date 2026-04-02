@@ -464,6 +464,12 @@ new class extends Component {
         @endif
 
         @if ($datenextraktionen->isNotEmpty())
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
+                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/30">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Studie</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Land</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Hauptbefund</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Qualität</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Akt.</th>

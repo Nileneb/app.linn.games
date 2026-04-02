@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    // Bewusst ohne DB::transaction(): PostgreSQL-DDL (CREATE TYPE/EXTENSION) ist
+    // auto-committed und ALTER TYPE ADD VALUE funktioniert nicht in Transaktionen.
+    // Idempotenz wird durch Existenz-Prüfung (pg_type) sichergestellt.
     public function up(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
