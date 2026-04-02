@@ -9,15 +9,17 @@ new class extends Component {
 
     public function starteRecherche(): void
     {
+        $this->authorize('create', Projekt::class);
+
         $this->validate([
             'eingabe' => ['required', 'string', 'max:10000'],
         ]);
 
-        $workspace = Auth::user()?->ensureDefaultWorkspace();
+        $workspace = Auth::user()->ensureDefaultWorkspace();
 
         $projekt = Projekt::create([
             'user_id' => Auth::id(),
-            'workspace_id' => $workspace?->id,
+            'workspace_id' => $workspace->id,
             'titel' => str()->limit($this->eingabe, 120),
             'forschungsfrage' => $this->eingabe,
         ]);

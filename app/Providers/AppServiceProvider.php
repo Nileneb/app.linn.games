@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Models\Recherche\Projekt;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Policies\ProjektPolicy;
+use App\Policies\WorkspacePolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Projekt::class, ProjektPolicy::class);
+        Gate::policy(Workspace::class, WorkspacePolicy::class);
 
         User::created(static function (User $user): void {
             $user->ensureDefaultWorkspace();

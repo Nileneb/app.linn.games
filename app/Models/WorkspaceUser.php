@@ -19,6 +19,13 @@ class WorkspaceUser extends Model
         'role',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'role' => 'string',
+        ];
+    }
+
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class, 'workspace_id');

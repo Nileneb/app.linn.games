@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
-use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -68,8 +67,9 @@ new class extends Component {
             'treffer_gesamt' => $this->spTrefferGesamt,
             'treffer_eindeutig' => $this->spTrefferEindeutig,
         ];
+        $data['projekt_id'] = $this->projekt->id;
         if ($this->editingSpId) {
-            P8Suchprotokoll::findOrFail($this->editingSpId)->update($data);
+            P8Suchprotokoll::where('projekt_id', $this->projekt->id)->findOrFail($this->editingSpId)->update($data);
         } else {
             P8Suchprotokoll::create($data);
         }
@@ -78,7 +78,7 @@ new class extends Component {
 
     public function editSp(string $id): void
     {
-        $r = P8Suchprotokoll::findOrFail($id);
+        $r = P8Suchprotokoll::where('projekt_id', $this->projekt->id)->findOrFail($id);
         $this->editingSpId = $id;
         $this->spSuchstringId = $r->suchstring_id ?? '';
         $this->spDatenbank = $r->datenbank ?? '';
@@ -93,7 +93,7 @@ new class extends Component {
 
     public function deleteSp(string $id): void
     {
-        P8Suchprotokoll::findOrFail($id)->delete();
+        P8Suchprotokoll::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
     }
 
     public function cancelSp(): void
@@ -244,7 +244,7 @@ new class extends Component {
         $suchstrings = P4Suchstring::where('projekt_id', $pid)->get();
         $suchstringIds = $suchstrings->pluck('id');
         return [
-            'suchprotokolle' => P8Suchprotokoll::whereIn('suchstring_id', $suchstringIds)->orWhereNull('suchstring_id')->with('suchstring')->get(),
+            'suchprotokolle' => P8Suchprotokoll::where('projekt_id', $pid)->with('suchstring')->get(),
             'limitationen' => P8Limitation::where('projekt_id', $pid)->get(),
             'reproduzierbarkeit' => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(),
             'updatePlaene' => P8UpdatePlan::where('projekt_id', $pid)->get(),

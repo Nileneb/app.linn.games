@@ -28,6 +28,7 @@
 
                 if ($workspaceId) {
                     $recentProjekte = \App\Models\Recherche\Projekt::where('workspace_id', $workspaceId)
+                        ->where('user_id', auth()->id())
                         ->orderByDesc('erstellt_am')
                         ->limit(5)
                         ->get();

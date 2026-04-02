@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 return new class extends Migration
 {
@@ -65,6 +66,13 @@ return new class extends Migration
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE projekte ALTER COLUMN workspace_id SET NOT NULL');
             DB::statement('ALTER TABLE chat_messages ALTER COLUMN workspace_id SET NOT NULL');
+        } else {
+            Schema::table('projekte', function (Blueprint $table) {
+                $table->uuid('workspace_id')->nullable(false)->change();
+            });
+            Schema::table('chat_messages', function (Blueprint $table) {
+                $table->uuid('workspace_id')->nullable(false)->change();
+            });
         }
 
         Schema::table('projekte', function (Blueprint $table) {

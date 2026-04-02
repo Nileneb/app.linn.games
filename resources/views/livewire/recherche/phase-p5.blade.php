@@ -780,7 +780,7 @@ new class extends Component {
                                         {{ $t->retrieval_downloaded === true ? 'Ja' : ($t->retrieval_downloaded === false ? 'Nein' : 'Unklar') }}
                                     </span>
 
-                                    @if($t->retrieval_source_url)
+                                    @if($t->retrieval_source_url && str_starts_with($t->retrieval_source_url, 'http'))
                                         <a href="{{ $t->retrieval_source_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">Quell-Link</a>
                                     @endif
 

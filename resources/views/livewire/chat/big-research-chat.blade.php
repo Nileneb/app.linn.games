@@ -131,18 +131,17 @@ new class extends Component {
 
         $this->loading = false;
     }
+    public function with(): array
+    {
+        return ['chatMessages' => $this->getChatMessages()];
+    }
 }; ?>
 
-<div
-    class="flex h-full flex-col"
-    x-data="{ autoScroll() { $nextTick(() => { const c = this.$refs.chatContainer; if (c) c.scrollTop = c.scrollHeight; }); } }"
-    x-init="autoScroll()"
-    @chat-updated.window="autoScroll()"
->
+<div class="flex h-full flex-col">
     {{-- Header --}}
     <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Dashboard Chat') }}</h3>
-        @if($this->getChatMessages()->isNotEmpty())
+        @if($chatMessages->isNotEmpty())
             <button wire:click="clearHistory" wire:confirm="{{ __('Chat-Verlauf wirklich löschen?') }}" class="text-xs text-zinc-400 hover:text-red-500 dark:hover:text-red-400">
                 {{ __('Verlauf löschen') }}
             </button>
@@ -150,8 +149,8 @@ new class extends Component {
     </div>
 
     {{-- Messages --}}
-    <div x-ref="chatContainer" class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        @forelse($this->getChatMessages() as $msg)
+    <div id="chat-scroll-container" class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        @forelse($chatMessages as $msg)
             <div class="flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }}">
                 <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm {{ $msg->role === 'user'
                     ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
@@ -186,7 +185,8 @@ new class extends Component {
                 placeholder="{{ __('Nachricht eingeben …') }}"
                 autocomplete="off"
                 class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                @disabled($loading)
+                wire:loading.attr="disabled"
+                wire:target="sendMessage"
             />
             <button
                 type="submit"
@@ -200,3 +200,16 @@ new class extends Component {
         </form>
     </div>
 </div>
+
+@script
+<script>
+    const container = document.getElementById('chat-scroll-container');
+    function scrollToBottom() {
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+    scrollToBottom();
+    $wire.on('chat-updated', () => {
+        setTimeout(scrollToBottom, 50);
+    });
+</script>
+@endscript

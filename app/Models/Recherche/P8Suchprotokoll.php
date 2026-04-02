@@ -14,6 +14,7 @@ class P8Suchprotokoll extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'projekt_id',
         'suchstring_id',
         'datenbank',
         'suchdatum',
@@ -30,6 +31,11 @@ class P8Suchprotokoll extends Model
         'treffer_gesamt' => 'integer',
         'treffer_eindeutig' => 'integer',
     ];
+
+    public function projekt(): BelongsTo
+    {
+        return $this->belongsTo(Projekt::class, 'projekt_id');
+    }
 
     public function suchstring(): BelongsTo
     {

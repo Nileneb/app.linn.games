@@ -47,14 +47,16 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('email')->sortable()->searchable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'warning' => 'trial',
-                        'success' => 'active',
-                        'danger'  => 'suspended',
-                        'gray'    => 'cancelled',
-                    ])
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'trial' => 'warning',
+                        'active' => 'success',
+                        'suspended' => 'danger',
+                        'cancelled' => 'gray',
+                        default => 'gray',
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Rolle')
@@ -75,7 +77,7 @@ class UserResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make(),
             ]);
     }
 
