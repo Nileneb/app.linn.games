@@ -1,8 +1,6 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P5Treffer, P5ScreeningKriterium, P5ScreeningEntscheidung, P5ToolEntscheidung, P5PrismaZahlen};
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
@@ -47,7 +45,6 @@ new class extends Component {
 
     // --- Filter ---
     public string $trefferFilter = 'alle';
-    public ?string $retrievalLoadingTrefferId = null;
 
     public function mount(Projekt $projekt): void
     {
@@ -240,114 +237,6 @@ new class extends Component {
         $e->delete();
     }
 
-    public function triggerRetrieval(string $trefferId): void
-    {
-        $this->retrievalLoadingTrefferId = $trefferId;
-
-        $treffer = P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($trefferId);
-
-        $contextLines = [
-            'Projekt-ID: ' . $this->projekt->id,
-            'Record-ID: ' . $treffer->record_id,
-            'Titel: ' . ($treffer->titel ?? 'unbekannt'),
-            'DOI: ' . ($treffer->doi ?? 'nicht vorhanden'),
-            'Quelle: ' . ($treffer->datenbank_quelle ?? 'nicht angegeben'),
-        ];
-
-        $prompt = implode("\n", $contextLines) . "\n\n"
-            . 'Lade die Studie herunter, wenn moeglich. '
-            . 'Antworte NUR als JSON mit den Schluesseln '
-            . 'downloaded (boolean), source_url (string|null), storage_path (string|null), note (string|null).';
-
-        try {
-            $response = app(LangdockAgentService::class)->callByConfigKey(
-                'retrieval_agent',
-                [['role' => 'user', 'content' => $prompt]],
-                120,
-                [
-                    'source' => 'phase_p5_retrieval',
-                    'projekt_id' => $this->projekt->id,
-                    'treffer_id' => $treffer->id,
-                    'user_id' => Auth::id(),
-                ],
-            );
-
-            $parsed = $this->parseRetrievalResponse($response['content'], $response['raw'] ?? [], $treffer);
-
-            $treffer->update([
-                'retrieval_downloaded' => $parsed['downloaded'],
-                'retrieval_source_url' => $parsed['source_url'],
-                'retrieval_storage_path' => $parsed['storage_path'],
-                'retrieval_status' => $parsed['status'],
-                'retrieval_last_response' => $parsed['last_response'],
-                'retrieval_checked_at' => now(),
-            ]);
-        } catch (LangdockAgentException $e) {
-            $treffer->update([
-                'retrieval_status' => 'fehler',
-                'retrieval_last_response' => $e->getMessage(),
-                'retrieval_checked_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            $treffer->update([
-                'retrieval_status' => 'verbindung_fehler',
-                'retrieval_last_response' => $e->getMessage(),
-                'retrieval_checked_at' => now(),
-            ]);
-        } finally {
-            $this->retrievalLoadingTrefferId = null;
-        }
-    }
-
-    protected function parseRetrievalResponse(string $content, array $raw, P5Treffer $treffer): array
-    {
-        $decoded = json_decode($content, true);
-        $payload = is_array($decoded) ? $decoded : [];
-
-        $downloaded = $payload['downloaded'] ?? $raw['downloaded'] ?? null;
-
-        if (! is_bool($downloaded)) {
-            if (preg_match('/\b(true|yes|ja|erfolgreich)\b/i', $content)) {
-                $downloaded = true;
-            } elseif (preg_match('/\b(false|no|nein|nicht)\b/i', $content)) {
-                $downloaded = false;
-            } else {
-                $downloaded = null;
-            }
-        }
-
-        $sourceUrl = $payload['source_url'] ?? $raw['source_url'] ?? $this->extractFirstUrl($content);
-        if (! $sourceUrl && $treffer->doi) {
-            $sourceUrl = 'https://doi.org/' . $treffer->doi;
-        }
-
-        $storagePath = $payload['storage_path']
-            ?? $raw['storage_path']
-            ?? $raw['file_path']
-            ?? $raw['storage_url']
-            ?? null;
-
-        $status = $downloaded === true
-            ? 'heruntergeladen'
-            : ($downloaded === false ? 'nicht_heruntergeladen' : 'unbekannt');
-
-        return [
-            'downloaded' => $downloaded,
-            'source_url' => $sourceUrl,
-            'storage_path' => $storagePath,
-            'status' => $status,
-            'last_response' => mb_substr($content, 0, 5000),
-        ];
-    }
-
-    protected function extractFirstUrl(string $text): ?string
-    {
-        if (preg_match('/https?:\/\/[^\s"<>]+/i', $text, $match) === 1) {
-            return $match[0];
-        }
-
-        return null;
-    }
 
     // ─── Data ────────────────────────────────────────────────
 
@@ -750,19 +639,23 @@ new class extends Component {
                                 @endif
                             </div>
                             <div class="shrink-0 space-y-1 text-right">
-                                <button
-                                    wire:click="triggerRetrieval('{{ $t->id }}')"
-                                    @disabled($retrievalLoadingTrefferId === $t->id)
-                                    class="rounded bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700 disabled:opacity-60"
-                                >
-                                    @if($retrievalLoadingTrefferId === $t->id)
-                                        Abruf laeuft...
-                                    @elseif($t->retrieval_checked_at)
-                                        Erneut abrufen
-                                    @else
-                                        Volltext abrufen
-                                    @endif
-                                </button>
+                                @php
+                                    $statusColor = match($t->retrieval_status) {
+                                        'heruntergeladen'   => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                                        'pending'           => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                                        'nicht_verfuegbar'  => 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400',
+                                        'fehler'            => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                                        default             => 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500',
+                                    };
+                                    $statusLabel = match($t->retrieval_status) {
+                                        'heruntergeladen'   => 'Volltext ✓',
+                                        'pending'           => 'Wird geladen…',
+                                        'nicht_verfuegbar'  => 'Kein OA',
+                                        'fehler'            => 'Fehler',
+                                        default             => 'Ausstehend',
+                                    };
+                                @endphp
+                                <span class="inline-block rounded px-2 py-1 text-xs {{ $statusColor }}">{{ $statusLabel }}</span>
                                 <button wire:click="openScreen('{{ $t->id }}')" class="rounded bg-neutral-200 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600">Screenen</button>
                             </div>
                         </div>

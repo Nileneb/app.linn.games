@@ -46,6 +46,7 @@ return [
         'pico_agent' => env('PICO_AGENT'),
         'synthesis_agent' => env('SYNTHESIS_AGENT'),
         'mayring_agent' => env('MAYRING_AGENT'),
+        'price_per_1k_tokens_cents' => env('LANGDOCK_PRICE_PER_1K_TOKENS_CENTS', 2),
     ],
 
     'mcp' => [

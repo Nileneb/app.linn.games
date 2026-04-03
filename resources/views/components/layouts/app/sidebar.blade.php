@@ -48,6 +48,11 @@
             {{-- Spacer --}}
             <div class="flex-1"></div>
 
+            {{-- Workspace Balance --}}
+            @auth
+                <livewire:credits.workspace-balance wire:poll.30s />
+            @endauth
+
             {{-- Bottom links --}}
             <nav class="space-y-1">
                 <a href="https://github.com/laravel/livewire-starter-kit" target="_blank"

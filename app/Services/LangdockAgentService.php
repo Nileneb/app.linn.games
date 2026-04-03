@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Workspace;
+use App\Services\CreditService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -41,19 +43,33 @@ class LangdockAgentService
             'parts' => [['type' => 'text', 'text' => $msg['content']]],
         ], $messages);
 
+        $transformedMessages = $this->injectContext($transformedMessages, $context);
+
+        $metadata = array_filter([
+            'projekt_id' => $context['projekt_id'] ?? null,
+            'user_id'    => $context['user_id'] ?? null,
+        ]);
+
+        $workspace = $this->resolveWorkspace($context);
+        if ($workspace !== null) {
+            app(CreditService::class)->assertHasBalance($workspace);
+        }
+
         $startedAt = microtime(true);
 
         Log::info('Langdock agent request started', $logContext);
 
         try {
+            $body = ['agentId' => $agentId, 'messages' => $transformedMessages];
+            if ($metadata !== []) {
+                $body['metadata'] = $metadata;
+            }
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type'  => 'application/json',
             ])->timeout($timeout)
-                ->post($baseUrl, [
-                    'agentId'  => $agentId,
-                    'messages' => $transformedMessages,
-                ]);
+                ->post($baseUrl, $body);
 
             $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
@@ -74,6 +90,11 @@ class LangdockAgentService
             $content = $raw['messages'][0]['content']
                 ?? $raw['result'][0]['content'][0]['text']
                 ?? $response->body();
+
+            $tokensUsed = $raw['usage']['total_tokens'] ?? $this->estimateTokens($transformedMessages);
+            if ($workspace !== null && $tokensUsed > 0) {
+                app(CreditService::class)->deduct($workspace, $tokensUsed, $context['config_key'] ?? 'unknown');
+            }
 
             Log::info('Langdock agent request succeeded', $logContext + [
                 'status'          => $response->status(),
@@ -119,6 +140,50 @@ class LangdockAgentService
         return $this->call($agentId, $messages, $timeout, $context + [
             'config_key' => $configKey,
         ]);
+    }
+
+    private function resolveWorkspace(array $context): ?Workspace
+    {
+        $id = $context['workspace_id'] ?? null;
+        return $id ? Workspace::find($id) : null;
+    }
+
+    private function estimateTokens(array $messages): int
+    {
+        $chars = array_sum(array_map(
+            fn (array $m) => mb_strlen($m['parts'][0]['text'] ?? ''),
+            $messages,
+        ));
+        return (int) ceil($chars / 4);
+    }
+
+    /**
+     * Prepends a structured _context message so the agent knows which projekt/user to scope to.
+     * Also serves as the source of truth for SET app.current_projekt_id in system-prompt instructions.
+     */
+    private function injectContext(array $messages, array $context): array
+    {
+        $projektId = $context['projekt_id'] ?? null;
+        $userId    = $context['user_id'] ?? null;
+
+        if ($projektId === null && $userId === null) {
+            return $messages;
+        }
+
+        $contextMessage = [
+            'id'    => (string) Str::uuid(),
+            'role'  => 'user',
+            'parts' => [['type' => 'text', 'text' => json_encode([
+                '_context' => array_filter([
+                    'projekt_id' => $projektId,
+                    'user_id'    => $userId,
+                ]),
+            ])]],
+        ];
+
+        array_unshift($messages, $contextMessage);
+
+        return $messages;
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Recherche\Projekt;
+use App\Services\InsufficientCreditsException;
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
 use Livewire\Volt\Component;
@@ -28,12 +29,15 @@ new class extends Component {
                 ->callByConfigKey($this->agentConfigKey, $messages, 120, [
                     'source' => 'recherche_phase_agent',
                     'projekt_id' => $this->projekt->id,
+                    'workspace_id' => $this->projekt->workspace_id,
                     'phase_nr' => $this->phaseNr,
                     'user_id' => $this->projekt->user_id,
                     'label' => $this->label,
                 ]);
 
             $this->result = $response['content'];
+        } catch (InsufficientCreditsException $e) {
+            $this->error = __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.');
         } catch (LangdockAgentException $e) {
             $this->error = __('Fehler bei der Verarbeitung. Bitte versuche es erneut.');
         } catch (\Throwable $e) {

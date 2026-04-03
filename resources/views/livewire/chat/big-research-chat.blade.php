@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ChatMessage;
+use App\Services\InsufficientCreditsException;
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
 use Illuminate\Support\Collection;
@@ -82,8 +83,9 @@ new class extends Component {
                 $this->buildMessages($userMessage),
                 120,
                 [
-                    'source' => 'dashboard_chat',
-                    'user_id' => Auth::id(),
+                    'source'       => 'dashboard_chat',
+                    'user_id'      => Auth::id(),
+                    'workspace_id' => $this->activeWorkspaceId(),
                 ],
             );
 
@@ -92,6 +94,13 @@ new class extends Component {
                 'workspace_id' => $workspaceId,
                 'role' => 'assistant',
                 'content' => $result['content'],
+            ]);
+        } catch (InsufficientCreditsException $e) {
+            ChatMessage::create([
+                'user_id'      => Auth::id(),
+                'workspace_id' => $workspaceId,
+                'role'         => 'assistant',
+                'content'      => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.'),
             ]);
         } catch (LangdockAgentException $e) {
             ChatMessage::create([

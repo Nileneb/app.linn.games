@@ -144,7 +144,7 @@ services:
     restart: unless-stopped
     command: ["--access-mode=unrestricted", "--transport=sse"]
     environment:
-      - DATABASE_URI=postgresql://${LANGDOCK_DB_USERNAME}:${LANGDOCK_DB_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
+      - DATABASE_URI=postgresql://${LANGDOCK_DB_USERNAME:-mcp_agent}:${LANGDOCK_DB_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
     ports:
       - "8200:8000"
     networks:

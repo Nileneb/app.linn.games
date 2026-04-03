@@ -102,3 +102,59 @@ test('callByConfigKey throws when config key is not set', function () {
         ['role' => 'user', 'content' => 'Test'],
     ]);
 })->throws(LangdockAgentException::class);
+
+test('call injects context message and metadata when projekt_id and user_id are given', function () {
+    Http::fake([
+        '*' => Http::response([
+            'messages' => [['id' => 'r-3', 'role' => 'assistant', 'content' => 'OK.']],
+        ], 200),
+    ]);
+
+    $projektId = '11111111-1111-1111-1111-111111111111';
+    $userId    = 42;
+
+    $service = new LangdockAgentService();
+    $service->call('test-agent-uuid', [
+        ['role' => 'user', 'content' => 'Analysiere.'],
+    ], 120, ['projekt_id' => $projektId, 'user_id' => $userId]);
+
+    Http::assertSent(function ($request) use ($projektId, $userId) {
+        $messages = $request['messages'];
+
+        // First message must be the injected _context
+        $contextText = $messages[0]['parts'][0]['text'] ?? '';
+        $context     = json_decode($contextText, true)['_context'] ?? [];
+
+        $hasContextMessage = $context['projekt_id'] === $projektId
+            && (int) $context['user_id'] === $userId;
+
+        // Second message is the actual user input
+        $hasUserMessage = ($messages[1]['parts'][0]['text'] ?? '') === 'Analysiere.';
+
+        // Metadata must be present in body
+        $hasMetadata = ($request['metadata']['projekt_id'] ?? null) === $projektId;
+
+        return $hasContextMessage && $hasUserMessage && $hasMetadata;
+    });
+});
+
+test('call does not inject context message when no projekt_id or user_id given', function () {
+    Http::fake([
+        '*' => Http::response([
+            'messages' => [['id' => 'r-4', 'role' => 'assistant', 'content' => 'OK.']],
+        ], 200),
+    ]);
+
+    $service = new LangdockAgentService();
+    $service->call('test-agent-uuid', [
+        ['role' => 'user', 'content' => 'Test ohne Kontext.'],
+    ]);
+
+    Http::assertSent(function ($request) {
+        $messages = $request['messages'];
+
+        return count($messages) === 1
+            && ($messages[0]['parts'][0]['text'] ?? '') === 'Test ohne Kontext.'
+            && ! isset($request['metadata']);
+    });
+});

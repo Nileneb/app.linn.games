@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Workspace extends Model
 {
@@ -16,6 +17,11 @@ class Workspace extends Model
     protected $fillable = [
         'name',
         'owner_id',
+        'credits_balance_cents',
+    ];
+
+    protected $casts = [
+        'credits_balance_cents' => 'integer',
     ];
 
     public function owner(): BelongsTo
@@ -43,5 +49,10 @@ class Workspace extends Model
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'workspace_id');
+    }
+
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class, 'workspace_id')->orderByDesc('created_at');
     }
 }
