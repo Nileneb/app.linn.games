@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p2_review_typ_entscheidung', 'p2_mapping_suchstring_komponenten', 'p2_trefferlisten', 'p2_cluster'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p2_review_typ_entscheidung')) {
             Schema::create('p2_review_typ_entscheidung', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
