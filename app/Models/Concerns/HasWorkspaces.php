@@ -73,7 +73,7 @@ trait HasWorkspaces
 
         $workspace = Workspace::create([
             'owner_id' => $this->id,
-            'name' => trim($this->name ?: 'Workspace') . ' Workspace',
+            'name' => (trim((string) $this->name) ?: 'My') . ' Workspace',
         ]);
 
         WorkspaceUser::create([
