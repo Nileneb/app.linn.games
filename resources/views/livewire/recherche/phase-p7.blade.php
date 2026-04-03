@@ -64,7 +64,7 @@ new class extends Component {
             'begruendung' => $this->smBegruendung ?: null,
         ];
         if ($this->editingSmId) {
-            P7SyntheseMethode::where('projekt_id', $this->projekt->id)->findOrFail($this->editingSmId)->update($data);
+            P7SyntheseMethode::where('projekt_id', $this->projekt->id)->find($this->editingSmId)?->update($data);
         } else {
             P7SyntheseMethode::create($data);
         }
@@ -73,7 +73,8 @@ new class extends Component {
 
     public function editSm(string $id): void
     {
-        $r = P7SyntheseMethode::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P7SyntheseMethode::where('projekt_id', $this->projekt->id)->find($id);
+        if ($r === null) { return; }
         $this->editingSmId = $id;
         $this->smMethode = $r->methode ?? 'narrative_synthese';
         $this->smGewaehlt = (bool) $r->gewaehlt;
@@ -101,7 +102,9 @@ new class extends Component {
     public function saveDe(): void
     {
         $this->validate(['deTrefferId' => 'required|string', 'deHauptbefund' => 'required|string']);
-        P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($this->deTrefferId);
+        if (P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $this->deTrefferId)->doesntExist()) {
+            return;
+        }
         $data = [
             'treffer_id' => $this->deTrefferId,
             'land' => $this->deLand ?: null,
@@ -113,7 +116,7 @@ new class extends Component {
             'anmerkung' => $this->deAnmerkung ?: null,
         ];
         if ($this->editingDeId) {
-            P7Datenextraktion::findOrFail($this->editingDeId)->update($data);
+            P7Datenextraktion::find($this->editingDeId)?->update($data);
         } else {
             P7Datenextraktion::create($data);
         }
@@ -122,8 +125,10 @@ new class extends Component {
 
     public function editDe(string $id): void
     {
-        $r = P7Datenextraktion::findOrFail($id);
-        P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($r->treffer_id);
+        $r = P7Datenextraktion::find($id);
+        if ($r === null || P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->doesntExist()) {
+            return;
+        }
         $this->editingDeId = $id;
         $this->deTrefferId = $r->treffer_id;
         $this->deLand = $r->land ?? '';
@@ -170,7 +175,7 @@ new class extends Component {
             'moegliche_erklaerung' => $this->mkErklaerung ?: null,
         ];
         if ($this->editingMkId) {
-            P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->findOrFail($this->editingMkId)->update($data);
+            P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->find($this->editingMkId)?->update($data);
         } else {
             P7MusterKonsistenz::create($data);
         }
@@ -179,7 +184,8 @@ new class extends Component {
 
     public function editMk(string $id): void
     {
-        $r = P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->find($id);
+        if ($r === null) { return; }
         $this->editingMkId = $id;
         $this->mkBefund = $r->muster_befund ?? '';
         $this->mkUnterstuetzend = is_array($r->unterstuetzende_quellen) ? implode(', ', $r->unterstuetzende_quellen) : '';
@@ -219,7 +225,7 @@ new class extends Component {
             'begruendung' => $this->grBegruendung ?: null,
         ];
         if ($this->editingGrId) {
-            P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->findOrFail($this->editingGrId)->update($data);
+            P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->find($this->editingGrId)?->update($data);
         } else {
             P7GradeEinschaetzung::create($data);
         }
@@ -228,7 +234,8 @@ new class extends Component {
 
     public function editGr(string $id): void
     {
-        $r = P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->find($id);
+        if ($r === null) { return; }
         $this->editingGrId = $id;
         $this->grOutcome = $r->outcome ?? '';
         $this->grStudienanzahl = $r->studienanzahl;

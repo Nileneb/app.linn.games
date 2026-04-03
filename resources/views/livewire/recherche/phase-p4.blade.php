@@ -67,7 +67,7 @@ new class extends Component {
             'suchdatum' => $this->ssSuchdatum ?: null,
         ];
         if ($this->editingSsId) {
-            P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($this->editingSsId)->update($data);
+            P4Suchstring::where('projekt_id', $this->projekt->id)->find($this->editingSsId)?->update($data);
         } else {
             P4Suchstring::create($data);
         }
@@ -76,7 +76,8 @@ new class extends Component {
 
     public function editSs(string $id): void
     {
-        $r = P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P4Suchstring::where('projekt_id', $this->projekt->id)->find($id);
+        if ($r === null) { return; }
         $this->editingSsId = $id;
         $this->ssDatenbank = $r->datenbank ?? '';
         $this->ssSuchstring = $r->suchstring ?? '';
@@ -92,7 +93,7 @@ new class extends Component {
 
     public function deleteSs(string $id): void
     {
-        P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P4Suchstring::where('projekt_id', $this->projekt->id)->find($id)?->delete();
     }
 
     public function cancelSs(): void
@@ -119,7 +120,7 @@ new class extends Component {
             'anmerkung' => $this->thAnmerkung ?: null,
         ];
         if ($this->editingThId) {
-            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->findOrFail($this->editingThId)->update($data);
+            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($this->editingThId)?->update($data);
         } else {
             P4ThesaurusMapping::create($data);
         }
@@ -128,7 +129,8 @@ new class extends Component {
 
     public function editTh(string $id): void
     {
-        $r = P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($id);
+        if ($r === null) { return; }
         $this->editingThId = $id;
         $this->thFreitextDe = $r->freitext_de ?? '';
         $this->thFreitextEn = $r->freitext_en ?? '';
@@ -141,7 +143,7 @@ new class extends Component {
 
     public function deleteTh(string $id): void
     {
-        P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($id)?->delete();
     }
 
     public function cancelTh(): void
@@ -167,7 +169,9 @@ new class extends Component {
             'apAenderung' => 'required|string',
         ]);
         // Verify the suchstring belongs to this project
-        P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($this->apSuchstringId);
+        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $this->apSuchstringId)->doesntExist()) {
+            return;
+        }
 
         $data = [
             'suchstring_id' => $this->apSuchstringId,
@@ -180,8 +184,10 @@ new class extends Component {
             'entscheidung' => $this->apEntscheidung ?: null,
         ];
         if ($this->editingApId) {
-            $ap = P4Anpassungsprotokoll::findOrFail($this->editingApId);
-            P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($ap->suchstring_id);
+            $ap = P4Anpassungsprotokoll::find($this->editingApId);
+            if ($ap === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $ap->suchstring_id)->doesntExist()) {
+                return;
+            }
             $ap->update($data);
         } else {
             P4Anpassungsprotokoll::create($data);
@@ -191,8 +197,10 @@ new class extends Component {
 
     public function editAp(string $id): void
     {
-        $r = P4Anpassungsprotokoll::findOrFail($id);
-        P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($r->suchstring_id);
+        $r = P4Anpassungsprotokoll::find($id);
+        if ($r === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $r->suchstring_id)->doesntExist()) {
+            return;
+        }
         $this->editingApId = $id;
         $this->apSuchstringId = $r->suchstring_id;
         $this->apVersion = $r->version ?? '';
@@ -207,8 +215,13 @@ new class extends Component {
 
     public function deleteAp(string $id): void
     {
-        $r = P4Anpassungsprotokoll::findOrFail($id);
-        P4Suchstring::where('projekt_id', $this->projekt->id)->findOrFail($r->suchstring_id);
+        $r = P4Anpassungsprotokoll::find($id);
+        if ($r === null) {
+            return;
+        }
+        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $r->suchstring_id)->doesntExist()) {
+            return;
+        }
         $r->delete();
     }
 
