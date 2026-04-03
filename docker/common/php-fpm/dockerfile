@@ -85,6 +85,9 @@ FROM production AS testing
 
 USER root
 
+# Raise memory limit for test runs (Pest + sorting needs >128MB)
+RUN echo 'memory_limit = 512M' > /usr/local/etc/php/conf.d/99-test-memory.ini
+
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
