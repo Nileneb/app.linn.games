@@ -7,9 +7,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 
 class PaperRagController extends Controller
 {
+    private const EMBEDDING_RATE_LIMIT_KEY = 'embedding_requests';
+    private const EMBEDDING_RATE_LIMIT_PER_MINUTE = 30;
+
     public function ingest(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -41,7 +45,16 @@ class PaperRagController extends Controller
             'max_results' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        $maxResults = $data['max_results'] ?? 5;
+        // Rate-limit embedding requests
+        $rateLimitKey = self::EMBEDDING_RATE_LIMIT_KEY . ':' . ($request->user()?->id ?? $request->ip());
+        if (! RateLimiter::attempt($rateLimitKey, self::EMBEDDING_RATE_LIMIT_PER_MINUTE)) {
+            return response()->json(
+                ['error' => 'Rate limit exceeded. Maximum ' . self::EMBEDDING_RATE_LIMIT_PER_MINUTE . ' requests per minute'],
+                429
+            );
+        }
+
+        $maxResults = (int) $data['max_results'] ?? 5;
         $projektId  = $data['projekt_id'] ?? null;
 
         $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
@@ -54,6 +67,19 @@ class PaperRagController extends Controller
         }
 
         $embedding = $embeddingResponse->json('embedding');
+        
+        // Safely cast embedding values to float, filtering out nulls/non-numeric values
+        $embedding = array_map(function ($value): ?float {
+            $float = (float) $value;
+            return is_finite($float) ? $float : null;
+        }, $embedding);
+        
+        $embedding = array_filter($embedding, static fn ($v) => $v !== null);
+        
+        if (empty($embedding)) {
+            return response()->json(['error' => 'Invalid embedding received from service'], 503);
+        }
+
         $vectorLiteral = '[' . implode(',', $embedding) . ']';
 
         $rows = DB::select(
