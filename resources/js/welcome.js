@@ -28,9 +28,22 @@
 
     if (frame && notice) {
       const src = frame.getAttribute("data-src");
-      frame.setAttribute("src", src);
-      frame.style.display = "block";
-      notice.style.display = "none";
+      if (!src) {
+        return;
+      }
+
+      try {
+        const url = new URL(src, window.location.origin);
+
+        // Allow only http(s) URLs
+        if (url.protocol === "http:" || url.protocol === "https:") {
+          frame.setAttribute("src", url.toString());
+          frame.style.display = "block";
+          notice.style.display = "none";
+        }
+      } catch (err) {
+        // Invalid URL in data-src; do not load it
+      }
     }
   };
 
