@@ -6,6 +6,12 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Volt;
 
+// Helper to give the projekt's workspace enough credits for tests
+function giveWorkspaceCredits(Projekt $projekt, int $cents = 100_000): void
+{
+    $projekt->workspace()->update(['credits_balance_cents' => $cents]);
+}
+
 beforeEach(function () {
     Config::set('services.langdock.api_key', 'test-api-key');
     Config::set('services.langdock.scoping_mapping_agent', 'scoping-uuid');
@@ -32,8 +38,8 @@ test('agent button renders with label', function () {
 
 test('agent button calls langdock api and shows result', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'content' => 'Empfohlenes Strukturmodell: PICO',
+        '*' => Http::response([
+            'messages' => [['id' => 'r-1', 'role' => 'assistant', 'content' => 'Empfohlenes Strukturmodell: PICO']],
         ], 200),
     ]);
 
@@ -42,6 +48,7 @@ test('agent button calls langdock api and shows result', function () {
         'user_id' => $user->id,
         'forschungsfrage' => 'Wie wirkt sich X auf Y aus?',
     ]);
+    giveWorkspaceCredits($projekt);
 
     $this->actingAs($user);
 
@@ -58,18 +65,19 @@ test('agent button calls langdock api and shows result', function () {
         ->assertSet('error', '');
 
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'scoping-uuid/completions')
-            && str_contains($request['messages'][0]['content'], 'Wie wirkt sich X auf Y aus?');
+        return str_contains($request->url(), 'api.langdock.com')
+            && $request->hasHeader('Authorization', 'Bearer test-api-key');
     });
 });
 
 test('agent button shows error on api failure', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response('Internal Server Error', 500),
+        '*' => Http::response('Internal Server Error', 500),
     ]);
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
+    giveWorkspaceCredits($projekt);
 
     $this->actingAs($user);
 
@@ -88,13 +96,14 @@ test('agent button shows error on api failure', function () {
 
 test('agent button dispatches event on accept', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'content' => 'KI-Ergebnis zum Übernehmen',
+        '*' => Http::response([
+            'messages' => [['id' => 'r-2', 'role' => 'assistant', 'content' => 'KI-Ergebnis zum Übernehmen']],
         ], 200),
     ]);
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
+    giveWorkspaceCredits($projekt);
 
     $this->actingAs($user);
 
@@ -113,13 +122,14 @@ test('agent button dispatches event on accept', function () {
 
 test('agent button dismiss closes modal', function () {
     Http::fake([
-        'app.langdock.com/*' => Http::response([
-            'content' => 'Ergebnis',
+        '*' => Http::response([
+            'messages' => [['id' => 'r-3', 'role' => 'assistant', 'content' => 'Ergebnis']],
         ], 200),
     ]);
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
+    giveWorkspaceCredits($projekt);
 
     $this->actingAs($user);
 

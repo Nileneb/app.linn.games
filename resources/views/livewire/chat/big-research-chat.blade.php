@@ -1,16 +1,15 @@
 <?php
 
+use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
-use App\Services\InsufficientCreditsException;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string $message = '';
-    public bool $loading = false;
+    public string  $message            = '';
+    public bool    $loading            = false;
+    public ?string $pendingUserMsgId   = null;
 
     private function activeWorkspaceId(): ?string
     {
@@ -32,94 +31,70 @@ new class extends Component {
             ->get();
     }
 
-    protected function buildMessages(string $userMessage): array
-    {
-        $messages = [];
-
-        if ($this->activeWorkspaceId() === null) {
-            return $messages;
-        }
-
-        $history = $this->getChatMessages()
-            ->filter(fn ($msg) => $msg->content !== null)
-            ->take(-20);
-
-        foreach ($history as $msg) {
-            $messages[] = ['role' => $msg->role, 'content' => $msg->content];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $userMessage];
-
-        return $messages;
-    }
-
     public function sendMessage(): void
     {
         $this->validate([
             'message' => ['required', 'string', 'max:10000'],
         ]);
 
-        $userMessage = $this->message;
-        $this->message = '';
-        $this->loading = true;
-
         $workspaceId = $this->activeWorkspaceId();
 
         if ($workspaceId === null) {
-            $this->loading = false;
             return;
         }
 
-        ChatMessage::create([
-            'user_id' => Auth::id(),
+        $userMessage = $this->message;
+        $this->message = '';
+
+        $userMsg = ChatMessage::create([
+            'user_id'      => Auth::id(),
             'workspace_id' => $workspaceId,
-            'role' => 'user',
-            'content' => $userMessage,
+            'role'         => 'user',
+            'content'      => $userMessage,
         ]);
 
-        try {
-            $result = app(LangdockAgentService::class)->callByConfigKey(
-                'agent_id',
-                $this->buildMessages($userMessage),
-                120,
-                [
-                    'source'       => 'dashboard_chat',
-                    'user_id'      => Auth::id(),
-                    'workspace_id' => $this->activeWorkspaceId(),
-                ],
-            );
+        $this->pendingUserMsgId = $userMsg->id;
+        $this->loading          = true;
 
-            ChatMessage::create([
-                'user_id' => Auth::id(),
-                'workspace_id' => $workspaceId,
-                'role' => 'assistant',
-                'content' => $result['content'],
-            ]);
-        } catch (InsufficientCreditsException $e) {
-            ChatMessage::create([
+        ProcessChatMessageJob::dispatch(
+            $userMsg->id,
+            $workspaceId,
+            Auth::id(),
+            [
+                'source'       => 'dashboard_chat',
                 'user_id'      => Auth::id(),
                 'workspace_id' => $workspaceId,
-                'role'         => 'assistant',
-                'content'      => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.'),
-            ]);
-        } catch (LangdockAgentException $e) {
-            ChatMessage::create([
-                'user_id' => Auth::id(),
-                'workspace_id' => $workspaceId,
-                'role' => 'assistant',
-                'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.'),
-            ]);
-        } catch (\Throwable $e) {
-            ChatMessage::create([
-                'user_id' => Auth::id(),
-                'workspace_id' => $workspaceId,
-                'role' => 'assistant',
-                'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.'),
-            ]);
+            ],
+        );
+
+        $this->dispatch('chat-loading-started');
+    }
+
+    public function checkForResponse(): void
+    {
+        if (! $this->loading || $this->pendingUserMsgId === null) {
+            return;
         }
 
-        $this->loading = false;
-        $this->dispatch('chat-updated');
+        $userMsg = ChatMessage::find($this->pendingUserMsgId);
+
+        if ($userMsg === null) {
+            $this->loading        = false;
+            $this->pendingUserMsgId = null;
+            return;
+        }
+
+        $hasResponse = ChatMessage::where('workspace_id', $userMsg->workspace_id)
+            ->where('user_id', Auth::id())
+            ->where('role', 'assistant')
+            ->where('created_at', '>=', $userMsg->created_at)
+            ->exists();
+
+        if ($hasResponse) {
+            $this->loading          = false;
+            $this->pendingUserMsgId = null;
+            $this->dispatch('chat-updated');
+        }
     }
 
     public function clearHistory(): void
@@ -132,8 +107,10 @@ new class extends Component {
                 ->delete();
         }
 
-        $this->loading = false;
+        $this->loading          = false;
+        $this->pendingUserMsgId = null;
     }
+
     public function with(): array
     {
         return ['chatMessages' => $this->getChatMessages()];
@@ -168,15 +145,17 @@ new class extends Component {
             </div>
         @endforelse
 
-        {{-- Loading indicator --}}
-        <div wire:loading wire:target="sendMessage" class="flex justify-start">
-            <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
-                <span class="inline-flex items-center gap-1">
-                    <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    {{ __('Denkt nach …') }}
-                </span>
+        {{-- Loading indicator with 3s poll --}}
+        @if($loading)
+            <div wire:poll.3s="checkForResponse" class="flex justify-start">
+                <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
+                    <span class="inline-flex items-center gap-1">
+                        <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        {{ __('Denkt nach …') }}
+                    </span>
+                </div>
             </div>
-        </div>
+        @endif
     </div>
 
     {{-- Input --}}
@@ -188,12 +167,11 @@ new class extends Component {
                 placeholder="{{ __('Nachricht eingeben …') }}"
                 autocomplete="off"
                 class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                wire:loading.attr="disabled"
-                wire:target="sendMessage"
+                @disabled($loading)
             />
             <button
                 type="submit"
-                wire:loading.attr="disabled"
+                @disabled($loading)
                 class="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4">
@@ -207,12 +185,26 @@ new class extends Component {
 @script
 <script>
     const container = document.getElementById('chat-scroll-container');
+    let timeoutHandle = null;
+
     function scrollToBottom() {
         if (container) container.scrollTop = container.scrollHeight;
     }
+
     scrollToBottom();
+
     $wire.on('chat-updated', () => {
+        clearTimeout(timeoutHandle);
         setTimeout(scrollToBottom, 50);
+    });
+
+    $wire.on('chat-loading-started', () => {
+        scrollToBottom();
+        // 90s frontend failsafe — stops spinner if queue-worker is down or response never arrives
+        timeoutHandle = setTimeout(() => {
+            $wire.set('loading', false);
+            $wire.set('pendingUserMsgId', null);
+        }, 90000);
     });
 </script>
 @endscript

@@ -46,6 +46,7 @@ test('P8: kann suchprotokoll bearbeiten', function () {
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
     $sp = P8Suchprotokoll::create([
+        'projekt_id' => $projekt->id,
         'datenbank' => 'PubMed',
         'suchstring_final' => 'alt',
         'treffer_gesamt' => 100,
@@ -65,7 +66,7 @@ test('P8: kann suchprotokoll bearbeiten', function () {
 test('P8: kann suchprotokoll löschen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
-    $sp = P8Suchprotokoll::create(['datenbank' => 'PubMed', 'suchstring_final' => 'test']);
+    $sp = P8Suchprotokoll::create(['projekt_id' => $projekt->id, 'datenbank' => 'PubMed', 'suchstring_final' => 'test']);
 
     $this->actingAs($user);
 
