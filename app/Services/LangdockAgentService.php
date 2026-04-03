@@ -163,10 +163,11 @@ class LangdockAgentService
      */
     private function injectContext(array $messages, array $context): array
     {
-        $projektId = $context['projekt_id'] ?? null;
-        $userId    = $context['user_id'] ?? null;
+        $projektId   = $context['projekt_id'] ?? null;
+        $workspaceId = $context['workspace_id'] ?? null;
+        $userId      = $context['user_id'] ?? null;
 
-        if ($projektId === null && $userId === null) {
+        if ($projektId === null && $workspaceId === null && $userId === null) {
             return $messages;
         }
 
@@ -179,10 +180,20 @@ class LangdockAgentService
             $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Ohne sie greift Row Level Security '
                 . 'und alle Abfragen liefern 0 Zeilen — Schreib-Operationen schlagen silent fehl.';
             $lines[] = '';
+        } elseif ($workspaceId !== null) {
+            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
+            $lines[] = "SET LOCAL app.current_workspace_id = '{$workspaceId}';";
+            $lines[] = '';
+            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Sie steuert, welche Workspace-Daten du sieht.';
+            $lines[] = '';
         }
 
         $lines[] = 'Kontext: ' . json_encode(
-            array_filter(['projekt_id' => $projektId, 'user_id' => $userId]),
+            array_filter([
+                'projekt_id' => $projektId,
+                'workspace_id' => $workspaceId,
+                'user_id' => $userId,
+            ]),
             JSON_UNESCAPED_UNICODE,
         );
 
