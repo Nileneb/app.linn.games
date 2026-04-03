@@ -14,6 +14,9 @@ class ProcessChatMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    // Dashboard chat agent config key — MUST match services.langdock.{KEY} in config/services.php
+    private const AGENT_CONFIG_KEY = 'agent_id';
+
     public int $tries   = 1;
     public int $timeout = 60;
 
@@ -43,7 +46,7 @@ class ProcessChatMessageJob implements ShouldQueue
             ->values()
             ->toArray();
 
-        $result = app(SendAgentMessage::class)->execute('agent_id', $history, 60, $this->context);
+        $result = app(SendAgentMessage::class)->execute(self::AGENT_CONFIG_KEY, $history, 60, $this->context);
 
         ChatMessage::create([
             'user_id'      => $this->userId,
