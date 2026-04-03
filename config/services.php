@@ -51,6 +51,7 @@ return [
 
     'mcp' => [
         'auth_token' => env('MCP_AUTH_TOKEN'),
+        'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),
     ],
 
     'ollama' => [
