@@ -24,6 +24,19 @@ class CreditService
         }
 
         DB::transaction(function () use ($workspace, $cents, $tokensUsed, $agentKey): void {
+            // Lock workspace for atomic check + deduct operation
+            // FOR UPDATE prevents race conditions in concurrent agent calls
+            $lockedWorkspace = DB::table('workspaces')
+                ->where('id', $workspace->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedWorkspace || $lockedWorkspace->credits_balance_cents < $cents) {
+                throw new InsufficientCreditsException(
+                    'Guthaben aufgebraucht. Bitte den Admin kontaktieren.'
+                );
+            }
+
             $workspace->decrement('credits_balance_cents', $cents);
             CreditTransaction::create([
                 'workspace_id'     => $workspace->id,

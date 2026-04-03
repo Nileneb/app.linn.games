@@ -35,41 +35,69 @@ class IngestPaperJob implements ShouldQueue
     {
         $chunks = $this->chunkText($this->text);
 
-        foreach ($chunks as $index => $chunk) {
-            $response = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
-                'model' => 'nomic-embed-text',
-                'prompt' => $chunk,
-            ]);
+        DB::transaction(function () use ($chunks): void {
+            foreach ($chunks as $index => $chunk) {
+                try {
+                    $response = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
+                        'model'  => 'nomic-embed-text',
+                        'prompt' => $chunk,
+                    ]);
 
-            if ($response->failed()) {
-                Log::error('Ollama embedding failed', [
-                    'paper_id' => $this->paperId,
-                    'chunk' => $index,
-                    'status' => $response->status(),
-                ]);
-                $this->fail(new \RuntimeException("Ollama returned {$response->status()} for chunk {$index}"));
-                return;
+                    if ($response->failed()) {
+                        Log::error('Ollama embedding failed', [
+                            'paper_id'  => $this->paperId,
+                            'chunk'     => $index,
+                            'status'    => $response->status(),
+                        ]);
+                        throw new \RuntimeException("Ollama returned {$response->status()} for chunk {$index}");
+                    }
+
+                    $embedding = $response->json('embedding');
+                    
+                    // Safely cast embedding values to float
+                    $embedding = array_map(function ($value): ?float {
+                        $float = (float) $value;
+                        return is_finite($float) ? $float : null;
+                    }, $embedding);
+                    
+                    $embedding = array_filter($embedding, static fn ($v) => $v !== null);
+                    
+                    if (empty($embedding)) {
+                        throw new \RuntimeException("Invalid embedding received for chunk {$index}");
+                    }
+
+                    $vectorLiteral = '[' . implode(',', $embedding) . ']';
+
+                    DB::statement(
+                        'INSERT INTO paper_embeddings (id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata, embedding)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::vector)',
+                        [
+                            Str::uuid()->toString(),
+                            $this->projektId,
+                            $this->source,
+                            $this->paperId,
+                            $this->title,
+                            $index,
+                            $chunk,
+                            json_encode($this->metadata),
+                            $vectorLiteral,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('Chunk processing failed, rolling back all inserts', [
+                        'paper_id' => $this->paperId,
+                        'chunk'    => $index,
+                        'message'  => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
             }
+        }, attempts: 3);
 
-            $embedding = $response->json('embedding');
-            $vectorLiteral = '[' . implode(',', $embedding) . ']';
-
-            DB::statement(
-                'INSERT INTO paper_embeddings (id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata, embedding)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::vector)',
-                [
-                    Str::uuid()->toString(),
-                    $this->projektId,
-                    $this->source,
-                    $this->paperId,
-                    $this->title,
-                    $index,
-                    $chunk,
-                    json_encode($this->metadata),
-                    $vectorLiteral,
-                ]
-            );
-        }
+        Log::info('Paper ingested successfully', [
+            'paper_id' => $this->paperId,
+            'chunk_count' => count($chunks),
+        ]);
     }
 
     private function chunkText(string $text): array

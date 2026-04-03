@@ -10,6 +10,10 @@ use Illuminate\Support\Str;
 
 class LangdockAgentService
 {
+    public function __construct(
+        private readonly LangdockContextInjector $contextInjector,
+    ) {}
+
     /**
      * Ruft einen Langdock-Agenten synchron über die Agents Chat Completions API auf.
      *
@@ -43,7 +47,7 @@ class LangdockAgentService
             'parts' => [['type' => 'text', 'text' => $msg['content']]],
         ], $messages);
 
-        $transformedMessages = $this->injectContext($transformedMessages, $context);
+        $transformedMessages = $this->contextInjector->inject($transformedMessages, $context);
 
         $metadata = array_filter([
             'projekt_id' => $context['projekt_id'] ?? null,
@@ -158,57 +162,6 @@ class LangdockAgentService
     }
 
     /**
-     * Prepends a structured _context message so the agent knows which projekt/user to scope to.
-     * Also serves as the source of truth for SET app.current_projekt_id in system-prompt instructions.
-     */
-    private function injectContext(array $messages, array $context): array
-    {
-        $projektId   = $context['projekt_id'] ?? null;
-        $workspaceId = $context['workspace_id'] ?? null;
-        $userId      = $context['user_id'] ?? null;
-
-        if ($projektId === null && $workspaceId === null && $userId === null) {
-            return $messages;
-        }
-
-        $lines = [];
-
-        if ($projektId !== null) {
-            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
-            $lines[] = "SET LOCAL app.current_projekt_id = '{$projektId}';";
-            $lines[] = '';
-            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Ohne sie greift Row Level Security '
-                . 'und alle Abfragen liefern 0 Zeilen — Schreib-Operationen schlagen silent fehl.';
-            $lines[] = '';
-        } elseif ($workspaceId !== null) {
-            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
-            $lines[] = "SET LOCAL app.current_workspace_id = '{$workspaceId}';";
-            $lines[] = '';
-            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Sie steuert, welche Workspace-Daten du sieht.';
-            $lines[] = '';
-        }
-
-        $lines[] = 'Kontext: ' . json_encode(
-            array_filter([
-                'projekt_id' => $projektId,
-                'workspace_id' => $workspaceId,
-                'user_id' => $userId,
-            ]),
-            JSON_UNESCAPED_UNICODE,
-        );
-
-        $contextMessage = [
-            'id'    => (string) Str::uuid(),
-            'role'  => 'user',
-            'parts' => [['type' => 'text', 'text' => implode("\n", $lines)]],
-        ];
-
-        array_unshift($messages, $contextMessage);
-
-        return $messages;
-    }
-
-    /**
      * @param  array<int, array{role: string, content: string}>  $messages
      */
     private function buildLogContext(string $agentId, array $messages, int $timeout, array $context): array
@@ -227,3 +180,4 @@ class LangdockAgentService
         ], static fn ($value) => $value !== null && $value !== '');
     }
 }
+

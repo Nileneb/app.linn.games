@@ -11,6 +11,17 @@ return new class extends Migration
             return;
         }
 
+        // Ensure langdock_agent role exists (idempotent)
+        DB::statement(<<<'SQL'
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'langdock_agent') THEN
+                    CREATE ROLE langdock_agent LOGIN PASSWORD 'temporary_password_for_tests';
+                END IF;
+            END
+            $$;
+        SQL);
+
         // Erstelle RLS-Policy für chat_messages auf workspace-level Zugriff
         // (falls chat_messages noch keine workspace_level Policy hat)
         DB::statement(<<<'SQL'
