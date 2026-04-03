@@ -2,10 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Actions\SendAgentMessage;
 use App\Models\ChatMessage;
-use App\Services\InsufficientCreditsException;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -45,41 +43,13 @@ class ProcessChatMessageJob implements ShouldQueue
             ->values()
             ->toArray();
 
-        try {
-            $result = app(LangdockAgentService::class)->callByConfigKey(
-                'agent_id',
-                $history,
-                60,
-                $this->context,
-            );
+        $result = app(SendAgentMessage::class)->execute('agent_id', $history, 60, $this->context);
 
-            ChatMessage::create([
-                'user_id'      => $this->userId,
-                'workspace_id' => $this->workspaceId,
-                'role'         => 'assistant',
-                'content'      => $result['content'],
-            ]);
-        } catch (InsufficientCreditsException $e) {
-            ChatMessage::create([
-                'user_id'      => $this->userId,
-                'workspace_id' => $this->workspaceId,
-                'role'         => 'assistant',
-                'content'      => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.'),
-            ]);
-        } catch (LangdockAgentException $e) {
-            ChatMessage::create([
-                'user_id'      => $this->userId,
-                'workspace_id' => $this->workspaceId,
-                'role'         => 'assistant',
-                'content'      => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.'),
-            ]);
-        } catch (\Throwable $e) {
-            ChatMessage::create([
-                'user_id'      => $this->userId,
-                'workspace_id' => $this->workspaceId,
-                'role'         => 'assistant',
-                'content'      => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.'),
-            ]);
-        }
+        ChatMessage::create([
+            'user_id'      => $this->userId,
+            'workspace_id' => $this->workspaceId,
+            'role'         => 'assistant',
+            'content'      => $result['content'],
+        ]);
     }
 }

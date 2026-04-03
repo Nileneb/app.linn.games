@@ -1,9 +1,7 @@
 <?php
 
+use App\Actions\SendAgentMessage;
 use App\Models\Recherche\Projekt;
-use App\Services\InsufficientCreditsException;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -24,24 +22,19 @@ new class extends Component {
 
         $messages = $this->buildContextMessages();
 
-        try {
-            $response = app(LangdockAgentService::class)
-                ->callByConfigKey($this->agentConfigKey, $messages, 120, [
-                    'source' => 'recherche_phase_agent',
-                    'projekt_id' => $this->projekt->id,
-                    'workspace_id' => $this->projekt->workspace_id,
-                    'phase_nr' => $this->phaseNr,
-                    'user_id' => $this->projekt->user_id,
-                    'label' => $this->label,
-                ]);
+        $result = app(SendAgentMessage::class)->execute($this->agentConfigKey, $messages, 120, [
+            'source' => 'recherche_phase_agent',
+            'projekt_id' => $this->projekt->id,
+            'workspace_id' => $this->projekt->workspace_id,
+            'phase_nr' => $this->phaseNr,
+            'user_id' => $this->projekt->user_id,
+            'label' => $this->label,
+        ]);
 
-            $this->result = $response['content'];
-        } catch (InsufficientCreditsException $e) {
-            $this->error = __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.');
-        } catch (LangdockAgentException $e) {
-            $this->error = __('Fehler bei der Verarbeitung. Bitte versuche es erneut.');
-        } catch (\Throwable $e) {
-            $this->error = __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.');
+        if ($result['success']) {
+            $this->result = $result['content'];
+        } else {
+            $this->error = $result['content'];
         }
     }
 
