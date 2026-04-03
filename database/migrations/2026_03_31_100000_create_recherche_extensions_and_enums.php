@@ -1,13 +1,18 @@
 <?php
 
+use Database\Migrations\Support\PgsqlEnumHelpers;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    // Bewusst ohne DB::transaction(): PostgreSQL-DDL (CREATE TYPE/EXTENSION) ist
-    // auto-committed und ALTER TYPE ADD VALUE funktioniert nicht in Transaktionen.
-    // Idempotenz wird durch Existenz-Prüfung (pg_type) sichergestellt.
+    use PgsqlEnumHelpers;
+
+    // CREATE EXTENSION ist in manchen PostgreSQL-Konfigurationen nicht transaktionssicher
+    // (z. B. bei shared-preload-libraries oder superuser-Anforderungen). Idempotenz
+    // wird durch IF NOT EXISTS und enumExists() sichergestellt.
+    public bool $withinTransaction = false;
+
     public function up(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
@@ -33,8 +38,7 @@ return new class extends Migration
         ];
 
         foreach ($enums as $name => $values) {
-            $exists = DB::scalar("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = ?)", [$name]);
-            if (! $exists) {
+            if (! self::enumExists($name)) {
                 DB::statement("CREATE TYPE {$name} AS ENUM ({$values})");
             }
         }

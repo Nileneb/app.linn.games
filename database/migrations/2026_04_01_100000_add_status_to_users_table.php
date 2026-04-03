@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Bewusst ohne DB::transaction(): CREATE TYPE + ALTER TABLE ... TYPE USING
-    // sind PostgreSQL-DDL (auto-commit). ALTER TYPE ADD VALUE ist in Transaktionen
-    // nicht erlaubt. Idempotenz durch PL/pgSQL EXCEPTION WHEN duplicate_object.
+    // Diese Migration nutzt Laravels $withinTransaction = true (Standard): Alle Operationen
+    // laufen in einer PostgreSQL-Transaktion. Das DO-$$-EXCEPTION-Muster erzeugt einen
+    // internen Savepoint für die CREATE TYPE Idempotenz — kompatibel mit dem äußeren TX.
     public function up(): void
     {
         if (DB::getDriverName() === 'pgsql') {

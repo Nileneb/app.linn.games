@@ -14,6 +14,13 @@ return new class extends Migration
      * Identifiziert → Duplikate → L1-Ausschluss → Volltext → L2-Ausschluss → Final.
      *
      * Aufruf: SELECT * FROM berechne_prisma_zahlen('projekt-uuid');
+     *
+     * Die SELECT-Logik erscheint auf den ersten Blick komplex, ist aber fachlich notwendig:
+     * Jeder FILTER-Zweig implementiert genau eine PRISMA-2020-Stufe (Identifizierung → Duplikate
+     * → L1-Ausschluss → Volltext → L2-Ausschluss → Final). Die Korrelation über EXISTS
+     * ist erforderlich, weil Treffer mehrfach in verschiedenen Screening-Ebenen vorkommen können.
+     * Eine Vereinfachung auf JOIN würde die Semantik verändern (Doppelzählung bei mehreren
+     * Screening-Einträgen pro Treffer). CREATE OR REPLACE stellt Idempotenz sicher.
      */
     public function up(): void
     {

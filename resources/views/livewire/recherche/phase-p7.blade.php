@@ -83,7 +83,7 @@ new class extends Component {
 
     public function deleteSm(string $id): void
     {
-        P7SyntheseMethode::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P7SyntheseMethode::where('projekt_id', $this->projekt->id)->find($id)?->delete();
     }
 
     public function cancelSm(): void
@@ -138,8 +138,13 @@ new class extends Component {
 
     public function deleteDe(string $id): void
     {
-        $r = P7Datenextraktion::findOrFail($id);
-        P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($r->treffer_id);
+        $r = P7Datenextraktion::find($id);
+        if ($r === null) {
+            return;
+        }
+        if (P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->doesntExist()) {
+            return;
+        }
         $r->delete();
     }
 
@@ -185,7 +190,7 @@ new class extends Component {
 
     public function deleteMk(string $id): void
     {
-        P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P7MusterKonsistenz::where('projekt_id', $this->projekt->id)->find($id)?->delete();
     }
 
     public function cancelMk(): void
@@ -238,7 +243,7 @@ new class extends Component {
 
     public function deleteGr(string $id): void
     {
-        P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P7GradeEinschaetzung::where('projekt_id', $this->projekt->id)->find($id)?->delete();
     }
 
     public function cancelGr(): void

@@ -110,6 +110,24 @@ sleep 5
 echo "==> Service status:"
 docker compose ps
 
+# ── Health check ───────────────────────────────
+echo "==> Running health check..."
+HEALTH_URL="http://localhost:6479"
+MAX_RETRIES=12
+RETRY_INTERVAL=5
+for i in $(seq 1 $MAX_RETRIES); do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$HEALTH_URL" 2>/dev/null || echo "000")
+  if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
+    echo "    App responded with HTTP $HTTP_STATUS after $((i * RETRY_INTERVAL))s."
+    break
+  fi
+  if [ "$i" -eq "$MAX_RETRIES" ]; then
+    echo "WARN: App did not respond after $((MAX_RETRIES * RETRY_INTERVAL))s (last status: $HTTP_STATUS)." >&2
+    echo "      Check logs: docker compose logs php-fpm"
+  fi
+  sleep "$RETRY_INTERVAL"
+done
+
 # ── Deploy notification mail ───────────────────
 echo "==> Sending deploy notification..."
 docker compose run --rm php-cli php artisan deploy:notify || echo "WARN: Deploy notification mail failed."

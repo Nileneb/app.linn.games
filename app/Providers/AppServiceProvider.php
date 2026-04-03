@@ -31,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Manuelle Registrierung nötig: Laravels Auto-Discovery würde App\Policies\Recherche\ProjektPolicy
+        // erwarten, die Policy liegt aber in App\Policies\ProjektPolicy (bewusst flach gehalten).
+        // Neue Policies entweder hier eintragen oder in App\Policies\ nach Laravel-Konvention benennen.
         Gate::policy(Projekt::class, ProjektPolicy::class);
         Gate::policy(Workspace::class, WorkspacePolicy::class);
 
