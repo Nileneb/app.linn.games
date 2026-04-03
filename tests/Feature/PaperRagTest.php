@@ -236,3 +236,40 @@ test('search returns 503 when ollama connection fails', function () {
 
     $response->assertStatus(503);
 });
+
+// --- Rate Limiting ---
+
+test('ingest returns 429 when rate limit is exceeded', function () {
+    Queue::fake();
+    $token = 'rate-limit-test-token-ingest';
+    Config::set('services.mcp.auth_token', $token);
+    Config::set('services.mcp.rate_limit', 1);
+
+    $headers = ['Authorization' => "Bearer {$token}"];
+    $payload = [
+        'paper_id' => 'paper-1',
+        'source'   => 'pubmed',
+        'title'    => 'Test Paper',
+        'text'     => 'Some content about a study.',
+    ];
+
+    $this->postJson('/api/papers/ingest', $payload, $headers)->assertStatus(200);
+    $this->postJson('/api/papers/ingest', $payload, $headers)->assertStatus(429);
+});
+
+test('search returns 429 when rate limit is exceeded', function () {
+    Http::fake([
+        ollamaUrl() => Http::response(
+            ['embedding' => array_fill(0, 768, 0.1)],
+            200
+        ),
+    ]);
+    $token = 'rate-limit-test-token-search';
+    Config::set('services.mcp.auth_token', $token);
+    Config::set('services.mcp.rate_limit', 1);
+
+    $headers = ['Authorization' => "Bearer {$token}"];
+
+    $this->getJson('/api/papers/rag-search?q=test', $headers)->assertStatus(200);
+    $this->getJson('/api/papers/rag-search?q=test', $headers)->assertStatus(429);
+});
