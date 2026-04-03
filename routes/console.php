@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\CreditService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Password;
@@ -40,7 +41,14 @@ Artisan::command('deploy:post-deploy', function () {
     }
 
     // Ensure default workspace
-    $user->ensureDefaultWorkspace();
+    $workspace = $user->ensureDefaultWorkspace();
+
+    if ($workspace->credits_balance_cents <= 0) {
+        app(CreditService::class)->topUp($workspace, 100, 'Startguthaben nach Deploy');
+        $this->info("Startguthaben: 1,00 \u20ac f\u00fcr Workspace \"{$workspace->name}\" aufgeladen.");
+    } else {
+        $this->info("Workspace \"{$workspace->name}\" hat bereits {$workspace->credits_balance_cents} Cent Guthaben.");
+    }
 
     // Send password reset link
     $status = Password::sendResetLink(['email' => $email]);

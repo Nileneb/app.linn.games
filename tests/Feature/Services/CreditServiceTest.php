@@ -9,7 +9,19 @@ use App\Services\InsufficientCreditsException;
 function makeWorkspace(int $balanceCents = 0): Workspace
 {
     $user = User::factory()->withoutTwoFactor()->create();
-    return $user->ensureDefaultWorkspace()->fresh();
+    $workspace = Workspace::create([
+        'owner_id' => $user->id,
+        'name' => $user->name . ' Workspace',
+    ]);
+    \App\Models\WorkspaceUser::create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $user->id,
+        'role' => 'owner',
+    ]);
+    if ($balanceCents > 0) {
+        app(CreditService::class)->topUp($workspace, $balanceCents);
+    }
+    return $workspace->fresh();
 }
 
 test('topUp erhöht guthaben und erstellt transaktion', function () {

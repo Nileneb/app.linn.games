@@ -164,6 +164,8 @@ class User extends Authenticatable implements FilamentUser
             'role' => 'owner',
         ]);
 
+        app(\App\Services\CreditService::class)->topUp($workspace, 100, 'Startguthaben');
+
         return $workspace;
     }
 }

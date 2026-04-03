@@ -60,7 +60,7 @@ class PaperRagController extends Controller
             'SELECT id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata,
                     1 - (embedding <=> ?::vector) AS similarity
              FROM paper_embeddings
-             WHERE (? IS NULL OR projekt_id = ?::uuid)
+             WHERE (?::text IS NULL OR projekt_id = ?::uuid)
              ORDER BY embedding <=> ?::vector
              LIMIT ?',
             [$vectorLiteral, $projektId, $projektId, $vectorLiteral, $maxResults]
