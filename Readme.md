@@ -173,6 +173,22 @@ docker compose run --rm php-test vendor/bin/pest
 | ProjektPolicy (Owner-Zugriff CRUD) | ✅ |
 | Agent-Buttons (P1–P7 Phasen) | ✅ |
 
+## Dokumentation & API
+
+Externe Systeme (Langdock, MCP-Server) nutzen die folgenden Endpunkte:
+
+| Endpunkt | Beschreibung | Doku |
+|----------|-------------|------|
+| `/mcp/sse` & `/messages/` | PostgreSQL MCP für KI-Datenbankzugriff | [docs/API.md](docs/API.md#-postgresql-mcp-endpoint) |
+| `/paper-mcp/sse` & `/paper-messages/` | Paper-Search MCP für Literatursuche | [docs/API.md](docs/API.md#-paper-search-mcp-endpoint) |
+| `/ollama/*` | Embedding-Proxy (Langdock) | [docs/API.md](docs/API.md#-ollama-embedding-endpoint) |
+| `/api/webhooks/langdock` | Webhook für Phase-Ergebnisse & Chat-Responses | [docs/API.md](docs/API.md#-langdock-webhook-endpoint) |
+| `/api/user` | Sanctum User-Endpunkt (Authentifizierung) | [docs/API.md](docs/API.md#-sanctum-user-endpoint) |
+
+**Alle MCP-Endpunkte nutzen:** Bearer Token, X-API-Key oder Query-Parameter (`?token=...`)
+
+👉 **Vollständige API-Dokumentation:** [docs/API.md](docs/API.md)
+
 ## Contributing
 
 Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Branch-Konventionen, Merge-Fluss und Arbeitsablauf.
