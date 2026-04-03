@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p6_qualitaetsbewertung', 'p6_luckenanalyse'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         // p6_qualitaetsbewertung – uses studientyp, rob_tool, rob_urteil ENUMs
         if (! Schema::hasTable('p6_qualitaetsbewertung')) {
             Schema::create('p6_qualitaetsbewertung', function (Blueprint $table) {

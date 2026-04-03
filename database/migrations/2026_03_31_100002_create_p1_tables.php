@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p1_strukturmodell_wahl', 'p1_komponenten', 'p1_kriterien', 'p1_warnsignale'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p1_strukturmodell_wahl')) {
             Schema::create('p1_strukturmodell_wahl', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
