@@ -153,13 +153,6 @@ services:
       postgres:
         condition: service_healthy
 
-  ollama:
-    image: ollama/ollama
-    restart: unless-stopped
-    volumes:
-      - linn-ollama-data:/root/.ollama
-    networks:
-      - linn-network
 
   mcp-paper-search:
     build:
@@ -176,13 +169,19 @@ services:
       - DOWNLOAD_PATH=/data/papers
       - LARAVEL_INGEST_URL=http://php-fpm/api/papers/ingest
       - LARAVEL_MCP_TOKEN=${MCP_AUTH_TOKEN}
+      - PAPER_SEARCH_MCP_UNPAYWALL_EMAIL=${PAPER_SEARCH_MCP_UNPAYWALL_EMAIL}
+      - PAPER_SEARCH_MCP_CORE_API_KEY=${PAPER_SEARCH_MCP_CORE_API_KEY}
+      - PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY=${PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY}
+      - PAPER_SEARCH_MCP_ZENODO_ACCESS_TOKEN=${PAPER_SEARCH_MCP_ZENODO_ACCESS_TOKEN}
+      - PAPER_SEARCH_MCP_DOAJ_API_KEY=${PAPER_SEARCH_MCP_DOAJ_API_KEY}
+      - PAPER_SEARCH_MCP_GOOGLE_SCHOLAR_PROXY_URL=${PAPER_SEARCH_MCP_GOOGLE_SCHOLAR_PROXY_URL}
+      - PAPER_SEARCH_MCP_IEEE_API_KEY=${PAPER_SEARCH_MCP_IEEE_API_KEY}
+      - PAPER_SEARCH_MCP_ACM_API_KEY=${PAPER_SEARCH_MCP_ACM_API_KEY}
     volumes:
       - linn-papers-data:/data/papers
     networks:
       - linn-network
     depends_on:
-      ollama:
-        condition: service_started
       php-fpm:
         condition: service_started
 
@@ -195,4 +194,3 @@ volumes:
   linn-storage-production:
   linn-build-assets:
   linn-papers-data:
-  linn-ollama-data:

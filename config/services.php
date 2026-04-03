@@ -43,6 +43,9 @@ return [
         'search_agent' => env('SEARCH_AGENT'),
         'review_agent' => env('REVIEW_AGENT'),
         'retrieval_agent' => env('RESEARCH_RETRIEVAL_AGENT'),
+        'pico_agent' => env('PICO_AGENT'),
+        'synthesis_agent' => env('SYNTHESIS_AGENT'),
+        'mayring_agent' => env('MAYRING_AGENT'),
     ],
 
     'mcp' => [

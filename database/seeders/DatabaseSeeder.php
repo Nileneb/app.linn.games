@@ -35,10 +35,14 @@ class DatabaseSeeder extends Seeder
             $this->command?->info("Admin erstellt: {$adminEmail}");
 
             try {
-                Password::sendResetLink(['email' => $adminEmail]);
-                $this->command?->info("Passwort-Reset-Link gesendet an: {$adminEmail}");
+                $token = Password::createToken($admin);
+                $resetUrl = url(route('password.reset', [
+                    'token' => $token,
+                    'email' => $adminEmail,
+                ], false));
+                $this->command?->info("Passwort-Reset-URL (einmalig): {$resetUrl}");
             } catch (\Throwable $e) {
-                $this->command?->warn("Reset-Link konnte nicht gesendet werden: {$e->getMessage()}");
+                $this->command?->warn("Reset-Token konnte nicht erstellt werden: {$e->getMessage()}");
             }
         } else {
             $this->command?->info("Admin bereits vorhanden: {$adminEmail}");
