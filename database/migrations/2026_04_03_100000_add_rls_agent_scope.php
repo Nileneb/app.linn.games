@@ -17,14 +17,13 @@ return new class extends Migration
         $role     = $this->roleName;
         $password = env('LANGDOCK_DB_PASSWORD', '');
         $database = config('database.connections.pgsql.database');
-        $pdo      = DB::getPdo();
 
         // 1. Dedicated DB role for MCP (no SUPERUSER, no BYPASSRLS)
-        $quotedPassword = $pdo->quote($password);
+        // Use %L so PostgreSQL handles quoting — avoids syntax error on empty password
         DB::statement("DO \$\$
             BEGIN
                 IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '{$role}') THEN
-                    EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %s NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS', '{$role}', {$quotedPassword});
+                    EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS', '{$role}', '{$password}');
                 END IF;
             END
         \$\$");
