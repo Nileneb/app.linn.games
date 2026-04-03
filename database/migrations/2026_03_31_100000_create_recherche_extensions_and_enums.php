@@ -11,7 +11,7 @@ return new class extends Migration
     // CREATE EXTENSION ist in manchen PostgreSQL-Konfigurationen nicht transaktionssicher
     // (z. B. bei shared-preload-libraries oder superuser-Anforderungen). Idempotenz
     // wird durch IF NOT EXISTS und enumExists() sichergestellt.
-    public bool $withinTransaction = false;
+    public $withinTransaction = false;
 
     public function up(): void
     {
