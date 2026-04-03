@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Services\InsufficientCreditsException;
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
+use Illuminate\Support\Facades\Log;
 
 class SendAgentMessage
 {
@@ -28,7 +29,8 @@ class SendAgentMessage
             ];
         } catch (InsufficientCreditsException) {
             return ['success' => false, 'content' => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.')];
-        } catch (LangdockAgentException) {
+        } catch (LangdockAgentException $e) {
+            Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
         } catch (\Throwable) {
             return ['success' => false, 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.')];
