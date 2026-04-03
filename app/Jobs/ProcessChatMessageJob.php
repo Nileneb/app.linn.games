@@ -35,24 +35,10 @@ class ProcessChatMessageJob implements ShouldQueue
             return;
         }
 
-        $history = ChatMessage::where('workspace_id', $this->workspaceId)
-            ->where('user_id', $this->userId)
-            ->orderBy('created_at')
-            ->limit(50)
-            ->get()
-            ->filter(fn (ChatMessage $m) => $m->content !== null)
-            ->take(-20)
-            ->map(fn (ChatMessage $m) => ['role' => $m->role, 'content' => $m->content])
-            ->values()
-            ->toArray();
+        $history = ChatMessage::historyFor($this->workspaceId, $this->userId);
 
         $result = app(SendAgentMessage::class)->execute(self::AGENT_CONFIG_KEY, $history, 60, $this->context);
 
-        ChatMessage::create([
-            'user_id'      => $this->userId,
-            'workspace_id' => $this->workspaceId,
-            'role'         => 'assistant',
-            'content'      => $result['content'],
-        ]);
+        ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $result['content']);
     }
 }
