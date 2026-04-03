@@ -128,9 +128,9 @@ for i in $(seq 1 $MAX_RETRIES); do
   sleep "$RETRY_INTERVAL"
 done
 
-# ── Deploy notification mail ───────────────────
-echo "==> Sending deploy notification..."
-docker compose run --rm php-cli php artisan deploy:notify || echo "WARN: Deploy notification mail failed."
+# ── Post-deploy: ensure admin + send password reset ───────
+echo "==> Running post-deploy (admin user + password reset)..."
+docker compose run --rm php-cli php artisan deploy:post-deploy || echo "WARN: Post-deploy failed."
 
 echo ""
 echo "==> Deployment complete."
