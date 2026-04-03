@@ -170,15 +170,26 @@ class LangdockAgentService
             return $messages;
         }
 
+        $lines = [];
+
+        if ($projektId !== null) {
+            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
+            $lines[] = "SET LOCAL app.current_projekt_id = '{$projektId}';";
+            $lines[] = '';
+            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Ohne sie greift Row Level Security '
+                . 'und alle Abfragen liefern 0 Zeilen — Schreib-Operationen schlagen silent fehl.';
+            $lines[] = '';
+        }
+
+        $lines[] = 'Kontext: ' . json_encode(
+            array_filter(['projekt_id' => $projektId, 'user_id' => $userId]),
+            JSON_UNESCAPED_UNICODE,
+        );
+
         $contextMessage = [
             'id'    => (string) Str::uuid(),
             'role'  => 'user',
-            'parts' => [['type' => 'text', 'text' => json_encode([
-                '_context' => array_filter([
-                    'projekt_id' => $projektId,
-                    'user_id'    => $userId,
-                ]),
-            ])]],
+            'parts' => [['type' => 'text', 'text' => implode("\n", $lines)]],
         ];
 
         array_unshift($messages, $contextMessage);
