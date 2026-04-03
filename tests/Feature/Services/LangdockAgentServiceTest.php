@@ -121,12 +121,12 @@ test('call injects context message and metadata when projekt_id and user_id are 
     Http::assertSent(function ($request) use ($projektId, $userId) {
         $messages = $request['messages'];
 
-        // First message must be the injected _context
+        // First message must be the injected _context (plaintext with SQL instruction)
         $contextText = $messages[0]['parts'][0]['text'] ?? '';
-        $context     = json_decode($contextText, true)['_context'] ?? [];
 
-        $hasContextMessage = $context['projekt_id'] === $projektId
-            && (int) $context['user_id'] === $userId;
+        $hasContextMessage = str_contains($contextText, "SET LOCAL app.current_projekt_id = '{$projektId}'")
+            && str_contains($contextText, (string) $userId)
+            && str_contains($contextText, $projektId);
 
         // Second message is the actual user input
         $hasUserMessage = ($messages[1]['parts'][0]['text'] ?? '') === 'Analysiere.';
