@@ -44,7 +44,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('mcp', function (Request $request) {
-            return Limit::perMinute(60)->by($request->bearerToken() ?: $request->ip());
+            $limit = config('services.mcp.rate_limit', 60);
+
+            return Limit::perMinute($limit)->by($request->bearerToken() ?: $request->ip());
         });
 
         RateLimiter::for('webhooks', function (Request $request) {
