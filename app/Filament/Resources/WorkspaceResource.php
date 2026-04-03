@@ -8,6 +8,8 @@ use App\Models\Workspace;
 use App\Services\CreditService;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -54,12 +56,26 @@ class WorkspaceResource extends Resource
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
                     ->form([
+                        ToggleButtons::make('preset')
+                            ->label('Schnellauswahl')
+                            ->inline()
+                            ->options([
+                                '0.50'  => '0,50 €',
+                                '1.00'  => '1,00 €',
+                                '5.00'  => '5,00 €',
+                                '10.00' => '10,00 €',
+                                '50.00' => '50,00 €',
+                            ])
+                            ->default('5.00')
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('amount_eur', $state)),
                         TextInput::make('amount_eur')
-                            ->label('Betrag (EUR)')
+                            ->label('Oder individueller Betrag (EUR)')
                             ->numeric()
                             ->minValue(0.01)
                             ->step(0.01)
                             ->required()
+                            ->default('5.00')
                             ->suffix('€'),
                         Textarea::make('description')
                             ->label('Notiz')
