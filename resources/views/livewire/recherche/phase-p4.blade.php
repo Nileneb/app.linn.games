@@ -168,10 +168,10 @@ new class extends Component {
             'apSuchstringId' => 'required|string',
             'apAenderung' => 'required|string',
         ]);
-        // Verify the suchstring belongs to this project
-        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $this->apSuchstringId)->doesntExist()) {
-            return;
-        }
+        // Verify the suchstring belongs to this project — throws ModelNotFoundException (→ 404) if not
+        P4Suchstring::where('projekt_id', $this->projekt->id)
+            ->where('id', $this->apSuchstringId)
+            ->firstOrFail();
 
         $data = [
             'suchstring_id' => $this->apSuchstringId,
