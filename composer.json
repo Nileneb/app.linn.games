@@ -1,13 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "nileneb/app-linn-games",
+    "name": "nileneb/linn-games-research",
     "type": "project",
     "description": "Research-Management-Plattform mit KI-gestützter systematischer Literaturrecherche.",
     "keywords": [
-        "laravel",
-        "framework"
+        "research",
+        "systematic-review",
+        "ai"
     ],
-    "license": "proprietary",
+    "license": "UNLICENSED",
     "require": {
         "php": "^8.2",
         "filament/filament": "^4.9",
