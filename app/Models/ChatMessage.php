@@ -46,7 +46,7 @@ class ChatMessage extends Model
         return static::where('workspace_id', $workspaceId)
             ->where('user_id', $userId)
             ->orderBy('created_at')
-            ->limit(50)
+            ->limit($limit + 30)
             ->get()
             ->filter(fn (self $m) => $m->content !== null)
             ->take(-$limit)
