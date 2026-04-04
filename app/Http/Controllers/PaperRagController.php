@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\IngestPaperJob;
+use App\Services\EmbeddingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,58 +62,18 @@ class PaperRagController extends Controller
         $projektId  = $data['projekt_id'] ?? null;
 
         try {
-            $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
-                'model'  => 'nomic-embed-text',
-                'prompt' => $data['q'],
-            ]);
-
-            if ($embeddingResponse->failed()) {
-                $statusCode = $embeddingResponse->status();
-                \Log::error('Ollama embedding request failed', [
-                    'status' => $statusCode,
-                    'body'   => $embeddingResponse->body(),
-                    'query'  => $data['q'],
-                ]);
+            $embeddingService = app(EmbeddingService::class);
+            
+            try {
+                $embedding = $embeddingService->generate($data['q']);
+            } catch (\RuntimeException $e) {
                 return response()->json([
                     'error' => 'Embedding service unavailable',
-                    'details' => "Ollama returned {$statusCode}",
+                    'details' => $e->getMessage(),
                 ], 503);
             }
 
-            $embedding = $embeddingResponse->json('embedding');
-
-            if (!is_array($embedding) || empty($embedding)) {
-                \Log::warning('Ollama returned invalid embedding format', [
-                    'embedding' => $embedding,
-                    'query'     => $data['q'],
-                ]);
-                return response()->json([
-                    'error' => 'Invalid embedding format from service',
-                    'details' => 'Expected array of numbers',
-                ], 503);
-            }
-
-            // Safely cast embedding values to float, filtering out nulls/non-numeric values
-            $embedding = array_map(function ($value): ?float {
-                $float = (float) $value;
-                return is_finite($float) ? $float : null;
-            }, $embedding);
-
-            $embedding = array_filter($embedding, static fn ($v) => $v !== null);
-
-            if (empty($embedding)) {
-                \Log::warning('Embedding validation removed all values', [
-                    'original_count' => count($embeddingResponse->json('embedding') ?? []),
-                    'filtered_count' => count($embedding),
-                    'query'          => $data['q'],
-                ]);
-                return response()->json([
-                    'error' => 'No valid embedding values after filtering',
-                    'details' => 'All embedding components were null or non-finite',
-                ], 503);
-            }
-
-            $vectorLiteral = '[' . implode(',', $embedding) . ']';
+            $vectorLiteral = $embeddingService->toLiteral($embedding);
 
             $rows = DB::select(
                 'SELECT id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata,

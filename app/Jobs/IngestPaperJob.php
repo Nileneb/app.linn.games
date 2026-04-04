@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\EmbeddingService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -34,39 +35,13 @@ class IngestPaperJob implements ShouldQueue
     public function handle(): void
     {
         $chunks = $this->chunkText($this->text);
+        $embeddingService = app(EmbeddingService::class);
 
-        DB::transaction(function () use ($chunks): void {
+        DB::transaction(function () use ($chunks, $embeddingService): void {
             foreach ($chunks as $index => $chunk) {
                 try {
-                    $response = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
-                        'model'  => 'nomic-embed-text',
-                        'prompt' => $chunk,
-                    ]);
-
-                    if ($response->failed()) {
-                        Log::error('Ollama embedding failed', [
-                            'paper_id'  => $this->paperId,
-                            'chunk'     => $index,
-                            'status'    => $response->status(),
-                        ]);
-                        throw new \RuntimeException("Ollama returned {$response->status()} for chunk {$index}");
-                    }
-
-                    $embedding = $response->json('embedding');
-                    
-                    // Safely cast embedding values to float
-                    $embedding = array_map(function ($value): ?float {
-                        $float = (float) $value;
-                        return is_finite($float) ? $float : null;
-                    }, $embedding);
-                    
-                    $embedding = array_filter($embedding, static fn ($v) => $v !== null);
-                    
-                    if (empty($embedding)) {
-                        throw new \RuntimeException("Invalid embedding received for chunk {$index}");
-                    }
-
-                    $vectorLiteral = '[' . implode(',', $embedding) . ']';
+                    $embedding = $embeddingService->generate($chunk);
+                    $vectorLiteral = $embeddingService->toLiteral($embedding);
 
                     DB::statement(
                         'INSERT INTO paper_embeddings (id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata, embedding)
