@@ -20,6 +20,8 @@
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (appearance === 'dark' || (appearance !== 'light' && prefersDark)) {
             document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     })();
 </script>
