@@ -71,7 +71,8 @@ new class extends Component {
 
         if ($this->editingSmwId) {
             P1Strukturmodellwahl::where('projekt_id', $this->projekt->id)
-                ->findOrFail($this->editingSmwId)
+                ->whereKey($this->editingSmwId)
+                ->firstOrFail()
                 ->update($data);
         } else {
             P1Strukturmodellwahl::create($data);
@@ -82,7 +83,7 @@ new class extends Component {
 
     public function editSmw(string $id): void
     {
-        $r = P1Strukturmodellwahl::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P1Strukturmodellwahl::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingSmwId = $id;
         $this->smwModell = $r->modell ?? '';
         $this->smwGewaehlt = (bool) $r->gewaehlt;
@@ -92,7 +93,7 @@ new class extends Component {
 
     public function deleteSmw(string $id): void
     {
-        P1Strukturmodellwahl::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P1Strukturmodellwahl::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelSmw(): void
@@ -131,7 +132,8 @@ new class extends Component {
 
         if ($this->editingKompId) {
             P1Komponente::where('projekt_id', $this->projekt->id)
-                ->findOrFail($this->editingKompId)
+                ->whereKey($this->editingKompId)
+                ->firstOrFail()
                 ->update($data);
         } else {
             P1Komponente::create($data);
@@ -142,7 +144,7 @@ new class extends Component {
 
     public function editKomp(string $id): void
     {
-        $r = P1Komponente::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P1Komponente::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingKompId = $id;
         $this->kompModell = $r->modell ?? '';
         $this->kompKuerzel = $r->komponente_kuerzel ?? '';
@@ -158,7 +160,7 @@ new class extends Component {
 
     public function deleteKomp(string $id): void
     {
-        P1Komponente::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P1Komponente::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelKomp(): void
@@ -192,7 +194,8 @@ new class extends Component {
 
         if ($this->editingKritId) {
             P1Kriterium::where('projekt_id', $this->projekt->id)
-                ->findOrFail($this->editingKritId)
+                ->whereKey($this->editingKritId)
+                ->firstOrFail()
                 ->update($data);
         } else {
             P1Kriterium::create($data);
@@ -203,7 +206,7 @@ new class extends Component {
 
     public function editKrit(string $id): void
     {
-        $r = P1Kriterium::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P1Kriterium::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingKritId = $id;
         $this->kritTyp = $r->kriterium_typ ?? 'einschluss';
         $this->kritBeschreibung = $r->beschreibung ?? '';
@@ -214,7 +217,7 @@ new class extends Component {
 
     public function deleteKrit(string $id): void
     {
-        P1Kriterium::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P1Kriterium::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelKrit(): void
@@ -251,7 +254,8 @@ new class extends Component {
 
         if ($this->editingWarnId) {
             P1Warnsignal::where('projekt_id', $this->projekt->id)
-                ->findOrFail($this->editingWarnId)
+                ->whereKey($this->editingWarnId)
+                ->firstOrFail()
                 ->update($data);
         } else {
             P1Warnsignal::create($data);
@@ -262,7 +266,7 @@ new class extends Component {
 
     public function editWarn(string $id): void
     {
-        $r = P1Warnsignal::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P1Warnsignal::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingWarnId = $id;
         $this->warnLfdNr = $r->lfd_nr ?? 1;
         $this->warnWarnsignal = $r->warnsignal ?? '';
@@ -273,7 +277,7 @@ new class extends Component {
 
     public function deleteWarn(string $id): void
     {
-        P1Warnsignal::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P1Warnsignal::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelWarn(): void
@@ -312,7 +316,7 @@ new class extends Component {
     <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">
         <x-crud.form :visible="$showSmwForm" save-action="saveSmw" cancel-action="cancelSmw">
             <div class="grid gap-3 sm:grid-cols-3">
-                <x-crud.field label="Modell" required>
+                <x-crud.field label="Modell" required :error="$errors->first('smwModell')">
                     <input wire:model="smwModell" type="text" placeholder="z.B. PICO" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
                 <div>
@@ -326,7 +330,6 @@ new class extends Component {
                     <input wire:model="smwBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
             </div>
-            @error('smwModell') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
         </x-crud.form>
 
         @if ($strukturmodelle->isNotEmpty())
@@ -373,7 +376,7 @@ new class extends Component {
                 <x-crud.field label="Kürzel">
                     <input wire:model="kompKuerzel" type="text" placeholder="z.B. P" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
-                <x-crud.field label="Label" required>
+                <x-crud.field label="Label" required :error="$errors->first('kompLabel')">
                     <input wire:model="kompLabel" type="text" placeholder="z.B. Population" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
             </div>
@@ -399,7 +402,6 @@ new class extends Component {
             <x-crud.field label="Anmerkungen" class="mt-3">
                 <textarea wire:model="kompAnmerkungen" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
             </x-crud.field>
-            @error('kompLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
         </x-crud.form>
 
         @if ($komponenten->isNotEmpty())
@@ -454,13 +456,12 @@ new class extends Component {
                     <input wire:model="kritQuellbezug" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
             </div>
-            <x-crud.field label="Beschreibung" required class="mt-3">
+            <x-crud.field label="Beschreibung" required class="mt-3" :error="$errors->first('kritBeschreibung')">
                 <textarea wire:model="kritBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
             </x-crud.field>
             <x-crud.field label="Begründung" class="mt-3">
                 <textarea wire:model="kritBegruendung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
             </x-crud.field>
-            @error('kritBeschreibung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
         </x-crud.form>
 
         @if ($kriterien->isNotEmpty())
@@ -504,7 +505,7 @@ new class extends Component {
                 <x-crud.field label="Lfd. Nr.">
                     <input wire:model="warnLfdNr" type="number" min="1" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
-                <x-crud.field label="Warnsignal" required class="sm:col-span-3">
+                <x-crud.field label="Warnsignal" required class="sm:col-span-3" :error="$errors->first('warnWarnsignal')">
                     <input wire:model="warnWarnsignal" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </x-crud.field>
             </div>
@@ -516,7 +517,6 @@ new class extends Component {
                     <textarea wire:model="warnHandlungsempfehlung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
                 </x-crud.field>
             </div>
-            @error('warnWarnsignal') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
         </x-crud.form>
 
         @if ($warnsignale->isNotEmpty())

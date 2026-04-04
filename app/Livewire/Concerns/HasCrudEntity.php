@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * public function newSmw(): void { $this->newEntity('Smw'); }
  * public function saveSmw(): void { $this->saveEntity('Smw', P1Strukturmodellwahl::class, ['smwModell' => 'required'], fn() => [...data...]); }
  * public function editSmw(string $id): void { $this->editEntity('Smw', P1Strukturmodellwahl::class, $id, fn($r) => ['smwModell' => $r->modell]); }
- * public function deleteSmw(string $id): void { $this->deleteEntity('Smw', P1Strukturmodellwahl::class, $id); }
+ * public function deleteSmw(string $id): void { $this->deleteEntity(P1Strukturmodellwahl::class, $id); }
  * public function cancelSmw(): void { $this->cancelEntity('Smw', ['smwModell']); }
  * ```
  */
@@ -112,11 +112,10 @@ trait HasCrudEntity
     /**
      * Löscht eine Entität.
      *
-     * @param string $entity Entity-Kürzel (für Event-Naming und Logging)
      * @param class-string<Model> $modelClass Eloquent Model-Klasse
      * @param string $id UUID der Entität
      */
-    protected function deleteEntity(string $entity, string $modelClass, string $id): void
+    protected function deleteEntity(string $modelClass, string $id): void
     {
         /** @var Model $model */
         $model = $modelClass::where('projekt_id', $this->projekt->id)
