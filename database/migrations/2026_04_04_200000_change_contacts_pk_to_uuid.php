@@ -9,6 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // PostgreSQL-only: uuid-ossp extension is provisioned in
+        // 2026_03_31_100000_create_recherche_extensions_and_enums.php
         if (DB::getDriverName() !== 'pgsql') {
             return;
         }
@@ -34,6 +36,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        // PostgreSQL-only (see up())
         if (DB::getDriverName() !== 'pgsql') {
             return;
         }
