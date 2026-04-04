@@ -23,6 +23,32 @@ class UnpaywallService
      */
     public function resolveOaUrl(string $doi): ?string
     {
+        $data = $this->fetchFromUnpaywall($doi);
+
+        if ($data === null) {
+            return null;
+        }
+
+        $url = data_get($data, 'best_oa_location.url_for_pdf');
+
+        if (blank($url)) {
+            Log::info('No Open Access URL found in Unpaywall', [
+                'doi' => $doi,
+            ]);
+            return null;
+        }
+
+        return $url;
+    }
+
+    /**
+     * Fetch raw response data from the Unpaywall API.
+     *
+     * @param string $doi The Digital Object Identifier
+     * @return ?array The decoded JSON response, or null on failure
+     */
+    private function fetchFromUnpaywall(string $doi): ?array
+    {
         $email = config('mail.from.address', 'info@linn.games');
 
         try {
@@ -39,16 +65,7 @@ class UnpaywallService
                 return null;
             }
 
-            $url = $response->json('best_oa_location.url_for_pdf');
-
-            if (blank($url)) {
-                Log::info('No Open Access URL found in Unpaywall', [
-                    'doi' => $doi,
-                ]);
-                return null;
-            }
-
-            return $url;
+            return $response->json();
         } catch (\Throwable $e) {
             Log::error('Unpaywall API error', [
                 'doi'     => $doi,
