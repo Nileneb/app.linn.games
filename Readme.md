@@ -7,7 +7,7 @@
 | Komponente | Version |
 |---|---|
 | Laravel | 12 |
-| PHP | 8.2+ |
+| PHP | 8.4 |
 | Livewire / Volt | 1.7 (Inline-Komponenten) |
 | Filament | 4.9 (Admin-Panel) |
 | Fortify | 1.30 (Auth + 2FA) |
