@@ -1,45 +1,24 @@
 <?php
 
+use App\Livewire\Forms\Recherche\{SuchstringForm, ThesaurusMappingForm, AnpassungsprotokollForm};
 use App\Models\Recherche\{Projekt, P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Projekt $projekt;
 
-    // --- Suchstring ---
+    public SuchstringForm        $ss;
+    public ThesaurusMappingForm  $th;
+    public AnpassungsprotokollForm $ap;
+
     public bool $showSsForm = false;
     public ?string $editingSsId = null;
-    public string $ssDatenbank = '';
-    public string $ssSuchstring = '';
-    public string $ssFeldeinschraenkung = '';
-    public string $ssFilter = '';
-    public ?int $ssTrefferAnzahl = null;
-    public string $ssEinschaetzung = '';
-    public string $ssAnpassung = '';
-    public string $ssVersion = '';
-    public ?string $ssSuchdatum = null;
 
-    // --- ThesaurusMapping ---
     public bool $showThForm = false;
     public ?string $editingThId = null;
-    public string $thFreitextDe = '';
-    public string $thFreitextEn = '';
-    public string $thMesh = '';
-    public string $thEmtree = '';
-    public string $thPsycinfo = '';
-    public string $thAnmerkung = '';
 
-    // --- Anpassungsprotokoll ---
     public bool $showApForm = false;
     public ?string $editingApId = null;
-    public string $apSuchstringId = '';
-    public string $apVersion = '';
-    public ?string $apDatum = null;
-    public string $apAenderung = '';
-    public string $apGrund = '';
-    public ?int $apTrefferVorher = null;
-    public ?int $apTrefferNachher = null;
-    public string $apEntscheidung = '';
 
     public function mount(Projekt $projekt): void
     {
@@ -53,23 +32,11 @@ new class extends Component {
 
     public function saveSs(): void
     {
-        $this->validate(['ssDatenbank' => 'required|string|max:255']);
-        $data = [
-            'projekt_id' => $this->projekt->id,
-            'datenbank' => $this->ssDatenbank,
-            'suchstring' => $this->ssSuchstring ?: null,
-            'feldeinschraenkung' => $this->ssFeldeinschraenkung ?: null,
-            'gesetzte_filter' => $this->ssFilter ? array_map('trim', explode(',', $this->ssFilter)) : null,
-            'treffer_anzahl' => $this->ssTrefferAnzahl,
-            'einschaetzung' => $this->ssEinschaetzung ?: null,
-            'anpassung' => $this->ssAnpassung ?: null,
-            'version' => $this->ssVersion ?: 'v1.0',
-            'suchdatum' => $this->ssSuchdatum ?: null,
-        ];
+        $this->ss->validate();
         if ($this->editingSsId) {
-            P4Suchstring::where('projekt_id', $this->projekt->id)->find($this->editingSsId)?->update($data);
+            P4Suchstring::where('projekt_id', $this->projekt->id)->find($this->editingSsId)?->update($this->ss->toArray($this->projekt->id));
         } else {
-            P4Suchstring::create($data);
+            P4Suchstring::create($this->ss->toArray($this->projekt->id));
         }
         $this->cancelSs();
     }
@@ -79,15 +46,7 @@ new class extends Component {
         $r = P4Suchstring::where('projekt_id', $this->projekt->id)->find($id);
         if ($r === null) { return; }
         $this->editingSsId = $id;
-        $this->ssDatenbank = $r->datenbank ?? '';
-        $this->ssSuchstring = $r->suchstring ?? '';
-        $this->ssFeldeinschraenkung = $r->feldeinschraenkung ?? '';
-        $this->ssFilter = is_array($r->gesetzte_filter) ? implode(', ', $r->gesetzte_filter) : '';
-        $this->ssTrefferAnzahl = $r->treffer_anzahl;
-        $this->ssEinschaetzung = $r->einschaetzung ?? '';
-        $this->ssAnpassung = $r->anpassung ?? '';
-        $this->ssVersion = $r->version ?? '';
-        $this->ssSuchdatum = $r->suchdatum?->format('Y-m-d');
+        $this->ss->fillFromModel($r);
         $this->showSsForm = true;
     }
 
@@ -100,7 +59,7 @@ new class extends Component {
     {
         $this->showSsForm = false;
         $this->editingSsId = null;
-        $this->reset(['ssDatenbank', 'ssSuchstring', 'ssFeldeinschraenkung', 'ssFilter', 'ssTrefferAnzahl', 'ssEinschaetzung', 'ssAnpassung', 'ssVersion', 'ssSuchdatum']);
+        $this->ss->reset();
     }
 
     // ─── ThesaurusMapping CRUD ───────────────────────────────
@@ -109,20 +68,11 @@ new class extends Component {
 
     public function saveTh(): void
     {
-        $this->validate(['thFreitextDe' => 'required|string|max:255']);
-        $data = [
-            'projekt_id' => $this->projekt->id,
-            'freitext_de' => $this->thFreitextDe,
-            'freitext_en' => $this->thFreitextEn ?: null,
-            'mesh_term' => $this->thMesh ?: null,
-            'emtree_term' => $this->thEmtree ?: null,
-            'psycinfo_term' => $this->thPsycinfo ?: null,
-            'anmerkung' => $this->thAnmerkung ?: null,
-        ];
+        $this->th->validate();
         if ($this->editingThId) {
-            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($this->editingThId)?->update($data);
+            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($this->editingThId)?->update($this->th->toArray($this->projekt->id));
         } else {
-            P4ThesaurusMapping::create($data);
+            P4ThesaurusMapping::create($this->th->toArray($this->projekt->id));
         }
         $this->cancelTh();
     }
@@ -132,12 +82,7 @@ new class extends Component {
         $r = P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($id);
         if ($r === null) { return; }
         $this->editingThId = $id;
-        $this->thFreitextDe = $r->freitext_de ?? '';
-        $this->thFreitextEn = $r->freitext_en ?? '';
-        $this->thMesh = $r->mesh_term ?? '';
-        $this->thEmtree = $r->emtree_term ?? '';
-        $this->thPsycinfo = $r->psycinfo_term ?? '';
-        $this->thAnmerkung = $r->anmerkung ?? '';
+        $this->th->fillFromModel($r);
         $this->showThForm = true;
     }
 
@@ -150,7 +95,7 @@ new class extends Component {
     {
         $this->showThForm = false;
         $this->editingThId = null;
-        $this->reset(['thFreitextDe', 'thFreitextEn', 'thMesh', 'thEmtree', 'thPsycinfo', 'thAnmerkung']);
+        $this->th->reset();
     }
 
     // ─── Anpassungsprotokoll CRUD ────────────────────────────
@@ -158,39 +103,24 @@ new class extends Component {
     public function newAp(string $suchstringId = ''): void
     {
         $this->cancelAp();
-        $this->apSuchstringId = $suchstringId;
+        $this->ap->suchstringId = $suchstringId;
         $this->showApForm = true;
     }
 
     public function saveAp(): void
     {
-        $this->validate([
-            'apSuchstringId' => 'required|string',
-            'apAenderung' => 'required|string',
-        ]);
-        // Verify the suchstring belongs to this project — throws ModelNotFoundException (→ 404) if not
-        P4Suchstring::where('projekt_id', $this->projekt->id)
-            ->where('id', $this->apSuchstringId)
-            ->firstOrFail();
-
-        $data = [
-            'suchstring_id' => $this->apSuchstringId,
-            'version' => $this->apVersion ?: null,
-            'datum' => $this->apDatum ?: null,
-            'aenderung' => $this->apAenderung,
-            'grund' => $this->apGrund ?: null,
-            'treffer_vorher' => $this->apTrefferVorher,
-            'treffer_nachher' => $this->apTrefferNachher,
-            'entscheidung' => $this->apEntscheidung ?: null,
-        ];
+        $this->ap->validate();
+        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $this->ap->suchstringId)->doesntExist()) {
+            return;
+        }
         if ($this->editingApId) {
-            $ap = P4Anpassungsprotokoll::find($this->editingApId);
-            if ($ap === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $ap->suchstring_id)->doesntExist()) {
+            $record = P4Anpassungsprotokoll::find($this->editingApId);
+            if ($record === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $record->suchstring_id)->doesntExist()) {
                 return;
             }
-            $ap->update($data);
+            $record->update($this->ap->toArray());
         } else {
-            P4Anpassungsprotokoll::create($data);
+            P4Anpassungsprotokoll::create($this->ap->toArray());
         }
         $this->cancelAp();
     }
@@ -202,24 +132,14 @@ new class extends Component {
             return;
         }
         $this->editingApId = $id;
-        $this->apSuchstringId = $r->suchstring_id;
-        $this->apVersion = $r->version ?? '';
-        $this->apDatum = $r->datum?->format('Y-m-d');
-        $this->apAenderung = $r->aenderung ?? '';
-        $this->apGrund = $r->grund ?? '';
-        $this->apTrefferVorher = $r->treffer_vorher;
-        $this->apTrefferNachher = $r->treffer_nachher;
-        $this->apEntscheidung = $r->entscheidung ?? '';
+        $this->ap->fillFromModel($r);
         $this->showApForm = true;
     }
 
     public function deleteAp(string $id): void
     {
         $r = P4Anpassungsprotokoll::find($id);
-        if ($r === null) {
-            return;
-        }
-        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $r->suchstring_id)->doesntExist()) {
+        if ($r === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $r->suchstring_id)->doesntExist()) {
             return;
         }
         $r->delete();
@@ -229,7 +149,7 @@ new class extends Component {
     {
         $this->showApForm = false;
         $this->editingApId = null;
-        $this->reset(['apSuchstringId', 'apVersion', 'apDatum', 'apAenderung', 'apGrund', 'apTrefferVorher', 'apTrefferNachher', 'apEntscheidung']);
+        $this->ap->reset();
     }
 
     // ─── Data ────────────────────────────────────────────────
