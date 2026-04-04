@@ -22,6 +22,6 @@ class RateLimitingServiceProvider extends ServiceProvider
     {
         $token = trim((string) $request->bearerToken());
 
-        return $token !== '' ? hash('sha256', $token) : $request->ip();
+        return $token !== '' ? hash('sha256', $token) : ($request->ip() ?? 'unknown');
     }
 }
