@@ -59,70 +59,34 @@ class LangdockAgentService
 
         Log::info('Langdock agent request started', $logContext);
 
-        try {
-            $body = ['agentId' => $agentId, 'messages' => $transformedMessages];
-            if ($metadata !== []) {
-                $body['metadata'] = $metadata;
-            }
-
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type'  => 'application/json',
-            ])->timeout($timeout)
-                ->post($baseUrl, $body);
-
-            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-
-            if ($response->failed()) {
-                Log::error('Langdock agent request failed', $logContext + [
-                    'status'           => $response->status(),
-                    'duration_ms'      => $durationMs,
-                    'response_excerpt' => Str::limit($response->body(), 1000),
-                ]);
-
-                throw new LangdockAgentException(
-                    "Langdock API returned HTTP {$response->status()}",
-                    $response->status(),
-                );
-            }
-
-            $raw     = $response->json() ?? [];
-            $content = $raw['messages'][0]['content']
-                ?? $raw['result'][0]['content'][0]['text']
-                ?? $response->body();
-
-            $tokensUsed = $raw['usage']['total_tokens'] ?? $this->estimateTokens($transformedMessages);
-            if ($workspace !== null && $tokensUsed > 0) {
-                app(CreditService::class)->deduct($workspace, $tokensUsed, $context['config_key'] ?? 'unknown');
-            }
-
-            Log::info('Langdock agent request succeeded', $logContext + [
-                'status'          => $response->status(),
-                'duration_ms'     => $durationMs,
-                'response_length' => mb_strlen((string) $content),
-            ]);
-
-            return [
-                'content' => (string) $content,
-                'raw'     => $raw,
-            ];
-        } catch (LangdockAgentException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-
-            Log::error('Langdock agent request crashed', $logContext + [
-                'duration_ms' => $durationMs,
-                'exception'   => $e::class,
-                'message'     => $e->getMessage(),
-            ]);
-
-            throw new LangdockAgentException(
-                'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
-                0,
-                $e,
-            );
+        $body = ['agentId' => $agentId, 'messages' => $transformedMessages];
+        if ($metadata !== []) {
+            $body['metadata'] = $metadata;
         }
+
+        $response = $this->callWithRetry($body, $apiKey, $baseUrl, $timeout, $logContext, $startedAt);
+
+        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+        $raw     = $response->json() ?? [];
+        $content = $raw['messages'][0]['content']
+            ?? $raw['result'][0]['content'][0]['text']
+            ?? $response->body();
+
+        $tokensUsed = $raw['usage']['total_tokens'] ?? $this->estimateTokens($transformedMessages);
+        if ($workspace !== null && $tokensUsed > 0) {
+            app(CreditService::class)->deduct($workspace, $tokensUsed, $context['config_key'] ?? 'unknown');
+        }
+
+        Log::info('Langdock agent request succeeded', $logContext + [
+            'status'          => $response->status(),
+            'duration_ms'     => $durationMs,
+            'response_length' => mb_strlen((string) $content),
+        ]);
+
+        return [
+            'content' => (string) $content,
+            'raw'     => $raw,
+        ];
     }
 
     /**
@@ -142,19 +106,122 @@ class LangdockAgentService
         ]);
     }
 
+    /**
+     * Führt den HTTP-Request mit exponentiellem Backoff-Retry durch.
+     *
+     * Retries bei: HTTP 5xx, ConnectionException (Timeout, DNS-Fehler u. ä.).
+     * Konfigurierbar über:
+     *   services.langdock.retry_attempts  (Standard: 3)
+     *   services.langdock.retry_sleep_ms  (Basis-Wartezeit in ms, Standard: 500)
+     *
+     * @throws LangdockAgentException
+     */
+    private function callWithRetry(
+        array $body,
+        string $apiKey,
+        string $baseUrl,
+        int $timeout,
+        array $logContext,
+        float $startedAt,
+    ): \Illuminate\Http\Client\Response {
+        $maxRetries  = (int) config('services.langdock.retry_attempts', 3);
+        $retrySleepMs = (int) config('services.langdock.retry_sleep_ms', 500);
+
+        $attempt = 0;
+
+        while (true) {
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type'  => 'application/json',
+                ])->timeout($timeout)->post($baseUrl, $body);
+
+                if ($response->serverError() && $attempt < $maxRetries) {
+                    $delayMs = $retrySleepMs * (2 ** $attempt);
+                    Log::warning('Langdock server error, retrying', $logContext + [
+                        'attempt'  => $attempt + 1,
+                        'max'      => $maxRetries,
+                        'delay_ms' => $delayMs,
+                        'status'   => $response->status(),
+                    ]);
+                    usleep($delayMs * 1000);
+                    $attempt++;
+                    continue;
+                }
+
+                if ($response->failed()) {
+                    $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+                    Log::error('Langdock agent request failed', $logContext + [
+                        'status'           => $response->status(),
+                        'duration_ms'      => $durationMs,
+                        'response_excerpt' => Str::limit($response->body(), 1000),
+                    ]);
+                    throw new LangdockAgentException(
+                        "Langdock API returned HTTP {$response->status()}",
+                        $response->status(),
+                    );
+                }
+
+                return $response;
+
+            } catch (LangdockAgentException $e) {
+                throw $e;
+            } catch (\Throwable $e) {
+                if ($attempt < $maxRetries) {
+                    $delayMs = $retrySleepMs * (2 ** $attempt);
+                    Log::warning('Langdock connection error, retrying', $logContext + [
+                        'attempt'   => $attempt + 1,
+                        'max'       => $maxRetries,
+                        'delay_ms'  => $delayMs,
+                        'exception' => $e::class,
+                        'message'   => $e->getMessage(),
+                    ]);
+                    usleep($delayMs * 1000);
+                    $attempt++;
+                    continue;
+                }
+
+                $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+                Log::error('Langdock agent request crashed', $logContext + [
+                    'duration_ms' => $durationMs,
+                    'exception'   => $e::class,
+                    'message'     => $e->getMessage(),
+                ]);
+
+                throw new LangdockAgentException(
+                    'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
+                    0,
+                    $e,
+                );
+            }
+        }
+    }
+
     private function resolveWorkspace(array $context): ?Workspace
     {
         $id = $context['workspace_id'] ?? null;
         return $id ? Workspace::find($id) : null;
     }
 
+    /**
+     * Schätzt die Token-Anzahl einer Nachrichtenliste.
+     *
+     * Genauer als chars/4, weil:
+     * - Non-ASCII-Zeichen (CJK, Arabisch, Emoji) tokenisieren weniger effizient (~2 Zeichen/Token)
+     * - Pro Nachricht werden ~4 Token Overhead für Role + Struktur addiert
+     */
     private function estimateTokens(array $messages): int
     {
-        $chars = array_sum(array_map(
-            fn (array $m) => mb_strlen($m['parts'][0]['text'] ?? ''),
-            $messages,
-        ));
-        return (int) ceil($chars / 4);
+        $total = count($messages) * 4; // Overhead pro Nachricht (role, formatting)
+
+        foreach ($messages as $m) {
+            $text = $m['parts'][0]['text'] ?? '';
+            $nonAsciiCount = (int) preg_match_all('/[^\x00-\x7F]/u', $text);
+            $asciiCount    = mb_strlen($text) - $nonAsciiCount;
+            $total += (int) ceil($asciiCount / 4) + (int) ceil($nonAsciiCount / 2);
+        }
+
+        return max(1, $total);
     }
 
     /**
