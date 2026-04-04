@@ -11,6 +11,9 @@ class Paper extends Model
     use HasUuids;
 
     protected $table = 'papers';
+
+    // German timestamp 'erstellt_am' instead of Laravel's created_at/updated_at
+    // for consistency with other Recherche-Models (see Projekt, Phase, etc.)
     public $timestamps = false;
 
     protected $fillable = [
