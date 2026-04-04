@@ -7,7 +7,7 @@
 | Komponente | Version |
 |---|---|
 | Laravel | 12 |
-| PHP | 8.2+ |
+| PHP | 8.4 |
 | Livewire / Volt | 1.7 (Inline-Komponenten) |
 | Filament | 4.9 (Admin-Panel) |
 | Fortify | 1.30 (Auth + 2FA) |
@@ -172,6 +172,22 @@ docker compose run --rm php-test vendor/bin/pest
 | Recherche (Projekt erstellen, Liste, Detail, Zugriff) | ✅ |
 | ProjektPolicy (Owner-Zugriff CRUD) | ✅ |
 | Agent-Buttons (P1–P7 Phasen) | ✅ |
+
+## Dokumentation & API
+
+Externe Systeme (Langdock, MCP-Server) nutzen die folgenden Endpunkte:
+
+| Endpunkt | Beschreibung | Doku |
+|----------|-------------|------|
+| `/mcp/sse` & `/messages/` | PostgreSQL MCP für KI-Datenbankzugriff | [docs/API.md](docs/API.md#-postgresql-mcp-endpoint) |
+| `/paper-mcp/sse` & `/paper-messages/` | Paper-Search MCP für Literatursuche | [docs/API.md](docs/API.md#-paper-search-mcp-endpoint) |
+| `/ollama/*` | Embedding-Proxy (Langdock) | [docs/API.md](docs/API.md#-ollama-embedding-endpoint) |
+| `/api/webhooks/langdock` | Webhook für Phase-Ergebnisse & Chat-Responses | [docs/API.md](docs/API.md#-langdock-webhook-endpoint) |
+| `/api/user` | Sanctum User-Endpunkt (Authentifizierung) | [docs/API.md](docs/API.md#-sanctum-user-endpoint) |
+
+**Alle MCP-Endpunkte nutzen:** Bearer Token, X-API-Key oder Query-Parameter (`?token=...`)
+
+👉 **Vollständige API-Dokumentation:** [docs/API.md](docs/API.md)
 
 ## Contributing
 

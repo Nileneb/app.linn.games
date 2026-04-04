@@ -20,6 +20,8 @@ test('welcome page increments visit counter', function () {
 });
 
 test('welcome page creates page_view record if none exists', function () {
+    PageView::query()->delete();
+
     expect(PageView::count())->toBe(0);
 
     $this->get(route('home'));

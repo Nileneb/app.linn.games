@@ -16,6 +16,12 @@ return new class extends Migration
         // hasTable-Guards sind bewusst gesetzt: Ermöglicht idempotente Ausführung
         // bei migrate:fresh und verhindert Fehler bei wiederholtem Migrationslauf.
 
+        foreach (['p7_synthese_methode', 'p7_datenextraktion', 'p7_muster_konsistenz', 'p7_grade_einschaetzung'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         // p7_synthese_methode – uses synthese_methode ENUM
         if (! Schema::hasTable('p7_synthese_methode')) {
             Schema::create('p7_synthese_methode', function (Blueprint $table) {

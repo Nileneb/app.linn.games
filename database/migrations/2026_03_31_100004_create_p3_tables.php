@@ -13,6 +13,13 @@ return new class extends Migration
             return;
         }
 
+        // Drop orphaned composite types left behind by partial rollbacks
+        foreach (['p3_disziplinen', 'p3_datenbankmatrix', 'p3_geografische_filter', 'p3_graue_literatur'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p3_disziplinen')) {
             Schema::create('p3_disziplinen', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));

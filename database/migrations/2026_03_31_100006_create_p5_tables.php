@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p5_prisma_zahlen', 'p5_screening_kriterien', 'p5_treffer', 'p5_screening_entscheidungen', 'p5_tool_entscheidung'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p5_prisma_zahlen')) {
             Schema::create('p5_prisma_zahlen', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));

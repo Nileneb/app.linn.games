@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\PhaseAgentResult;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -214,5 +215,11 @@ class Projekt extends Model
     public function p8UpdatePlan(): HasMany
     {
         return $this->hasMany(P8UpdatePlan::class, 'projekt_id');
+    }
+
+    // Phase Agent Results
+    public function phaseAgentResults(): HasMany
+    {
+        return $this->hasMany(PhaseAgentResult::class, 'projekt_id');
     }
 }

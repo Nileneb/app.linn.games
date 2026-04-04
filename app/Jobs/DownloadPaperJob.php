@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\Recherche\P5Treffer;
+use App\Services\PdfParserService;
+use App\Services\UnpaywallService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,7 +14,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Smalot\PdfParser\Parser;
 
 class DownloadPaperJob implements ShouldQueue
 {
@@ -32,7 +33,8 @@ class DownloadPaperJob implements ShouldQueue
             return;
         }
 
-        $pdfUrl = $this->resolveOaUrl($treffer->doi);
+        $unpaywallService = app(UnpaywallService::class);
+        $pdfUrl = $unpaywallService->resolveOaUrl($treffer->doi);
 
         if ($pdfUrl === null) {
             $treffer->update([
@@ -68,12 +70,20 @@ class DownloadPaperJob implements ShouldQueue
             'retrieval_last_response' => null,
         ]);
 
-        $text = $this->extractText($response->body());
+        // Extract text using dedicated service
+        $parserService = app(PdfParserService::class);
+        $text = $parserService->extractText($response->body());
 
         if (blank($text)) {
-            Log::warning('DownloadPaperJob: PDF-Text leer, kein Embedding.', [
+            Log::warning('PDF text extraction returned empty', [
                 'treffer_id' => $this->trefferId,
                 'path'       => $path,
+                'doi'        => $treffer->doi,
+            ]);
+
+            $treffer->update([
+                'retrieval_status'        => 'text_extraktion_fehlgeschlagen',
+                'retrieval_last_response' => 'PDF heruntergeladen, aber Textextraktion lieferte kein Ergebnis.',
             ]);
 
             return;
@@ -87,36 +97,5 @@ class DownloadPaperJob implements ShouldQueue
             projektId: $treffer->projekt_id,
             metadata:  ['doi' => $treffer->doi, 'treffer_id' => $treffer->id],
         );
-    }
-
-    private function resolveOaUrl(string $doi): ?string
-    {
-        $email = config('mail.from.address', 'info@linn.games');
-
-        $res = Http::timeout(10)
-            ->get('https://api.unpaywall.org/v2/' . rawurlencode($doi), ['email' => $email]);
-
-        if ($res->failed()) {
-            return null;
-        }
-
-        return $res->json('best_oa_location.url_for_pdf');
-    }
-
-    private function extractText(string $pdfContent): string
-    {
-        try {
-            $parser = new Parser();
-            $pdf    = $parser->parseContent($pdfContent);
-
-            return $pdf->getText();
-        } catch (\Throwable $e) {
-            Log::warning('DownloadPaperJob: PDF-Parsing fehlgeschlagen.', [
-                'treffer_id' => $this->trefferId,
-                'error'      => $e->getMessage(),
-            ]);
-
-            return '';
-        }
     }
 }

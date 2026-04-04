@@ -3,16 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\HasWorkspaces;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use RuntimeException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -20,10 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, LogsActivity, Notifiable, TwoFactorAuthenticatable;
-
-    private bool $workspaceIdLoaded = false;
-    private ?string $cachedWorkspaceId = null;
+    use HasFactory, HasRoles, HasWorkspaces, LogsActivity, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -95,77 +90,5 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasRole('admin');
-    }
-
-    public function ownedWorkspaces(): HasMany
-    {
-        return $this->hasMany(Workspace::class, 'owner_id');
-    }
-
-    public function workspaces(): BelongsToMany
-    {
-        return $this->belongsToMany(Workspace::class, 'workspace_users')
-            ->withPivot(['id', 'role'])
-            ->withTimestamps();
-    }
-
-    public function workspaceMemberships(): HasMany
-    {
-        return $this->hasMany(WorkspaceUser::class, 'user_id');
-    }
-
-    public function workspaceRole(string $workspaceId): ?string
-    {
-        return $this->workspaceMemberships()
-            ->where('workspace_id', $workspaceId)
-            ->value('role');
-    }
-
-    public function activeWorkspaceId(): ?string
-    {
-        if (! $this->workspaceIdLoaded) {
-            $this->cachedWorkspaceId = $this->workspaces()
-                ->orderBy('workspaces.created_at')
-                ->value('workspaces.id');
-            $this->workspaceIdLoaded = true;
-        }
-
-        return $this->cachedWorkspaceId;
-    }
-
-    public function ensureDefaultWorkspace(): Workspace
-    {
-        $workspace = $this->ownedWorkspaces()->first();
-
-        if ($workspace !== null) {
-            $hasMembership = $this->workspaceMemberships()
-                ->where('workspace_id', $workspace->id)
-                ->exists();
-
-            if (! $hasMembership) {
-                WorkspaceUser::create([
-                    'workspace_id' => $workspace->id,
-                    'user_id' => $this->id,
-                    'role' => 'owner',
-                ]);
-            }
-
-            return $workspace;
-        }
-
-        $workspace = Workspace::create([
-            'owner_id' => $this->id,
-            'name' => trim($this->name ?: 'Workspace') . ' Workspace',
-        ]);
-
-        WorkspaceUser::create([
-            'workspace_id' => $workspace->id,
-            'user_id' => $this->id,
-            'role' => 'owner',
-        ]);
-
-        app(\App\Services\CreditService::class)->topUp($workspace, 100, 'Startguthaben');
-
-        return $workspace;
     }
 }

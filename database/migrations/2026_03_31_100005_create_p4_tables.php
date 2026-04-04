@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p4_suchstrings', 'p4_thesaurus_mapping', 'p4_anpassungsprotokoll'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p4_suchstrings')) {
             Schema::create('p4_suchstrings', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));

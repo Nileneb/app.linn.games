@@ -35,8 +35,13 @@ return [
         ],
     ],
 
+    'credits' => [
+        'starter_amount_cents' => (int) env('CREDITS_STARTER_AMOUNT_CENTS', 100),
+    ],
+
     'langdock' => [
         'base_url' => env('LANGDOCK_BASE_URL', 'https://api.langdock.com/agent/v1/chat/completions'),
+        'list_url' => env('LANGDOCK_LIST_URL', 'https://api.langdock.com/agent/v1/list'),
         'api_key' => env('LANGDOCK_API_KEY'),
         'agent_id' => env('LANGDOCK_AGENT_ID'),
         'scoping_mapping_agent' => env('SCOPING_MAPPING_AGENT'),
@@ -47,6 +52,18 @@ return [
         'synthesis_agent' => env('SYNTHESIS_AGENT'),
         'mayring_agent' => env('MAYRING_AGENT'),
         'price_per_1k_tokens_cents' => env('LANGDOCK_PRICE_PER_1K_TOKENS_CENTS', 2),
+        'low_balance_threshold_percent' => env('LANGDOCK_LOW_BALANCE_THRESHOLD_PERCENT', 10),
+        'agent_daily_limits' => [
+            // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
+            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 0),
+            'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 0),
+            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 0),
+            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 0),
+            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 0),
+            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 0),
+            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 0),
+            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 0),
+        ],
     ],
 
     'mcp' => [

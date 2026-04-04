@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['projekte', 'phasen'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('projekte')) {
             Schema::create('projekte', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));
