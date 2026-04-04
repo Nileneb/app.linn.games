@@ -18,7 +18,9 @@ class RateLimitingServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('webhooks', function (Request $request) {
-            return Limit::perMinute(30)->by($request->ip());
+            $limit = config('services.webhooks.rate_limit', 30);
+
+            return Limit::perMinute($limit)->by($request->ip());
         });
     }
 }
