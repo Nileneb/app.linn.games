@@ -1,8 +1,10 @@
 <?php
 
-use App\Actions\SendAgentMessage;
+use App\Jobs\ProcessPhaseAgentJob;
 use App\Models\Recherche\Projekt;
+use App\Models\PhaseAgentResult;
 use Livewire\Volt\Component;
+use Livewire\Attributes\Computed;
 
 new class extends Component {
     public Projekt $projekt;
@@ -11,45 +13,64 @@ new class extends Component {
     public int $phaseNr;
 
     public bool $showModal = false;
-    public string $result = '';
-    public string $error = '';
+    public ?string $loadingPhase = null;
 
     public function runAgent(): void
     {
-        $this->error = '';
-        $this->result = '';
-        $this->showModal = true;
+        $this->loadingPhase = (string) $this->phaseNr;
 
         $messages = $this->buildContextMessages();
 
-        $result = app(SendAgentMessage::class)->execute($this->agentConfigKey, $messages, 120, [
-            'source' => 'recherche_phase_agent',
-            'projekt_id' => $this->projekt->id,
-            'workspace_id' => $this->projekt->workspace_id,
-            'phase_nr' => $this->phaseNr,
-            'user_id' => $this->projekt->user_id,
-            'label' => $this->label,
-        ]);
+        ProcessPhaseAgentJob::dispatch(
+            $this->projekt->id,
+            $this->phaseNr,
+            $this->agentConfigKey,
+            $messages,
+            [
+                'source' => 'recherche_phase_agent',
+                'projekt_id' => $this->projekt->id,
+                'workspace_id' => $this->projekt->workspace_id,
+                'phase_nr' => $this->phaseNr,
+                'user_id' => $this->projekt->user_id,
+                'label' => $this->label,
+            ]
+        );
 
-        if ($result['success']) {
-            $this->result = trim($result['content']);
-        } else {
-            $this->error = trim($result['content']);
+        $this->showModal = true;
+    }
+
+    #[Computed]
+    public function latestResult(): ?PhaseAgentResult
+    {
+        return PhaseAgentResult::latestPending(
+            $this->projekt->id,
+            $this->phaseNr,
+            $this->agentConfigKey
+        );
+    }
+
+    public function pollForResult(): void
+    {
+        $result = $this->latestResult();
+
+        if ($result && $result->status !== 'pending') {
+            $this->loadingPhase = null;
         }
     }
 
     public function acceptResult(): void
     {
-        $this->dispatch('agent-result-accepted', result: $this->result, phaseNr: $this->phaseNr);
-        $this->showModal = false;
-        $this->result = '';
+        $result = $this->latestResult();
+        if ($result && $result->status === 'completed') {
+            $this->dispatch('agent-result-accepted', result: $result->content, phaseNr: $this->phaseNr);
+            $this->dismissResult();
+        }
     }
 
     public function dismissResult(): void
     {
         $this->showModal = false;
-        $this->result = '';
-        $this->error = '';
+        $this->loadingPhase = null;
     }
 
     protected function buildContextMessages(): array
@@ -66,7 +87,7 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div wire:poll.3s="pollForResult">
     <button
         wire:click="runAgent"
         wire:loading.attr="disabled"
@@ -100,28 +121,49 @@ new class extends Component {
 
                 {{-- Body --}}
                 <div class="max-h-[60vh] overflow-y-auto px-6 py-4">
-                    @if ($error)
-                        <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-                            <p class="text-sm text-red-700 dark:text-red-400">{{ $error }}</p>
+                    @if ($this->loadingPhase)
+                        <div class="flex items-center justify-center py-8">
+                            <div class="flex flex-col items-center gap-3">
+                                <svg class="h-8 w-8 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <p class="text-sm text-neutral-600 dark:text-neutral-400">{{ __('KI arbeitet daran…') }}</p>
+                            </div>
                         </div>
-                    @elseif ($result)
-                        <div class="prose prose-sm max-w-none dark:prose-invert">
-                            {!! nl2br(e($result)) !!}
-                        </div>
+                    @else
+                        @php
+                            $result = $this->latestResult();
+                        @endphp
+                        @if ($result && $result->status === 'failed')
+                            <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                                <p class="mb-2 text-sm font-medium text-red-700 dark:text-red-400">{{ __('Fehler') }}</p>
+                                <p class="text-sm text-red-700 dark:text-red-400">{{ $result->error_message }}</p>
+                            </div>
+                        @elseif ($result && $result->status === 'completed' && $result->content)
+                            <div class="prose prose-sm max-w-none dark:prose-invert">
+                                {!! nl2br(e($result->content)) !!}
+                            </div>
+                        @endif
                     @endif
                 </div>
 
                 {{-- Footer --}}
-                <div class="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4 dark:border-neutral-700">
-                    <button wire:click="dismissResult" class="rounded-lg px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">
-                        {{ __('Verwerfen') }}
-                    </button>
-                    @if ($result && ! $error)
-                        <button wire:click="acceptResult" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-                            {{ __('Übernehmen') }}
+                @if (! $this->loadingPhase)
+                    @php
+                        $result = $this->latestResult();
+                    @endphp
+                    <div class="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4 dark:border-neutral-700">
+                        <button wire:click="dismissResult" class="rounded-lg px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">
+                            {{ __('Verwerfen') }}
                         </button>
-                    @endif
-                </div>
+                        @if ($result && $result->status === 'completed' && $result->content)
+                            <button wire:click="acceptResult" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+                                {{ __('Übernehmen') }}
+                            </button>
+                        @endif
+                    </div>
+                @endif
             </div>
         </div>
     @endif

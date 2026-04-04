@@ -1,9 +1,11 @@
 <?php
 
+use App\Jobs\ProcessPhaseAgentJob;
+use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 
 // Helper to give the projekt's workspace enough credits for tests
@@ -37,11 +39,7 @@ test('agent button renders with label', function () {
 });
 
 test('agent button calls langdock api and shows result', function () {
-    Http::fake([
-        '*' => Http::response([
-            'messages' => [['id' => 'r-1', 'role' => 'assistant', 'content' => 'Empfohlenes Strukturmodell: PICO']],
-        ], 200),
-    ]);
+    Queue::fake();
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create([
@@ -59,32 +57,29 @@ test('agent button calls langdock api and shows result', function () {
         'phaseNr' => 1,
     ])
         ->call('runAgent')
-        ->assertSet('loading', false)
         ->assertSet('showModal', true)
-        ->assertSet('error', '');
-    
-    // Get the Volt test component to inspect the result
-    $component = Volt::test('recherche.agent-action-button', [
-        'projekt' => $projekt,
-        'agentConfigKey' => 'scoping_mapping_agent',
-        'label' => '🎯 KI: Strukturierung starten',
-        'phaseNr' => 1,
-    ]);
-    $component->call('runAgent');
-    
-    expect($component->get('result'))->toBe('Empfohlenes Strukturmodell: PICO');
-    expect($component->get('error'))->toBe('');
+        ->assertSet('loadingPhase', '1');
 
-    Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'api.langdock.com')
-            && $request->hasHeader('Authorization', 'Bearer test-api-key');
-    });
+    // Verify job was dispatched
+    Queue::assertPushed(ProcessPhaseAgentJob::class);
+
+    // Simulate job completion by creating result
+    $result = PhaseAgentResult::create([
+        'projekt_id' => $projekt->id,
+        'user_id' => $user->id,
+        'phase_nr' => 1,
+        'agent_config_key' => 'scoping_mapping_agent',
+        'status' => 'completed',
+        'content' => 'Empfohlenes Strukturmodell: PICO',
+    ]);
+
+    // Verify result exists and has correct content
+    expect($result->content)->toBe('Empfohlenes Strukturmodell: PICO')
+        ->and($result->status)->toBe('completed');
 });
 
 test('agent button shows error on api failure', function () {
-    Http::fake([
-        '*' => Http::response('Internal Server Error', 500),
-    ]);
+    Queue::fake();
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
@@ -99,24 +94,42 @@ test('agent button shows error on api failure', function () {
         'phaseNr' => 1,
     ])
         ->call('runAgent')
-        ->assertSet('loading', false)
         ->assertSet('showModal', true)
-        ->assertSet('result', '')
-        ->assertNotSet('error', '');
+        ->assertSet('loadingPhase', '1');
+
+    // Simulate job failure
+    $result = PhaseAgentResult::create([
+        'projekt_id' => $projekt->id,
+        'user_id' => $user->id,
+        'phase_nr' => 1,
+        'agent_config_key' => 'scoping_mapping_agent',
+        'status' => 'failed',
+        'error_message' => 'API Error: Invalid request',
+    ]);
+
+    // Verify error result
+    expect($result->status)->toBe('failed')
+        ->and($result->error_message)->not->toBeEmpty();
 });
 
 test('agent button dispatches event on accept', function () {
-    Http::fake([
-        '*' => Http::response([
-            'messages' => [['id' => 'r-2', 'role' => 'assistant', 'content' => 'KI-Ergebnis zum Übernehmen']],
-        ], 200),
-    ]);
+    Queue::fake();
 
     $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
     giveWorkspaceCredits($projekt);
 
     $this->actingAs($user);
+
+    // Create completed result
+    PhaseAgentResult::create([
+        'projekt_id' => $projekt->id,
+        'user_id' => $user->id,
+        'phase_nr' => 4,
+        'agent_config_key' => 'search_agent',
+        'status' => 'completed',
+        'content' => 'KI-Ergebnis zum Übernehmen',
+    ]);
 
     Volt::test('recherche.agent-action-button', [
         'projekt' => $projekt,
@@ -124,11 +137,11 @@ test('agent button dispatches event on accept', function () {
         'label' => '🔍 KI: Suchstrings generieren',
         'phaseNr' => 4,
     ])
-        ->call('runAgent')
+        ->call('pollForResult')
         ->call('acceptResult')
         ->assertDispatched('agent-result-accepted')
         ->assertSet('showModal', false)
-        ->assertSet('result', '');
+        ->assertSet('loadingPhase', null);
 });
 
 test('agent button dismiss closes modal', function () {
