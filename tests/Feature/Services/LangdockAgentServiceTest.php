@@ -13,6 +13,9 @@ beforeEach(function () {
     Config::set('services.langdock.search_agent', 'search-uuid');
     Config::set('services.langdock.review_agent', 'review-uuid');
     Config::set('services.langdock.retrieval_agent', 'retrieval-uuid');
+    // Kein echtes Warten in Tests
+    Config::set('services.langdock.retry_attempts', 3);
+    Config::set('services.langdock.retry_sleep_ms', 0);
 });
 
 test('call sends request to langdock api and returns content', function () {
@@ -121,12 +124,10 @@ test('call injects context message and metadata when projekt_id and user_id are 
     Http::assertSent(function ($request) use ($projektId, $userId) {
         $messages = $request['messages'];
 
-        // First message must be the injected _context
+        // First message must be the injected context with RLS instruction and JSON context
         $contextText = $messages[0]['parts'][0]['text'] ?? '';
-        $context     = json_decode($contextText, true)['_context'] ?? [];
-
-        $hasContextMessage = $context['projekt_id'] === $projektId
-            && (int) $context['user_id'] === $userId;
+        $hasSetLocal = str_contains($contextText, "SET LOCAL app.current_projekt_id = '{$projektId}'");
+        $hasKontext  = str_contains($contextText, '"projekt_id":"' . $projektId . '"');
 
         // Second message is the actual user input
         $hasUserMessage = ($messages[1]['parts'][0]['text'] ?? '') === 'Analysiere.';
@@ -134,7 +135,7 @@ test('call injects context message and metadata when projekt_id and user_id are 
         // Metadata must be present in body
         $hasMetadata = ($request['metadata']['projekt_id'] ?? null) === $projektId;
 
-        return $hasContextMessage && $hasUserMessage && $hasMetadata;
+        return $hasSetLocal && $hasKontext && $hasUserMessage && $hasMetadata;
     });
 });
 
@@ -157,4 +158,105 @@ test('call does not inject context message when no projekt_id or user_id given',
             && ($messages[0]['parts'][0]['text'] ?? '') === 'Test ohne Kontext.'
             && ! isset($request['metadata']);
     });
+});
+
+// ---------------------------------------------------------------------------
+// Retry-Logik
+// ---------------------------------------------------------------------------
+
+test('call retries on 5xx and succeeds on second attempt', function () {
+    Http::fake([
+        '*' => Http::sequence()
+            ->push('Server Error', 503)
+            ->push(['messages' => [['id' => 'r-ok', 'role' => 'assistant', 'content' => 'Retry erfolgreich.']]], 200),
+    ]);
+
+    $service = new LangdockAgentService();
+    $result = $service->call('test-agent-uuid', [
+        ['role' => 'user', 'content' => 'Test'],
+    ]);
+
+    expect($result['content'])->toBe('Retry erfolgreich.');
+    Http::assertSentCount(2);
+});
+
+test('call throws after exhausting all retries on persistent 5xx', function () {
+    Http::fake([
+        '*' => Http::response('Service Unavailable', 503),
+    ]);
+
+    $service = new LangdockAgentService();
+    $service->call('test-agent-uuid', [
+        ['role' => 'user', 'content' => 'Test'],
+    ]);
+})->throws(LangdockAgentException::class);
+
+test('call does not retry on 4xx client errors', function () {
+    Http::fake([
+        '*' => Http::response('Unauthorized', 401),
+    ]);
+
+    $service = new LangdockAgentService();
+
+    try {
+        $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
+    } catch (LangdockAgentException $e) {
+        // erwartet
+    }
+
+    // 401 darf nicht wiederholt werden
+    Http::assertSentCount(1);
+});
+
+test('retry_attempts config controls number of retries', function () {
+    Config::set('services.langdock.retry_attempts', 1);
+
+    Http::fake([
+        '*' => Http::response('Server Error', 500),
+    ]);
+
+    $service = new LangdockAgentService();
+
+    try {
+        $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
+    } catch (LangdockAgentException $e) {
+        // erwartet
+    }
+
+    // 1 Originalversuch + 1 Retry = 2 Requests
+    Http::assertSentCount(2);
+});
+
+// ---------------------------------------------------------------------------
+// Token-Schätzung
+// ---------------------------------------------------------------------------
+
+test('estimateTokens accounts for non-ascii characters', function () {
+    $service = new LangdockAgentService();
+    $reflection = new \ReflectionMethod($service, 'estimateTokens');
+    $reflection->setAccessible(true);
+
+    $asciiOnly = [['parts' => [['text' => str_repeat('a', 200)]]]]; // 200 ASCII chars
+    $withCjk   = [['parts' => [['text' => str_repeat('字', 200)]]]]; // 200 CJK chars
+
+    $asciiTokens = $reflection->invoke($service, $asciiOnly);
+    $cjkTokens   = $reflection->invoke($service, $withCjk);
+
+    // CJK sollte mehr Token schätzen als gleich viele ASCII-Zeichen
+    expect($cjkTokens)->toBeGreaterThan($asciiTokens);
+});
+
+test('estimateTokens adds per-message overhead', function () {
+    $service = new LangdockAgentService();
+    $reflection = new \ReflectionMethod($service, 'estimateTokens');
+    $reflection->setAccessible(true);
+
+    $oneMsg  = [['parts' => [['text' => 'Hello']]]];
+    $twoMsgs = [['parts' => [['text' => 'Hello']]], ['parts' => [['text' => 'Hello']]]];
+
+    $one = $reflection->invoke($service, $oneMsg);
+    $two = $reflection->invoke($service, $twoMsgs);
+
+    // Zwei gleiche Nachrichten müssen mehr Token schätzen als eine
+    expect($two)->toBeGreaterThan($one);
 });
