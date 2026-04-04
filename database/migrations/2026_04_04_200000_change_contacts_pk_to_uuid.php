@@ -9,6 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // PostgreSQL-only: uuid-ossp extension is provisioned in
+        // 2026_03_31_100000_create_recherche_extensions_and_enums.php
         if (DB::getDriverName() !== 'pgsql') {
             return;
         }
@@ -18,7 +20,7 @@ return new class extends Migration
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->uuid('id')->nullable()->first();
+            $table->uuid('id')->nullable()->default(DB::raw('uuid_generate_v4()'));
         });
 
         DB::statement('UPDATE contacts SET id = uuid_generate_v4() WHERE id IS NULL');
@@ -34,6 +36,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        // PostgreSQL-only (see up())
         if (DB::getDriverName() !== 'pgsql') {
             return;
         }
@@ -45,10 +48,10 @@ return new class extends Migration
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->nullable()->first();
+            $table->bigInteger('id')->nullable();
         });
 
-        DB::statement("CREATE SEQUENCE IF NOT EXISTS contacts_id_seq OWNED BY contacts.id");
+        // Restore auto-increment: create sequence, bind as default, backfill, sync
         DB::statement("ALTER TABLE contacts ALTER COLUMN id SET DEFAULT nextval('contacts_id_seq')");
         DB::statement("UPDATE contacts SET id = nextval('contacts_id_seq') WHERE id IS NULL");
         DB::statement("
