@@ -20,8 +20,8 @@ class PaperRagController extends Controller
         $data = $request->validate([
             'paper_id'   => ['required', 'string', 'max:255'],
             'source'     => ['required', 'string', 'max:50'],
-            'title'      => ['required', 'string'],
-            'text'       => ['required', 'string'],
+            'title'      => ['required', 'string', 'max:1000'],
+            'text'       => ['required', 'string', 'max:500000'],
             'projekt_id' => ['nullable', 'uuid', 'exists:projekte,id'],
             'metadata'   => ['nullable', 'array'],
         ]);

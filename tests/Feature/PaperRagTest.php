@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 
 // Hilfsfunktion: Autorisierungs-Header mit gültigem MCP-Token
 function mcpHeaders(): array
@@ -241,7 +242,7 @@ test('search returns 503 when ollama connection fails', function () {
 
 test('ingest returns 429 when rate limit is exceeded', function () {
     Queue::fake();
-    $token = 'rate-limit-test-token-ingest';
+    $token = 'rate-limit-test-token-ingest-' . uniqid();
     Config::set('services.mcp.auth_token', $token);
     Config::set('services.mcp.rate_limit', 1);
 
@@ -264,7 +265,7 @@ test('search returns 429 when rate limit is exceeded', function () {
             200
         ),
     ]);
-    $token = 'rate-limit-test-token-search';
+    $token = 'rate-limit-test-token-search-' . uniqid();
     Config::set('services.mcp.auth_token', $token);
     Config::set('services.mcp.rate_limit', 1);
 
@@ -272,4 +273,64 @@ test('search returns 429 when rate limit is exceeded', function () {
 
     $this->getJson('/api/papers/rag-search?q=test', $headers)->assertStatus(200);
     $this->getJson('/api/papers/rag-search?q=test', $headers)->assertStatus(429);
+});
+
+// --- Längenbegrenzung (Issue #59) ---
+
+test('ingest rejects title exceeding 1000 characters', function () {
+    Queue::fake();
+
+    $response = $this->postJson('/api/papers/ingest', [
+        'paper_id' => 'paper-1',
+        'source'   => 'pubmed',
+        'title'    => str_repeat('x', 1001),
+        'text'     => 'Some content',
+    ], mcpHeaders());
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['title']);
+    Queue::assertNothingPushed();
+});
+
+test('ingest accepts title with exactly 1000 characters', function () {
+    Queue::fake();
+
+    $response = $this->postJson('/api/papers/ingest', [
+        'paper_id' => 'paper-1',
+        'source'   => 'pubmed',
+        'title'    => str_repeat('x', 1000),
+        'text'     => 'Some content',
+    ], mcpHeaders());
+
+    $response->assertStatus(200);
+    Queue::assertPushed(\App\Jobs\IngestPaperJob::class);
+});
+
+test('ingest rejects text exceeding 500000 characters', function () {
+    Queue::fake();
+
+    $response = $this->postJson('/api/papers/ingest', [
+        'paper_id' => 'paper-1',
+        'source'   => 'pubmed',
+        'title'    => 'Test Paper',
+        'text'     => str_repeat('x', 500001),
+    ], mcpHeaders());
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['text']);
+    Queue::assertNothingPushed();
+});
+
+test('ingest accepts text with exactly 500000 characters', function () {
+    Queue::fake();
+
+    $response = $this->postJson('/api/papers/ingest', [
+        'paper_id' => 'paper-1',
+        'source'   => 'pubmed',
+        'title'    => 'Test Paper',
+        'text'     => str_repeat('x', 500000),
+    ], mcpHeaders());
+
+    $response->assertStatus(200);
+    Queue::assertPushed(\App\Jobs\IngestPaperJob::class);
 });
