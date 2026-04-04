@@ -9,37 +9,60 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Add nullable UUID column alongside old PK
-        Schema::table('contacts', function (Blueprint $table) {
-            $table->uuid('uuid_id')->nullable();
-        });
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
 
-        // 2. Backfill all existing rows
-        DB::statement("UPDATE contacts SET uuid_id = gen_random_uuid()");
-
-        // 3. Drop old auto-increment PK
         Schema::table('contacts', function (Blueprint $table) {
-            $table->dropColumn('id');
-        });
-
-        // 4. Rename, make non-nullable, and set as primary key
-        Schema::table('contacts', function (Blueprint $table) {
-            $table->renameColumn('uuid_id', 'id');
+            $table->renameColumn('id', 'legacy_id');
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->uuid('id')->nullable(false)->primary()->change();
+            $table->uuid('id')->nullable()->first();
         });
+
+        DB::statement('UPDATE contacts SET id = uuid_generate_v4() WHERE id IS NULL');
+        DB::statement('ALTER TABLE contacts DROP CONSTRAINT IF EXISTS contacts_pkey');
+
+        Schema::table('contacts', function (Blueprint $table) {
+            $table->dropColumn('legacy_id');
+        });
+
+        DB::statement('ALTER TABLE contacts ALTER COLUMN id SET NOT NULL');
+        DB::statement('ALTER TABLE contacts ADD PRIMARY KEY (id)');
     }
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        DB::statement('ALTER TABLE contacts DROP CONSTRAINT IF EXISTS contacts_pkey');
+
         Schema::table('contacts', function (Blueprint $table) {
-            $table->dropColumn('id');
+            $table->renameColumn('id', 'legacy_uuid');
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->id()->first();
+            $table->unsignedBigInteger('id')->nullable()->first();
+        });
+
+        DB::statement("CREATE SEQUENCE IF NOT EXISTS contacts_id_seq OWNED BY contacts.id");
+        DB::statement("ALTER TABLE contacts ALTER COLUMN id SET DEFAULT nextval('contacts_id_seq')");
+        DB::statement("UPDATE contacts SET id = nextval('contacts_id_seq') WHERE id IS NULL");
+        DB::statement("
+            SELECT setval(
+                'contacts_id_seq',
+                COALESCE((SELECT MAX(id) FROM contacts), 1),
+                COALESCE((SELECT MAX(id) FROM contacts), 0) > 0
+            )
+        ");
+        DB::statement('ALTER TABLE contacts ALTER COLUMN id SET NOT NULL');
+        DB::statement('ALTER TABLE contacts ADD PRIMARY KEY (id)');
+
+        Schema::table('contacts', function (Blueprint $table) {
+            $table->dropColumn('legacy_uuid');
         });
     }
 };
