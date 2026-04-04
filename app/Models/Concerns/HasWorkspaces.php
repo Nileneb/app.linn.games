@@ -71,6 +71,8 @@ trait HasWorkspaces
             return $workspace;
         }
 
+        // Falls kein Name gesetzt ist, wird "My Workspace" als freundlicher Fallback verwendet
+        // (statt des früheren generischen "Workspace").
         $workspace = Workspace::create([
             'owner_id' => $this->id,
             'name' => (trim((string) $this->name) ?: 'My') . ' Workspace',
