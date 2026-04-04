@@ -70,10 +70,6 @@ return [
         'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),
     ],
 
-    'webhooks' => [
-        'rate_limit' => (int) env('WEBHOOKS_RATE_LIMIT', 30),
-    ],
-
     'ollama' => [
         'url' => env('OLLAMA_URL', 'http://localhost:11434'),
     ],
