@@ -117,7 +117,7 @@ test('call injects context message and metadata when projekt_id and user_id are 
     ]);
 
     $projektId = '11111111-1111-1111-1111-111111111111';
-    $userId    = 42;
+    $userId    = '22222222-2222-2222-2222-222222222222';
 
     $service = makeLangdockService();
     $service->call('test-agent-uuid', [

@@ -54,16 +54,16 @@ test('ingest paper job fails when ollama returns error', function () {
         'Word1 Word2 Word3',
     );
 
-    // DB::transaction propagiert die RuntimeException
-    expect(fn () => $job->handle())->toThrow(RuntimeException::class);
+    // DB::transaction propagates the RuntimeException from EmbeddingService
+    expect(fn () => $job->handle())->toThrow(RuntimeException::class, 'Ollama returned 503');
 
+    // Log should show chunk processing failed (caught by try-catch in job)
     Log::shouldHaveReceived('error')
         ->withArgs(function ($message, $context) {
-            return $message === 'Ollama embedding failed'
+            return $message === 'Chunk processing failed, rolling back all inserts'
                 && $context['paper_id'] === 'paper-1';
         });
 
-    // Kein pgvector-Insert wurde versucht (Ollama-Fehler führt zu frühem Return)
     Http::assertSentCount(1);
 });
 

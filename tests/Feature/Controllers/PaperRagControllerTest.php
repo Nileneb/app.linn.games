@@ -96,7 +96,8 @@ test('search returns 503 when embedding response format is invalid', function ()
         ->getJson('/api/papers/rag-search?q=test');
 
     expect($response->status())->toBe(503);
-    expect($response->json('error'))->toBe('Invalid embedding format from service');
+    expect($response->json('error'))->toBe('Embedding service unavailable');
+    expect($response->json('details'))->toContain('Invalid embedding format');
 });
 
 test('search returns 401 without bearer token', function () {
