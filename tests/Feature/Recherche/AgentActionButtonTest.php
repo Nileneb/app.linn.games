@@ -61,8 +61,19 @@ test('agent button calls langdock api and shows result', function () {
         ->call('runAgent')
         ->assertSet('loading', false)
         ->assertSet('showModal', true)
-        ->assertSet('result', 'Empfohlenes Strukturmodell: PICO')
         ->assertSet('error', '');
+    
+    // Get the Volt test component to inspect the result
+    $component = Volt::test('recherche.agent-action-button', [
+        'projekt' => $projekt,
+        'agentConfigKey' => 'scoping_mapping_agent',
+        'label' => '🎯 KI: Strukturierung starten',
+        'phaseNr' => 1,
+    ]);
+    $component->call('runAgent');
+    
+    expect($component->get('result'))->toBe('Empfohlenes Strukturmodell: PICO');
+    expect($component->get('error'))->toBe('');
 
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'api.langdock.com')
