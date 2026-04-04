@@ -81,6 +81,11 @@ class DownloadPaperJob implements ShouldQueue
                 'doi'        => $treffer->doi,
             ]);
 
+            $treffer->update([
+                'retrieval_status'        => 'text_extraktion_fehlgeschlagen',
+                'retrieval_last_response' => 'PDF heruntergeladen, aber Textextraktion lieferte kein Ergebnis.',
+            ]);
+
             return;
         }
 

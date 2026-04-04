@@ -82,8 +82,6 @@ trait HasWorkspaces
             'role' => 'owner',
         ]);
 
-        app(\App\Services\CreditService::class)->topUp($workspace, 100, 'Startguthaben');
-
         return $workspace;
     }
 }

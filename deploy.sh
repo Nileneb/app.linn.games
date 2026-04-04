@@ -72,8 +72,11 @@ echo "    Backup saved to $BACKUP_FILE"
 # ── Fresh database (optional) ──────────────────
 if [ "$FRESH_DB" = true ]; then
   echo "==> Dropping and recreating database (--fresh)..."
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -tc "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -tc "CREATE DATABASE \"$POSTGRES_DB\";"'
+  # Terminate all active connections, then drop — connect to 'postgres' system DB to avoid "cannot drop currently open database"
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '"'"'"$POSTGRES_DB"'"'"' AND pid <> pg_backend_pid();"' || true
+  sleep 1
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "CREATE DATABASE \"$POSTGRES_DB\";"'
   echo "    Database reset complete."
   echo "==> Recreating Postgres extensions..."
   docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'

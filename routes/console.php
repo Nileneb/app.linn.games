@@ -11,19 +11,19 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('deploy:post-deploy', function () {
+// ── Deploy Sub-Commands ──────────────────────────────────────────
+
+Artisan::command('deploy:ensure-admin', function () {
     $email = 'bene@linn.games';
 
-    // Ensure admin role exists
     Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
 
-    // Ensure admin user exists (idempotent)
     $user = User::firstOrCreate(
         ['email' => $email],
         [
-            'name' => 'Bene',
+            'name'     => 'Bene',
             'password' => bcrypt(bin2hex(random_bytes(32))),
-            'status' => 'active',
+            'status'   => 'active',
         ],
     );
 
@@ -34,28 +34,59 @@ Artisan::command('deploy:post-deploy', function () {
         $this->info("Admin-User {$email} existiert bereits.");
     }
 
-    // Ensure admin role
     if (! $user->hasRole('admin')) {
         $user->assignRole('admin');
         $this->info('Admin-Rolle zugewiesen.');
     }
+})->purpose('Ensure admin user and role exist');
 
-    // Ensure default workspace
-    $workspace = $user->ensureDefaultWorkspace();
+Artisan::command('deploy:ensure-workspace', function () {
+    $email = 'bene@linn.games';
+    $user  = User::where('email', $email)->first();
 
-    if ($workspace->credits_balance_cents <= 0) {
-        app(CreditService::class)->topUp($workspace, 100, 'Startguthaben nach Deploy');
-        $this->info("Startguthaben: 1,00 \u20ac f\u00fcr Workspace \"{$workspace->name}\" aufgeladen.");
+    if (! $user) {
+        $this->warn("User {$email} nicht gefunden. Zuerst deploy:ensure-admin ausführen.");
+        return 1;
+    }
+
+    $workspace    = $user->ensureDefaultWorkspace();
+    $starterCents = (int) config('services.credits.starter_amount_cents', 100);
+
+    if ($workspace->credits_balance_cents <= 0 && $starterCents > 0) {
+        app(CreditService::class)->topUp($workspace, $starterCents, 'Startguthaben nach Deploy');
+        $euros = number_format($starterCents / 100, 2, ',', '.');
+        $this->info("Startguthaben: {$euros} € für Workspace \"{$workspace->name}\" aufgeladen.");
     } else {
         $this->info("Workspace \"{$workspace->name}\" hat bereits {$workspace->credits_balance_cents} Cent Guthaben.");
     }
+})->purpose('Ensure default workspace with starter credits exists');
 
-    // Send password reset link
-    $status = Password::sendResetLink(['email' => $email]);
+Artisan::command('deploy:send-reset-link', function () {
+    $email  = 'bene@linn.games';
+    $broker = Password::broker();
+    $user   = $broker->getUser(['email' => $email]);
 
-    if ($status === Password::RESET_LINK_SENT) {
-        $this->info("Passwort-Reset-Link an {$email} gesendet.");
-    } else {
-        $this->warn("Passwort-Reset-Link konnte nicht gesendet werden: {$status}");
+    if (! $user) {
+        $this->warn("User {$email} nicht gefunden für Password-Reset.");
+        return 1;
     }
-})->purpose('Ensure admin user exists and send password reset link after deploy');
+
+    // Throttle umgehen: alten Token löschen, neuen erstellen
+    $broker->deleteToken($user);
+    $token = $broker->createToken($user);
+    $user->sendPasswordResetNotification($token);
+    $this->info("Passwort-Reset-Link an {$email} gesendet.");
+})->purpose('Send password reset link to admin user');
+
+// ── Orchestrator ──────────────────────────────────────────────────
+
+Artisan::command('deploy:post-deploy', function () {
+    foreach (['deploy:ensure-admin', 'deploy:ensure-workspace', 'deploy:send-reset-link'] as $step) {
+        $this->info("── {$step}");
+        try {
+            $this->call($step);
+        } catch (\Throwable $e) {
+            $this->error("{$step} fehlgeschlagen: {$e->getMessage()}");
+        }
+    }
+})->purpose('Run all post-deploy steps (admin, workspace, password reset)');
