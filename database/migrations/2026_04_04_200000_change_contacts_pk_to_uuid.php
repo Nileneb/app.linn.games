@@ -18,7 +18,7 @@ return new class extends Migration
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->uuid('id')->nullable()->first();
+            $table->uuid('id')->nullable()->default(DB::raw('uuid_generate_v4()'));
         });
 
         DB::statement('UPDATE contacts SET id = uuid_generate_v4() WHERE id IS NULL');
@@ -45,7 +45,7 @@ return new class extends Migration
         });
 
         Schema::table('contacts', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->nullable()->first();
+            $table->unsignedBigInteger('id')->nullable();
         });
 
         DB::statement("CREATE SEQUENCE IF NOT EXISTS contacts_id_seq OWNED BY contacts.id");
