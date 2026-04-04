@@ -3,18 +3,20 @@ set -euo pipefail
 
 # ──────────────────────────────────────────────
 # deploy.sh — Production build & deploy for app.linn.games
-# Usage: ./deploy.sh [--skip-build] [--skip-migrate]
+# Usage: ./deploy.sh [--skip-build] [--skip-migrate] [--seed] [--fresh]
 # ──────────────────────────────────────────────
 
 SKIP_BUILD=false
 SKIP_MIGRATE=false
 RUN_SEED=false
+FRESH_DB=false
 
 for arg in "$@"; do
   case "$arg" in
     --skip-build)   SKIP_BUILD=true ;;
     --skip-migrate) SKIP_MIGRATE=true ;;
     --seed)         RUN_SEED=true ;;
+    --fresh)        FRESH_DB=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -66,6 +68,18 @@ docker compose exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRE
   exit 1
 }
 echo "    Backup saved to $BACKUP_FILE"
+
+# ── Fresh database (optional) ──────────────────
+if [ "$FRESH_DB" = true ]; then
+  echo "==> Dropping and recreating database (--fresh)..."
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -tc "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -tc "CREATE DATABASE \"$POSTGRES_DB\";"'
+  echo "    Database reset complete."
+  echo "==> Recreating Postgres extensions..."
+  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
+  # After fresh DB, we must run migrations
+  SKIP_MIGRATE=false
+fi
 
 # ── Migrate ────────────────────────────────────
 if [ "$SKIP_MIGRATE" = false ]; then
