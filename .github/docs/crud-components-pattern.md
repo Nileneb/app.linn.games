@@ -155,7 +155,7 @@ Vier neue Komponenten in `resources/views/components/crud/`:
 2. **Formular-Wrapper** ersetzen mit `<x-crud.form>`
 3. **Label + Input** gruppieren mit `<x-crud.field>` (optional, spart ~2-3 Zeilen pro Feld)
 4. **Edit/Delete-Buttons** ersetzen mit `<x-crud.actions>` (spart ~15 Zeilen SVG-Code)
-5. **Tests ausführen**, um Regressions zu vermeiden
+5. **Tests ausführen**, um Regressionen zu vermeiden
 
 ## Vorteile
 
