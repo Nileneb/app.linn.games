@@ -32,24 +32,55 @@ test('inject throws InvalidArgumentException for invalid workspace_id', function
     $injector = new LangdockContextInjector();
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
- try {
-        $injector->inject($messages, ['workspace_id' => '123456']);
+    try {
+        $injector->inject($messages, ['workspace_id' => 'not-a-valid-uuid']);
         expect(true)->toBe(false);
     } catch (InvalidArgumentException $e) {
         expect($e->getMessage())->toContain('Invalid workspace_id format');
     }
 });
 
-test('inject throws InvalidArgumentException for invalid user_id', function () {
+test('inject throws InvalidArgumentException for invalid user_id format', function () {
     $injector = new LangdockContextInjector();
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
+    // Should fail: not numeric, not UUID, not a simple string like "abc"
     try {
-        $injector->inject($messages, ['user_id' => 'invalid-format']);
+        $injector->inject($messages, ['user_id' => 'invalid-format-with-dashes']);
         expect(true)->toBe(false);
     } catch (InvalidArgumentException $e) {
         expect($e->getMessage())->toContain('Invalid user_id format');
     }
+});
+
+test('inject accepts numeric user_id (like User auto-increment ID)', function () {
+    $injector = new LangdockContextInjector();
+    $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
+
+    // Realistic: both projekt_id (UUID) and user_id (numeric, from User model)
+    $validUuid = '550e8400-e29b-41d4-a716-446655440000';
+    $result = $injector->inject($messages, [
+        'projekt_id' => $validUuid,
+        'user_id' => 42,  // Numeric ID from User model
+    ]);
+
+    expect($result)->toHaveCount(2);
+    expect($result[0]['role'])->toBe('system');
+    expect($result[0]['parts'][0]['text'])->toContain('app.current_projekt_id');
+    expect($result[0]['parts'][0]['text'])->toContain($validUuid);
+    expect($result[0]['parts'][0]['text'])->toContain('"user_id":42');
+});
+
+test('inject accepts uuid user_id as well', function () {
+    $injector = new LangdockContextInjector();
+    $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
+
+    // UUID format
+    $validUuid = '550e8400-e29b-41d4-a716-446655440000';
+    $result = $injector->inject($messages, ['user_id' => $validUuid]);
+
+    expect($result)->toHaveCount(2);
+    expect($result[0]['role'])->toBe('system');
 });
 
 test('inject accepts null values as optional context fields', function () {

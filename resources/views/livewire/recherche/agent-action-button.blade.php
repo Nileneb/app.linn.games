@@ -32,9 +32,9 @@ new class extends Component {
         ]);
 
         if ($result['success']) {
-            $this->result = $result['content'];
+            $this->result = trim($result['content']);
         } else {
-            $this->error = $result['content'];
+            $this->error = trim($result['content']);
         }
     }
 

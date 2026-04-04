@@ -9,6 +9,30 @@ namespace App\Services;
 class LangdockContextInjector
 {
     /**
+     * Validates if a value is either a valid UUID or a numeric ID.
+     * Numeric IDs are used for user_id (User model uses auto-increment integers).
+     *
+     * @param  mixed  $value
+     * @return bool
+     */
+    private function isValidIdentifier($value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+
+        $stringValue = (string) $value;
+
+        // Check if it's a numeric ID (integer like 1, 2, 123)
+        if (ctype_digit($stringValue)) {
+            return true;
+        }
+
+        // Otherwise check if it's a valid UUID format
+        return $this->isValidUuid($stringValue);
+    }
+
+    /**
      * Validates if a string is a valid UUID format.
      *
      * @param  string|null  $value
@@ -63,16 +87,17 @@ class LangdockContextInjector
         $userId      = $context['user_id'] ?? null;
 
         // Validate UUIDs defensively before using in SQL context
-        if ($projektId !== null && !$this->isValidUuid($projektId)) {
+        if ($projektId !== null && !$this->isValidUuid((string) $projektId)) {
             throw new \InvalidArgumentException("Invalid projekt_id format: '{$projektId}'. Must be a valid UUID.");
         }
 
-        if ($workspaceId !== null && !$this->isValidUuid($workspaceId)) {
+        if ($workspaceId !== null && !$this->isValidUuid((string) $workspaceId)) {
             throw new \InvalidArgumentException("Invalid workspace_id format: '{$workspaceId}'. Must be a valid UUID.");
         }
 
-        if ($userId !== null && !$this->isValidUuid($userId)) {
-            throw new \InvalidArgumentException("Invalid user_id format: '{$userId}'. Must be a valid UUID.");
+        // user_id can be either a numeric ID (from User model) or UUID
+        if ($userId !== null && !$this->isValidIdentifier($userId)) {
+            throw new \InvalidArgumentException("Invalid user_id format: '{$userId}'. Must be a valid UUID or numeric ID.");
         }
 
         if ($projektId === null && $workspaceId === null && $userId === null) {
