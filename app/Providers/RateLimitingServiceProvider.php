@@ -13,14 +13,12 @@ class RateLimitingServiceProvider extends ServiceProvider
     {
         RateLimiter::for('mcp', function (Request $request) {
             $limit = config('services.mcp.rate_limit', 60);
+            $token = $request->bearerToken();
+            $identifier = $token !== null && $token !== ''
+                ? hash('sha256', $token)
+                : $request->ip();
 
-            return Limit::perMinute($limit)->by($request->bearerToken() ?: $request->ip());
-        });
-
-        RateLimiter::for('webhooks', function (Request $request) {
-            $limit = config('services.webhooks.rate_limit', 30);
-
-            return Limit::perMinute($limit)->by($request->ip());
+            return Limit::perMinute($limit)->by($identifier);
         });
     }
 }
