@@ -13,6 +13,12 @@ return new class extends Migration
             return;
         }
 
+        foreach (['p8_suchprotokoll', 'p8_limitationen', 'p8_reproduzierbarkeitspruefung', 'p8_update_plan'] as $t) {
+            if (! Schema::hasTable($t)) {
+                DB::statement("DROP TYPE IF EXISTS \"{$t}\" CASCADE");
+            }
+        }
+
         if (! Schema::hasTable('p8_suchprotokoll')) {
             Schema::create('p8_suchprotokoll', function (Blueprint $table) {
                 $table->uuid('id')->primary()->default(DB::raw('uuid_generate_v4()'));

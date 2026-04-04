@@ -2,10 +2,24 @@
 
 namespace App\Actions;
 
+use App\Services\AgentDailyLimitExceededException;
 use App\Services\InsufficientCreditsException;
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Sends a message to a configured Langdock agent.
+ *
+ * Used by ProcessChatMessageJob and ProcessPhaseAgentJob for background processing.
+ * Currently uses synchronous HTTP (Stufe 1: Polling).
+ *
+ * === Stufe 2 — Token-Streaming (Future Enhancement) ===
+ * When Langdock agents support SSE streaming, upgrade to:
+ *   - Http::withOptions(['stream' => true]) in LangdockAgentService
+ *   - New SSE endpoint to stream tokens to browser (bypass polling)
+ * See GitHub issue #58 for details.
+ */
 class SendAgentMessage
 {
     public function __construct(
@@ -28,7 +42,11 @@ class SendAgentMessage
             ];
         } catch (InsufficientCreditsException) {
             return ['success' => false, 'content' => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.')];
-        } catch (LangdockAgentException) {
+        } catch (AgentDailyLimitExceededException $e) {
+            Log::warning('Agent daily limit exceeded', ['key' => $configKey, 'message' => $e->getMessage()]);
+            return ['success' => false, 'content' => __('Tageslimit für diesen Agenten erreicht. Bitte morgen erneut versuchen.')];
+        } catch (LangdockAgentException $e) {
+            Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
         } catch (\Throwable) {
             return ['success' => false, 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.')];

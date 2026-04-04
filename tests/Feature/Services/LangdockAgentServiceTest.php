@@ -2,6 +2,7 @@
 
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
+use App\Services\LangdockContextInjector;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 
@@ -18,6 +19,11 @@ beforeEach(function () {
     Config::set('services.langdock.retry_sleep_ms', 0);
 });
 
+function makeLangdockService(): LangdockAgentService
+{
+    return new LangdockAgentService(new LangdockContextInjector());
+}
+
 test('call sends request to langdock api and returns content', function () {
     Http::fake([
         '*' => Http::response([
@@ -25,7 +31,7 @@ test('call sends request to langdock api and returns content', function () {
         ], 200),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $result = $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Analysiere diese Forschungsfrage.'],
     ]);
@@ -50,7 +56,7 @@ test('call falls back to result array when messages content is missing', functio
         ], 200),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $result = $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -63,7 +69,7 @@ test('call throws LangdockAgentException on http error', function () {
         '*' => Http::response('Server Error', 500),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -72,7 +78,7 @@ test('call throws LangdockAgentException on http error', function () {
 test('call throws LangdockAgentException when api key is missing', function () {
     Config::set('services.langdock.api_key', null);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -85,7 +91,7 @@ test('callByConfigKey resolves agent id from config', function () {
         ], 200),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $result = $service->callByConfigKey('search_agent', [
         ['role' => 'user', 'content' => 'Generiere Suchstrings.'],
     ]);
@@ -100,7 +106,7 @@ test('callByConfigKey resolves agent id from config', function () {
 test('callByConfigKey throws when config key is not set', function () {
     Config::set('services.langdock.unknown_agent', null);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $service->callByConfigKey('unknown_agent', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -114,9 +120,9 @@ test('call injects context message and metadata when projekt_id and user_id are 
     ]);
 
     $projektId = '11111111-1111-1111-1111-111111111111';
-    $userId    = 42;
+    $userId    = '22222222-2222-2222-2222-222222222222';
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Analysiere.'],
     ], 120, ['projekt_id' => $projektId, 'user_id' => $userId]);
@@ -146,7 +152,7 @@ test('call does not inject context message when no projekt_id or user_id given',
         ], 200),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = makeLangdockService();
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test ohne Kontext.'],
     ]);

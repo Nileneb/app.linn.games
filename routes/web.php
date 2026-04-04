@@ -43,5 +43,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('dsgvo/delete-account', [DsgvoController::class, 'deleteAccount'])->name('dsgvo.delete-account');
 
     Route::get('recherche', fn () => view('recherche.index'))->name('recherche');
-    Route::get('recherche/{projekt}', fn (Projekt $projekt) => view('recherche.show', ['projekt' => $projekt]))->name('recherche.projekt');
+    Route::get('recherche/{projekt}', fn (Projekt $projekt) => view('recherche.show', ['projekt' => $projekt]))
+        ->middleware('can:view,projekt')
+        ->name('recherche.projekt');
 });
