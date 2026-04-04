@@ -28,8 +28,13 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $admin->ensureDefaultWorkspace();
+        $workspace = $admin->ensureDefaultWorkspace();
         $admin->syncRoles(['admin']);
+
+        if ($admin->wasRecentlyCreated && $workspace->credits_balance_cents <= 0) {
+            $starterCents = (int) config('services.credits.starter_amount_cents', 100);
+            app(\App\Services\CreditService::class)->topUp($workspace, $starterCents, 'Startguthaben');
+        }
 
         if ($admin->wasRecentlyCreated) {
             $this->command?->info("Admin erstellt: {$adminEmail}");

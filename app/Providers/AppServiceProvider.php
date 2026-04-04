@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Recherche\P5Treffer;
 use App\Models\User;
 use App\Observers\P5TrefferObserver;
+use App\Services\CreditService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,7 +30,12 @@ class AppServiceProvider extends ServiceProvider
         P5Treffer::observe(P5TrefferObserver::class);
 
         User::created(static function (User $user): void {
-            $user->ensureDefaultWorkspace();
+            $workspace = $user->ensureDefaultWorkspace();
+
+            $starterCents = (int) config('services.credits.starter_amount_cents', 100);
+            if ($starterCents > 0) {
+                app(CreditService::class)->topUp($workspace, $starterCents, 'Startguthaben');
+            }
         });
 
         RateLimiter::for('mcp', function (Request $request) {

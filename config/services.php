@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'credits' => [
+        'starter_amount_cents' => (int) env('CREDITS_STARTER_AMOUNT_CENTS', 100),
+    ],
+
     'langdock' => [
         'base_url' => env('LANGDOCK_BASE_URL', 'https://api.langdock.com/agent/v1/chat/completions'),
         'api_key' => env('LANGDOCK_API_KEY'),

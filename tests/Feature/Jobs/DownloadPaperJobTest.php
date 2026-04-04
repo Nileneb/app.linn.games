@@ -5,6 +5,7 @@ use App\Jobs\IngestPaperJob;
 use App\Models\Recherche\P5Treffer;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
+use App\Services\PdfParserService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -90,6 +91,11 @@ test('job lädt pdf herunter und startet ingest wenn unpaywall url liefert', fun
         'example.com/paper.pdf' => Http::response($pdfContent, 200),
     ]);
 
+    // Mock PdfParserService to return actual text so IngestPaperJob gets dispatched
+    $mock = Mockery::mock(PdfParserService::class);
+    $mock->shouldReceive('extractText')->andReturn('Extracted paper text content');
+    app()->instance(PdfParserService::class, $mock);
+
     (new DownloadPaperJob($treffer->id))->handle();
 
     $treffer->refresh();
@@ -146,4 +152,29 @@ test('job setzt nicht_verfuegbar wenn unpaywall api nicht erreichbar', function 
 
     $treffer->refresh();
     expect($treffer->retrieval_status)->toBe('nicht_verfuegbar');
+});
+
+test('job setzt text_extraktion_fehlgeschlagen wenn pdf text leer', function () {
+    $treffer = makeTreffer(['retrieval_status' => 'pending']);
+    $pdfContent = '%PDF-1.4 fake content for testing';
+
+    Http::fake([
+        'api.unpaywall.org/*' => Http::response([
+            'best_oa_location' => ['url_for_pdf' => 'https://example.com/paper.pdf'],
+        ], 200),
+        'example.com/paper.pdf' => Http::response($pdfContent, 200),
+    ]);
+
+    // Mock PdfParserService to return empty text
+    $mock = Mockery::mock(PdfParserService::class);
+    $mock->shouldReceive('extractText')->andReturn('');
+    app()->instance(PdfParserService::class, $mock);
+
+    (new DownloadPaperJob($treffer->id))->handle();
+
+    $treffer->refresh();
+    expect($treffer->retrieval_status)->toBe('text_extraktion_fehlgeschlagen');
+    expect($treffer->retrieval_last_response)->toContain('Textextraktion');
+    expect($treffer->retrieval_downloaded)->toBeTrue();
+    Queue::assertNotPushed(IngestPaperJob::class);
 });
