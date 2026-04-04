@@ -8,6 +8,18 @@ use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Sends a message to a configured Langdock agent.
+ *
+ * Used by ProcessChatMessageJob and ProcessPhaseAgentJob for background processing.
+ * Currently uses synchronous HTTP (Stufe 1: Polling).
+ *
+ * === Stufe 2 — Token-Streaming (Future Enhancement) ===
+ * When Langdock agents support SSE streaming, upgrade to:
+ *   - Http::withOptions(['stream' => true]) in LangdockAgentService
+ *   - New SSE endpoint to stream tokens to browser (bypass polling)
+ * See GitHub issue #58 for details.
+ */
 class SendAgentMessage
 {
     public function __construct(
