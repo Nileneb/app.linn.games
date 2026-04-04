@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Workspace;
 use App\Services\CreditService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -144,6 +145,90 @@ class LangdockAgentService
         return $this->call($agentId, $messages, $timeout, $context + [
             'config_key' => $configKey,
         ]);
+    }
+
+    /**
+     * Listet alle in Langdock vorhandenen Agenten auf.
+     *
+     * Endpoint: GET https://api.langdock.com/agent/v1/list
+     * Antwort wird 5 Minuten gecacht.
+     *
+     * @return array<int, array{id: string, name: string, description: string|null, status: string|null}>
+     *
+     * @throws \App\Services\LangdockAgentException
+     */
+    public function listAgents(): array
+    {
+        $apiKey  = config('services.langdock.api_key');
+        $listUrl = config('services.langdock.list_url');
+
+        if (! $apiKey) {
+            throw new LangdockAgentException('Langdock API-Key nicht konfiguriert.');
+        }
+
+        return Cache::remember('langdock.agents.list', 300, function () use ($apiKey, $listUrl) {
+            Log::info('Langdock agent list requested', ['url' => $listUrl]);
+
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type'  => 'application/json',
+                ])->timeout(15)->get($listUrl);
+
+                if ($response->failed()) {
+                    Log::error('Langdock agent list request failed', [
+                        'status'           => $response->status(),
+                        'response_excerpt' => Str::limit($response->body(), 500),
+                    ]);
+
+                    throw new LangdockAgentException(
+                        "Langdock Agent-Liste: HTTP {$response->status()}",
+                        $response->status(),
+                    );
+                }
+
+                $raw    = $response->json() ?? [];
+                $agents = $raw['agents'] ?? $raw['data'] ?? $raw;
+
+                if (! is_array($agents)) {
+                    Log::warning('Langdock agent list: unexpected response shape', ['raw' => $raw]);
+                    return [];
+                }
+
+                Log::info('Langdock agent list fetched', ['count' => count($agents)]);
+
+                return $agents;
+            } catch (LangdockAgentException $e) {
+                throw $e;
+            } catch (\Throwable $e) {
+                Log::error('Langdock agent list crashed', [
+                    'exception' => $e::class,
+                    'message'   => $e->getMessage(),
+                ]);
+
+                throw new LangdockAgentException(
+                    'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
+                    0,
+                    $e,
+                );
+            }
+        });
+    }
+
+    /**
+     * Gibt die lokal in config/services.php konfigurierten Agent-Keys und ihre UUIDs zurück.
+     * Schließt Nicht-Agent-Keys aus.
+     *
+     * @return array<string, string>  Key => UUID
+     */
+    public function configuredAgents(): array
+    {
+        $skip = ['base_url', 'list_url', 'api_key', 'price_per_1k_tokens_cents', 'low_balance_threshold_percent', 'agent_daily_limits'];
+
+        return collect(config('services.langdock', []))
+            ->except($skip)
+            ->filter(fn ($v) => is_string($v) && $v !== '')
+            ->all();
     }
 
     private function resolveWorkspace(array $context): ?Workspace
