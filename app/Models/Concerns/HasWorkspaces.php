@@ -53,7 +53,9 @@ trait HasWorkspaces
 
     public function ensureDefaultWorkspace(): Workspace
     {
-        $workspace = $this->ownedWorkspaces()->first();
+        // oldest() stellt sicher, dass bei mehreren owned Workspaces immer der
+        // früheste (und damit konzeptionell "primäre") Workspace gewählt wird.
+        $workspace = $this->ownedWorkspaces()->oldest()->first();
 
         if ($workspace !== null) {
             $hasMembership = $this->workspaceMemberships()
