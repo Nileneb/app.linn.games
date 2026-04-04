@@ -70,7 +70,7 @@ new class extends Component {
             'eingeschlossen_final' => $this->prismaEingeschlossen,
         ];
         if ($this->editingPrismaId) {
-            P5PrismaZahlen::where('projekt_id', $this->projekt->id)->findOrFail($this->editingPrismaId)->update($data);
+            P5PrismaZahlen::where('projekt_id', $this->projekt->id)->whereKey($this->editingPrismaId)->firstOrFail()->update($data);
         } else {
             P5PrismaZahlen::create($data);
         }
@@ -79,7 +79,7 @@ new class extends Component {
 
     public function editPrisma(string $id): void
     {
-        $r = P5PrismaZahlen::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P5PrismaZahlen::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingPrismaId = $id;
         $this->prismaIdentGesamt = $r->identifiziert_gesamt;
         $this->prismaDatenbankTreffer = $r->davon_datenbank_treffer;
@@ -94,7 +94,7 @@ new class extends Component {
 
     public function deletePrisma(string $id): void
     {
-        P5PrismaZahlen::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P5PrismaZahlen::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelPrisma(): void
@@ -119,7 +119,7 @@ new class extends Component {
             'beispiel' => $this->skBeispiel ?: null,
         ];
         if ($this->editingSkId) {
-            P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->findOrFail($this->editingSkId)->update($data);
+            P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->whereKey($this->editingSkId)->firstOrFail()->update($data);
         } else {
             P5ScreeningKriterium::create($data);
         }
@@ -128,7 +128,7 @@ new class extends Component {
 
     public function editSk(string $id): void
     {
-        $r = P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingSkId = $id;
         $this->skLevel = $r->level ?? 'L1_titel_abstract';
         $this->skTyp = $r->kriterium_typ ?? 'einschluss';
@@ -139,7 +139,7 @@ new class extends Component {
 
     public function deleteSk(string $id): void
     {
-        P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P5ScreeningKriterium::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelSk(): void
@@ -164,7 +164,7 @@ new class extends Component {
             'begruendung' => $this->toolBegruendung ?: null,
         ];
         if ($this->editingToolId) {
-            P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->findOrFail($this->editingToolId)->update($data);
+            P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->whereKey($this->editingToolId)->firstOrFail()->update($data);
         } else {
             P5ToolEntscheidung::create($data);
         }
@@ -173,7 +173,7 @@ new class extends Component {
 
     public function editTool(string $id): void
     {
-        $r = P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $r = P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail();
         $this->editingToolId = $id;
         $this->toolName = $r->tool ?? 'Rayyan';
         $this->toolGewaehlt = (bool) $r->gewaehlt;
@@ -183,7 +183,7 @@ new class extends Component {
 
     public function deleteTool(string $id): void
     {
-        P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->findOrFail($id)->delete();
+        P5ToolEntscheidung::where('projekt_id', $this->projekt->id)->whereKey($id)->firstOrFail()->delete();
     }
 
     public function cancelTool(): void
@@ -209,7 +209,7 @@ new class extends Component {
             'screenTrefferId' => 'required|string',
             'screenEntscheidung' => 'required|string',
         ]);
-        P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($this->screenTrefferId);
+        P5Treffer::where('projekt_id', $this->projekt->id)->whereKey($this->screenTrefferId)->firstOrFail();
         P5ScreeningEntscheidung::create([
             'treffer_id' => $this->screenTrefferId,
             'level' => $this->screenLevel,
@@ -233,7 +233,7 @@ new class extends Component {
     public function deleteScreen(string $id): void
     {
         $e = P5ScreeningEntscheidung::findOrFail($id);
-        P5Treffer::where('projekt_id', $this->projekt->id)->findOrFail($e->treffer_id);
+        P5Treffer::where('projekt_id', $this->projekt->id)->whereKey($e->treffer_id)->firstOrFail();
         $e->delete();
     }
 
@@ -283,50 +283,36 @@ new class extends Component {
             @endif
         </div>
 
-        @if ($showPrismaForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Identifiziert gesamt</label>
-                        <input wire:model="prismaIdentGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank-Treffer</label>
-                        <input wire:model="prismaDatenbankTreffer" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Graue Literatur</label>
-                        <input wire:model="prismaGraueLit" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Nach Deduplizierung</label>
-                        <input wire:model="prismaNachDedup" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Ausgeschlossen L1</label>
-                        <input wire:model="prismaAusgeschlossenL1" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Volltext geprüft</label>
-                        <input wire:model="prismaVolltextGeprueft" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Ausgeschlossen L2</label>
-                        <input wire:model="prismaAusgeschlossenL2" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Eingeschlossen final</label>
-                        <input wire:model="prismaEingeschlossen" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="savePrisma" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelPrisma" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+        <x-crud.form :visible="$showPrismaForm" save-action="savePrisma" cancel-action="cancelPrisma">
+            <div class="grid gap-3 sm:grid-cols-4">
+                <x-crud.field label="Identifiziert gesamt">
+                    <input wire:model="prismaIdentGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Datenbank-Treffer">
+                    <input wire:model="prismaDatenbankTreffer" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Graue Literatur">
+                    <input wire:model="prismaGraueLit" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Nach Deduplizierung">
+                    <input wire:model="prismaNachDedup" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+            <div class="mt-3 grid gap-3 sm:grid-cols-4">
+                <x-crud.field label="Ausgeschlossen L1">
+                    <input wire:model="prismaAusgeschlossenL1" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Volltext geprüft">
+                    <input wire:model="prismaVolltextGeprueft" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Ausgeschlossen L2">
+                    <input wire:model="prismaAusgeschlossenL2" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Eingeschlossen final">
+                    <input wire:model="prismaEingeschlossen" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+            </div>
+        </x-crud.form>
 
         @if ($prismaZahlen)
             <div class="p-4">
@@ -415,48 +401,30 @@ new class extends Component {
     </div>
 
     {{-- ═══ Screening-Kriterien ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Screening-Kriterien
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $screeningKriterien->count() }})</span>
-            </h3>
-            <button wire:click="newSk" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
+    <x-crud.section title="Screening-Kriterien" :count="$screeningKriterien->count()" new-action="newSk">
 
-        @if ($showSkForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Level *</label>
-                        <select wire:model="skLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
-                            <option value="L2_volltext">L2 — Volltext</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Typ *</label>
-                        <select wire:model="skTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="einschluss">Einschluss</option>
-                            <option value="ausschluss">Ausschluss</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beschreibung *</label>
-                    <textarea wire:model="skBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beispiel</label>
-                    <input wire:model="skBeispiel" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                @error('skBeschreibung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveSk" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelSk" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+        <x-crud.form :visible="$showSkForm" save-action="saveSk" cancel-action="cancelSk">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="Level" required>
+                    <select wire:model="skLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
+                        <option value="L2_volltext">L2 — Volltext</option>
+                    </select>
+                </x-crud.field>
+                <x-crud.field label="Typ" required>
+                    <select wire:model="skTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="einschluss">Einschluss</option>
+                        <option value="ausschluss">Ausschluss</option>
+                    </select>
+                </x-crud.field>
             </div>
-        @endif
+            <x-crud.field label="Beschreibung" required class="mt-3" :error="$errors->first('skBeschreibung')">
+                <textarea wire:model="skBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </x-crud.field>
+            <x-crud.field label="Beispiel" class="mt-3">
+                <input wire:model="skBeispiel" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </x-crud.field>
+        </x-crud.form>
 
         @if ($screeningKriterien->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -486,46 +454,31 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Screening-Kriterien definiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Tool-Entscheidung ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Screening-Tool
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $tools->count() }})</span>
-            </h3>
-            <button wire:click="newTool" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
+    <x-crud.section title="Screening-Tool" :count="$tools->count()" new-action="newTool">
 
-        @if ($showToolForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Tool *</label>
-                        <select wire:model="toolName" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="Rayyan">Rayyan</option>
-                            <option value="Covidence">Covidence</option>
-                            <option value="EPPI_Reviewer">EPPI-Reviewer</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end gap-2 pb-0.5">
-                        <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="toolGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600">
-                            Gewählt
-                        </label>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                    <textarea wire:model="toolBegruendung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveTool" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelTool" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+        <x-crud.form :visible="$showToolForm" save-action="saveTool" cancel-action="cancelTool">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="Tool" required>
+                    <select wire:model="toolName" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="Rayyan">Rayyan</option>
+                        <option value="Covidence">Covidence</option>
+                        <option value="EPPI_Reviewer">EPPI-Reviewer</option>
+                    </select>
+                </x-crud.field>
+                <div class="flex items-end gap-2 pb-0.5">
+                    <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input wire:model="toolGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600">
+                        Gewählt
+                    </label>
                 </div>
             </div>
-        @endif
+            <x-crud.field label="Begründung" class="mt-3">
+                <textarea wire:model="toolBegruendung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </x-crud.field>
+        </x-crud.form>
 
         @if ($tools->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -550,7 +503,7 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch kein Screening-Tool bewertet.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Treffer-Übersicht mit Screening ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -573,30 +526,26 @@ new class extends Component {
             <div class="border-b border-neutral-200 bg-amber-50/50 p-4 dark:border-neutral-700 dark:bg-amber-950/20">
                 <h4 class="mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">Screening-Entscheidung</h4>
                 <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Level</label>
+                    <x-crud.field label="Level">
                         <select wire:model="screenLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                             <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
                             <option value="L2_volltext">L2 — Volltext</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Entscheidung *</label>
+                    </x-crud.field>
+                    <x-crud.field label="Entscheidung" required>
                         <select wire:model="screenEntscheidung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                             <option value="eingeschlossen">Eingeschlossen</option>
                             <option value="ausgeschlossen">Ausgeschlossen</option>
                             <option value="unklar">Unklar</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Reviewer</label>
+                    </x-crud.field>
+                    <x-crud.field label="Reviewer">
                         <input wire:model="screenReviewer" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+                    </x-crud.field>
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Ausschlussgrund</label>
+                <x-crud.field label="Ausschlussgrund" class="mt-3">
                     <input wire:model="screenAusschlussgrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
+                </x-crud.field>
                 <div class="mt-3 flex gap-2">
                     <button wire:click="saveScreen" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                     <button wire:click="cancelScreen" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
