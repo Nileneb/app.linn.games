@@ -309,41 +309,25 @@ new class extends Component {
     />
 
     {{-- ═══ Strukturmodellwahl ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Strukturmodellwahl
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $strukturmodelle->count() }})</span>
-            </h3>
-            <button wire:click="newSmw" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showSmwForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Modell *</label>
-                        <input wire:model="smwModell" type="text" placeholder="z.B. PICO" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Gewählt</label>
-                        <label class="mt-1 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="smwGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600">
-                            Ja
-                        </label>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                        <input wire:model="smwBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+    <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">
+        <x-crud.form :visible="$showSmwForm" save-action="saveSmw" cancel-action="cancelSmw">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <x-crud.field label="Modell" required>
+                    <input wire:model="smwModell" type="text" placeholder="z.B. PICO" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Gewählt</label>
+                    <label class="mt-1 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input wire:model="smwGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600">
+                        Ja
+                    </label>
                 </div>
-                @error('smwModell') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveSmw" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelSmw" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+                <x-crud.field label="Begründung">
+                    <input wire:model="smwBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+            @error('smwModell') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($strukturmodelle->isNotEmpty())
             <div class="overflow-x-auto">
@@ -368,14 +352,7 @@ new class extends Component {
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ str()->limit($s->begruendung, 60) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editSmw('{{ $s->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
-                                    </button>
-                                    <button wire:click="deleteSmw('{{ $s->id }}')" wire:confirm="Eintrag wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-                                    </button>
-                                </td>
+                                <x-crud.actions edit-action="editSmw" delete-action="deleteSmw" :item-id="$s->id" />
                             </tr>
                         @endforeach
                     </tbody>
@@ -384,69 +361,46 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Strukturmodelle bewertet.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Komponenten ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Komponenten
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $komponenten->count() }})</span>
-            </h3>
-            <button wire:click="newKomp" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showKompForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Modell</label>
-                        <input wire:model="kompModell" type="text" placeholder="z.B. PICO" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Kürzel</label>
-                        <input wire:model="kompKuerzel" type="text" placeholder="z.B. P" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Label *</label>
-                        <input wire:model="kompLabel" type="text" placeholder="z.B. Population" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Inhaltlicher Begriff (DE)</label>
-                        <input wire:model="kompBegriffDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Englische Entsprechung</label>
-                        <input wire:model="kompEnglisch" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">MeSH-Term</label>
-                        <input wire:model="kompMesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Thesaurus-Term</label>
-                        <input wire:model="kompThesaurus" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Synonyme <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                    <input wire:model="kompSynonyme" type="text" placeholder="Synonym 1, Synonym 2, ..." class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkungen</label>
-                    <textarea wire:model="kompAnmerkungen" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                @error('kompLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveKomp" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelKomp" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+    <x-crud.section title="Komponenten" :count="$komponenten->count()" new-action="newKomp">
+        <x-crud.form :visible="$showKompForm" save-action="saveKomp" cancel-action="cancelKomp">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <x-crud.field label="Modell">
+                    <input wire:model="kompModell" type="text" placeholder="z.B. PICO" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Kürzel">
+                    <input wire:model="kompKuerzel" type="text" placeholder="z.B. P" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Label" required>
+                    <input wire:model="kompLabel" type="text" placeholder="z.B. Population" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="Inhaltlicher Begriff (DE)">
+                    <input wire:model="kompBegriffDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Englische Entsprechung">
+                    <input wire:model="kompEnglisch" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+            </div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="MeSH-Term">
+                    <input wire:model="kompMesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Thesaurus-Term">
+                    <input wire:model="kompThesaurus" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+            </div>
+            <x-crud.field label="Synonyme" sublabel="(kommagetrennt)" class="mt-3">
+                <input wire:model="kompSynonyme" type="text" placeholder="Synonym 1, Synonym 2, ..." class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </x-crud.field>
+            <x-crud.field label="Anmerkungen" class="mt-3">
+                <textarea wire:model="kompAnmerkungen" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </x-crud.field>
+            @error('kompLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($komponenten->isNotEmpty())
             <div class="overflow-x-auto">
@@ -475,14 +429,7 @@ new class extends Component {
                                         —
                                     @endif
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editKomp('{{ $k->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
-                                    </button>
-                                    <button wire:click="deleteKomp('{{ $k->id }}')" wire:confirm="Komponente wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-                                    </button>
-                                </td>
+                                <x-crud.actions edit-action="editKomp" delete-action="deleteKomp" :item-id="$k->id" confirm-delete="Komponente wirklich löschen?" />
                             </tr>
                         @endforeach
                     </tbody>
@@ -491,48 +438,30 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Komponenten definiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Ein-/Ausschlusskriterien ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Ein-/Ausschlusskriterien
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $kriterien->count() }})</span>
-            </h3>
-            <button wire:click="newKrit" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showKritForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Typ *</label>
-                        <select wire:model="kritTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="einschluss">Einschluss</option>
-                            <option value="ausschluss">Ausschluss</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Quellbezug</label>
-                        <input wire:model="kritQuellbezug" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beschreibung *</label>
-                    <textarea wire:model="kritBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                    <textarea wire:model="kritBegruendung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                @error('kritBeschreibung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveKrit" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelKrit" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+    <x-crud.section title="Ein-/Ausschlusskriterien" :count="$kriterien->count()" new-action="newKrit">
+        <x-crud.form :visible="$showKritForm" save-action="saveKrit" cancel-action="cancelKrit">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="Typ" required>
+                    <select wire:model="kritTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="einschluss">Einschluss</option>
+                        <option value="ausschluss">Ausschluss</option>
+                    </select>
+                </x-crud.field>
+                <x-crud.field label="Quellbezug">
+                    <input wire:model="kritQuellbezug" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+            <x-crud.field label="Beschreibung" required class="mt-3">
+                <textarea wire:model="kritBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </x-crud.field>
+            <x-crud.field label="Begründung" class="mt-3">
+                <textarea wire:model="kritBegruendung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </x-crud.field>
+            @error('kritBeschreibung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($kriterien->isNotEmpty())
             <div class="overflow-x-auto">
@@ -557,14 +486,7 @@ new class extends Component {
                                 </td>
                                 <td class="px-4 py-2 text-neutral-900 dark:text-neutral-100">{{ str()->limit($kr->beschreibung, 80) }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ str()->limit($kr->begruendung, 60) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editKrit('{{ $kr->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
-                                    </button>
-                                    <button wire:click="deleteKrit('{{ $kr->id }}')" wire:confirm="Kriterium wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-                                    </button>
-                                </td>
+                                <x-crud.actions edit-action="editKrit" delete-action="deleteKrit" :item-id="$kr->id" confirm-delete="Kriterium wirklich löschen?" />
                             </tr>
                         @endforeach
                     </tbody>
@@ -573,47 +495,29 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Kriterien definiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Warnsignale ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Warnsignale
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $warnsignale->count() }})</span>
-            </h3>
-            <button wire:click="newWarn" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showWarnForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Lfd. Nr.</label>
-                        <input wire:model="warnLfdNr" type="number" min="1" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div class="sm:col-span-3">
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Warnsignal *</label>
-                        <input wire:model="warnWarnsignal" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Mögliche Auswirkung</label>
-                        <textarea wire:model="warnAuswirkung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Handlungsempfehlung</label>
-                        <textarea wire:model="warnHandlungsempfehlung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                </div>
-                @error('warnWarnsignal') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveWarn" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelWarn" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
+    <x-crud.section title="Warnsignale" :count="$warnsignale->count()" new-action="newWarn">
+        <x-crud.form :visible="$showWarnForm" save-action="saveWarn" cancel-action="cancelWarn">
+            <div class="grid gap-3 sm:grid-cols-4">
+                <x-crud.field label="Lfd. Nr.">
+                    <input wire:model="warnLfdNr" type="number" min="1" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Warnsignal" required class="sm:col-span-3">
+                    <input wire:model="warnWarnsignal" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <x-crud.field label="Mögliche Auswirkung">
+                    <textarea wire:model="warnAuswirkung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                </x-crud.field>
+                <x-crud.field label="Handlungsempfehlung">
+                    <textarea wire:model="warnHandlungsempfehlung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                </x-crud.field>
+            </div>
+            @error('warnWarnsignal') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($warnsignale->isNotEmpty())
             <div class="overflow-x-auto">
@@ -634,14 +538,7 @@ new class extends Component {
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ str()->limit($w->warnsignal, 60) }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ str()->limit($w->moegliche_auswirkung, 50) }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ str()->limit($w->handlungsempfehlung, 50) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editWarn('{{ $w->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
-                                    </button>
-                                    <button wire:click="deleteWarn('{{ $w->id }}')" wire:confirm="Warnsignal wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400">
-                                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
-                                    </button>
-                                </td>
+                                <x-crud.actions edit-action="editWarn" delete-action="deleteWarn" :item-id="$w->id" confirm-delete="Warnsignal wirklich löschen?" />
                             </tr>
                         @endforeach
                     </tbody>
@@ -650,5 +547,5 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Warnsignale vorhanden.</p>
         @endif
-    </div>
+    </x-crud.section>
 </div>
