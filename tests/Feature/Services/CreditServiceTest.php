@@ -3,8 +3,10 @@
 use App\Models\CreditTransaction;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\AgentDailyLimitExceededException;
 use App\Services\CreditService;
 use App\Services\InsufficientCreditsException;
+use Illuminate\Support\Carbon;
 
 function makeWorkspace(int $balanceCents = 0): Workspace
 {
@@ -82,4 +84,135 @@ test('topUp und deduct sind atomar bei datenbankfehler', function () {
 
     expect($workspace->credits_balance_cents)->toBe($initialBalance + 200);
     expect(CreditTransaction::where('workspace_id', $workspace->id)->count())->toBe(1);
+});
+
+// ─── Low-Balance-Warnung ───────────────────────────────────────────
+
+test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', function () {
+    config(['services.langdock.low_balance_threshold_percent' => 10]);
+    $workspace = makeWorkspace(1000);
+
+    // Verbrauche 950 von 1000 → 5% übrig
+    app(CreditService::class)->deduct($workspace->fresh(), 475000, 'test_agent');
+
+    $result = app(CreditService::class)->checkLowBalance($workspace->fresh());
+    expect($result)->toBeTrue();
+});
+
+test('checkLowBalance gibt false zurück wenn guthaben über schwellenwert', function () {
+    config(['services.langdock.low_balance_threshold_percent' => 10]);
+    $workspace = makeWorkspace(1000);
+
+    // Verbrauche nur 100 von 1000 → 90% übrig
+    app(CreditService::class)->deduct($workspace->fresh(), 50000, 'test_agent');
+
+    $result = app(CreditService::class)->checkLowBalance($workspace->fresh());
+    expect($result)->toBeFalse();
+});
+
+test('checkLowBalance gibt false zurück wenn kein topup vorhanden', function () {
+    $workspace = makeWorkspace();
+    $result = app(CreditService::class)->checkLowBalance($workspace);
+    expect($result)->toBeFalse();
+});
+
+// ─── Tageslimit pro Agent ──────────────────────────────────────────
+
+test('assertAgentDailyLimit wirft exception wenn tageslimit überschritten', function () {
+    config(['services.langdock.agent_daily_limits.test_agent' => 100]);
+    $workspace = makeWorkspace(10000);
+
+    // Erste Nutzung: 80 cents → OK
+    app(CreditService::class)->deduct($workspace->fresh(), 40000, 'test_agent');
+
+    // Zweite Nutzung: nochmal 80 cents → 160 total > 100 Limit
+    expect(fn () => app(CreditService::class)->deduct($workspace->fresh(), 40000, 'test_agent'))
+        ->toThrow(AgentDailyLimitExceededException::class);
+});
+
+test('assertAgentDailyLimit erlaubt nutzung wenn kein limit konfiguriert', function () {
+    config(['services.langdock.agent_daily_limits.unlimited_agent' => 0]);
+    $workspace = makeWorkspace(10000);
+
+    // Kein Limit → sollte durchgehen
+    app(CreditService::class)->deduct($workspace->fresh(), 100000, 'unlimited_agent');
+
+    expect($workspace->fresh()->credits_balance_cents)->toBeLessThan(10000);
+});
+
+test('assertAgentDailyLimit zählt nur heutige ausgaben', function () {
+    config(['services.langdock.agent_daily_limits.daily_agent' => 100]);
+    $workspace = makeWorkspace(10000);
+
+    // Gestern: 90 cents ausgegeben
+    CreditTransaction::create([
+        'workspace_id'     => $workspace->id,
+        'type'             => 'usage',
+        'amount_cents'     => -90,
+        'tokens_used'      => 45000,
+        'agent_config_key' => 'daily_agent',
+        'created_at'       => Carbon::yesterday(),
+    ]);
+
+    // Heute: 80 cents → innerhalb des Limits da gestern nicht zählt
+    expect(fn () => app(CreditService::class)->deduct($workspace->fresh(), 40000, 'daily_agent'))
+        ->not->toThrow(AgentDailyLimitExceededException::class);
+});
+
+// ─── Verbrauchszusammenfassung ─────────────────────────────────────
+
+test('usageSummary liefert verbrauch pro agent', function () {
+    $workspace = makeWorkspace(10000);
+    $service = app(CreditService::class);
+
+    $service->deduct($workspace->fresh(), 5000, 'search_agent');
+    $service->deduct($workspace->fresh(), 3000, 'search_agent');
+    $service->deduct($workspace->fresh(), 2000, 'review_agent');
+
+    $summary = $service->usageSummary($workspace);
+
+    expect($summary)->toHaveCount(2);
+
+    $searchSummary = collect($summary)->firstWhere('agent_config_key', 'search_agent');
+    expect($searchSummary)->not->toBeNull();
+    expect($searchSummary['request_count'])->toBe(2);
+    expect($searchSummary['total_tokens'])->toBe(8000);
+
+    $reviewSummary = collect($summary)->firstWhere('agent_config_key', 'review_agent');
+    expect($reviewSummary)->not->toBeNull();
+    expect($reviewSummary['request_count'])->toBe(1);
+    expect($reviewSummary['total_tokens'])->toBe(2000);
+});
+
+test('usageSummary filtert nach zeitraum', function () {
+    $workspace = makeWorkspace(10000);
+    $service = app(CreditService::class);
+
+    // Aktuelle Nutzung
+    $service->deduct($workspace->fresh(), 5000, 'search_agent');
+
+    // Alte Transaktion (vor 60 Tagen)
+    CreditTransaction::create([
+        'workspace_id'     => $workspace->id,
+        'type'             => 'usage',
+        'amount_cents'     => -50,
+        'tokens_used'      => 25000,
+        'agent_config_key' => 'old_agent',
+        'created_at'       => Carbon::now()->subDays(60),
+    ]);
+
+    // Standard: letzte 30 Tage → nur search_agent
+    $summary = $service->usageSummary($workspace);
+    expect($summary)->toHaveCount(1);
+    expect($summary[0]['agent_config_key'])->toBe('search_agent');
+
+    // Letzter 90 Tage → beide Agents
+    $summary = $service->usageSummary($workspace, Carbon::now()->subDays(90));
+    expect($summary)->toHaveCount(2);
+});
+
+test('usageSummary gibt leeres array zurück wenn keine nutzung', function () {
+    $workspace = makeWorkspace(1000);
+    $summary = app(CreditService::class)->usageSummary($workspace);
+    expect($summary)->toBe([]);
 });

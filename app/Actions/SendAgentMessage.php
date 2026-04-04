@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Services\AgentDailyLimitExceededException;
 use App\Services\InsufficientCreditsException;
 use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
@@ -29,6 +30,9 @@ class SendAgentMessage
             ];
         } catch (InsufficientCreditsException) {
             return ['success' => false, 'content' => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.')];
+        } catch (AgentDailyLimitExceededException $e) {
+            Log::warning('Agent daily limit exceeded', ['key' => $configKey, 'message' => $e->getMessage()]);
+            return ['success' => false, 'content' => __('Tageslimit für diesen Agenten erreicht. Bitte morgen erneut versuchen.')];
         } catch (LangdockAgentException $e) {
             Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
