@@ -2,17 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * Contact Model
- * 
- * Simple contact form submission storage.
- * Uses auto-increment ID (unlike most other models in this project).
- * This is intentional as Contact represents external submissions, not domain entities.
- */
 class Contact extends Model
 {
+    use HasUuids;
+
     protected $fillable = [
         'name',
         'company',
