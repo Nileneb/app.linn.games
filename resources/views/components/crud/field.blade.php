@@ -5,7 +5,7 @@
     'error' => null,
 ])
 
-<div>
+<div {{ $attributes->merge(['class' => '']) }}>
     <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
         {{ $label }}
         @if ($required)

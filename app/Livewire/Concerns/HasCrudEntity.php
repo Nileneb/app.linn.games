@@ -68,7 +68,8 @@ trait HasCrudEntity
         if ($this->$editingIdProp) {
             /** @var Model $model */
             $model = $modelClass::where('projekt_id', $this->projekt->id)
-                ->findOrFail($this->$editingIdProp);
+                ->whereKey($this->$editingIdProp)
+                ->firstOrFail();
             $model->update($data);
         } else {
             $modelClass::create($data);
@@ -93,7 +94,9 @@ trait HasCrudEntity
         callable $propertyMapper
     ): void {
         /** @var Model $record */
-        $record = $modelClass::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $record = $modelClass::where('projekt_id', $this->projekt->id)
+            ->whereKey($id)
+            ->firstOrFail();
 
         $editingIdProp = "editing{$entity}Id";
         $this->$editingIdProp = $id;
@@ -109,14 +112,16 @@ trait HasCrudEntity
     /**
      * Löscht eine Entität.
      *
-     * @param string $entity Entity-Kürzel (nur für Konsistenz; aktuell ungenutzt)
+     * @param string $entity Entity-Kürzel (für Event-Naming und Logging)
      * @param class-string<Model> $modelClass Eloquent Model-Klasse
      * @param string $id UUID der Entität
      */
     protected function deleteEntity(string $entity, string $modelClass, string $id): void
     {
         /** @var Model $model */
-        $model = $modelClass::where('projekt_id', $this->projekt->id)->findOrFail($id);
+        $model = $modelClass::where('projekt_id', $this->projekt->id)
+            ->whereKey($id)
+            ->firstOrFail();
         $model->delete();
     }
 
