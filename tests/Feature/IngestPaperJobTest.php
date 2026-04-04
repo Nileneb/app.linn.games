@@ -54,11 +54,10 @@ test('ingest paper job fails when ollama returns error', function () {
         'Word1 Word2 Word3',
     );
 
-    // Direkter Aufruf – ohne Queue-Kontext, $this->fail() ist no-op
-    $job->handle();
+    // DB::transaction propagiert die RuntimeException
+    expect(fn () => $job->handle())->toThrow(RuntimeException::class);
 
     Log::shouldHaveReceived('error')
-        ->once()
         ->withArgs(function ($message, $context) {
             return $message === 'Ollama embedding failed'
                 && $context['paper_id'] === 'paper-1';

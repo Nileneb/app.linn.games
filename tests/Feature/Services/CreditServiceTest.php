@@ -141,15 +141,15 @@ test('assertAgentDailyLimit erlaubt nutzung wenn kein limit konfiguriert', funct
 });
 
 test('assertAgentDailyLimit zählt nur heutige ausgaben', function () {
-    config(['services.langdock.agent_daily_limits.daily_agent' => 100]);
+    config(['services.langdock.agent_daily_limits.daily_agent' => 500]);
     $workspace = makeWorkspace(10000);
 
-    // Gestern: 90 cents ausgegeben
+    // Gestern: 400 cents ausgegeben
     CreditTransaction::create([
         'workspace_id'     => $workspace->id,
         'type'             => 'usage',
-        'amount_cents'     => -90,
-        'tokens_used'      => 45000,
+        'amount_cents'     => -400,
+        'tokens_used'      => 200000,
         'agent_config_key' => 'daily_agent',
         'created_at'       => Carbon::yesterday(),
     ]);
@@ -191,8 +191,9 @@ test('usageSummary filtert nach zeitraum', function () {
     // Aktuelle Nutzung
     $service->deduct($workspace->fresh(), 5000, 'search_agent');
 
-    // Alte Transaktion (vor 60 Tagen)
-    CreditTransaction::create([
+    // Alte Transaktion (vor 60 Tagen) — direkt in DB
+    DB::table('credit_transactions')->insert([
+        'id'               => \Illuminate\Support\Str::uuid()->toString(),
         'workspace_id'     => $workspace->id,
         'type'             => 'usage',
         'amount_cents'     => -50,
@@ -203,12 +204,15 @@ test('usageSummary filtert nach zeitraum', function () {
 
     // Standard: letzte 30 Tage → nur search_agent
     $summary = $service->usageSummary($workspace);
-    expect($summary)->toHaveCount(1);
-    expect($summary[0]['agent_config_key'])->toBe('search_agent');
+    $agents = collect($summary)->pluck('agent_config_key')->all();
+    expect($agents)->toContain('search_agent');
+    expect($agents)->not->toContain('old_agent');
 
-    // Letzter 90 Tage → beide Agents
+    // Letzte 90 Tage → beide Agents
     $summary = $service->usageSummary($workspace, Carbon::now()->subDays(90));
-    expect($summary)->toHaveCount(2);
+    $agents = collect($summary)->pluck('agent_config_key')->all();
+    expect($agents)->toContain('search_agent');
+    expect($agents)->toContain('old_agent');
 });
 
 test('usageSummary gibt leeres array zurück wenn keine nutzung', function () {

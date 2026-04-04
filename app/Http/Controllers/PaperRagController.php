@@ -47,14 +47,15 @@ class PaperRagController extends Controller
 
         // Rate-limit embedding requests
         $rateLimitKey = self::EMBEDDING_RATE_LIMIT_KEY . ':' . ($request->user()?->id ?? $request->ip());
-        if (! RateLimiter::attempt($rateLimitKey, self::EMBEDDING_RATE_LIMIT_PER_MINUTE)) {
+        if (RateLimiter::tooManyAttempts($rateLimitKey, self::EMBEDDING_RATE_LIMIT_PER_MINUTE)) {
             return response()->json(
                 ['error' => 'Rate limit exceeded. Maximum ' . self::EMBEDDING_RATE_LIMIT_PER_MINUTE . ' requests per minute'],
                 429
             );
         }
+        RateLimiter::hit($rateLimitKey, 60);
 
-        $maxResults = (int) $data['max_results'] ?? 5;
+        $maxResults = (int) ($data['max_results'] ?? 5);
         $projektId  = $data['projekt_id'] ?? null;
 
         $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
