@@ -43,6 +43,7 @@ class PaperRagController extends Controller
             'q'           => ['required', 'string'],
             'projekt_id'  => ['nullable', 'uuid'],
             'max_results' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'offset'      => ['nullable', 'integer', 'min:0', 'max:10000'],
         ]);
 
         // Rate-limit embedding requests
@@ -56,43 +57,85 @@ class PaperRagController extends Controller
         RateLimiter::hit($rateLimitKey, 60);
 
         $maxResults = (int) ($data['max_results'] ?? 5);
+        $offset     = (int) ($data['offset'] ?? 0);
         $projektId  = $data['projekt_id'] ?? null;
 
-        $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
-            'model'  => 'nomic-embed-text',
-            'prompt' => $data['q'],
-        ]);
+        try {
+            $embeddingResponse = Http::timeout(30)->post(config('services.ollama.url') . '/api/embeddings', [
+                'model'  => 'nomic-embed-text',
+                'prompt' => $data['q'],
+            ]);
 
-        if ($embeddingResponse->failed()) {
-            return response()->json(['error' => 'Embedding service unavailable'], 503);
+            if ($embeddingResponse->failed()) {
+                $statusCode = $embeddingResponse->status();
+                \Log::error('Ollama embedding request failed', [
+                    'status' => $statusCode,
+                    'body'   => $embeddingResponse->body(),
+                    'query'  => $data['q'],
+                ]);
+                return response()->json([
+                    'error' => 'Embedding service unavailable',
+                    'details' => "Ollama returned {$statusCode}",
+                ], 503);
+            }
+
+            $embedding = $embeddingResponse->json('embedding');
+
+            if (!is_array($embedding) || empty($embedding)) {
+                \Log::warning('Ollama returned invalid embedding format', [
+                    'embedding' => $embedding,
+                    'query'     => $data['q'],
+                ]);
+                return response()->json([
+                    'error' => 'Invalid embedding format from service',
+                    'details' => 'Expected array of numbers',
+                ], 503);
+            }
+
+            // Safely cast embedding values to float, filtering out nulls/non-numeric values
+            $embedding = array_map(function ($value): ?float {
+                $float = (float) $value;
+                return is_finite($float) ? $float : null;
+            }, $embedding);
+
+            $embedding = array_filter($embedding, static fn ($v) => $v !== null);
+
+            if (empty($embedding)) {
+                \Log::warning('Embedding validation removed all values', [
+                    'original_count' => count($embeddingResponse->json('embedding') ?? []),
+                    'filtered_count' => count($embedding),
+                    'query'          => $data['q'],
+                ]);
+                return response()->json([
+                    'error' => 'No valid embedding values after filtering',
+                    'details' => 'All embedding components were null or non-finite',
+                ], 503);
+            }
+
+            $vectorLiteral = '[' . implode(',', $embedding) . ']';
+
+            $rows = DB::select(
+                'SELECT id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata,
+                        1 - (embedding <=> ?::vector) AS similarity
+                 FROM paper_embeddings
+                 WHERE (?::text IS NULL OR projekt_id = ?::uuid)
+                 ORDER BY embedding <=> ?::vector
+                 LIMIT ? OFFSET ?',
+                [$vectorLiteral, $projektId, $projektId, $vectorLiteral, $maxResults, $offset]
+            );
+
+            return response()->json($rows);
+        } catch (\Throwable $e) {
+            \Log::error('PaperRagController::search error', [
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+                'query'     => $data['q'],
+            ]);
+            return response()->json([
+                'error' => 'Search failed',
+                'details' => 'An unexpected error occurred',
+            ], 500);
         }
-
-        $embedding = $embeddingResponse->json('embedding');
-        
-        // Safely cast embedding values to float, filtering out nulls/non-numeric values
-        $embedding = array_map(function ($value): ?float {
-            $float = (float) $value;
-            return is_finite($float) ? $float : null;
-        }, $embedding);
-        
-        $embedding = array_filter($embedding, static fn ($v) => $v !== null);
-        
-        if (empty($embedding)) {
-            return response()->json(['error' => 'Invalid embedding received from service'], 503);
-        }
-
-        $vectorLiteral = '[' . implode(',', $embedding) . ']';
-
-        $rows = DB::select(
-            'SELECT id, projekt_id, source, paper_id, title, chunk_index, text_chunk, metadata,
-                    1 - (embedding <=> ?::vector) AS similarity
-             FROM paper_embeddings
-             WHERE (?::text IS NULL OR projekt_id = ?::uuid)
-             ORDER BY embedding <=> ?::vector
-             LIMIT ?',
-            [$vectorLiteral, $projektId, $projektId, $vectorLiteral, $maxResults]
-        );
-
-        return response()->json($rows);
     }
 }
