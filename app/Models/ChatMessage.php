@@ -45,11 +45,11 @@ class ChatMessage extends Model
     {
         return static::where('workspace_id', $workspaceId)
             ->where('user_id', $userId)
-            ->orderBy('created_at')
-            ->limit($limit + 30)
+            ->whereNotNull('content')
+            ->orderByDesc('created_at')
+            ->limit($limit)
             ->get()
-            ->filter(fn (self $m) => $m->content !== null)
-            ->take(-$limit)
+            ->reverse()
             ->map(fn (self $m) => ['role' => $m->role, 'content' => $m->content])
             ->values()
             ->toArray();
