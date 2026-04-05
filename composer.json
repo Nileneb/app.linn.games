@@ -10,7 +10,7 @@
     ],
     "license": "UNLICENSED",
     "require": {
-        "php": "^8.2",
+        "php": "^8.4",
         "filament/filament": "^4.9",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
