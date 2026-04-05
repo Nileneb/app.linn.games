@@ -1,10 +1,11 @@
 <?php
 
 use App\Jobs\ProcessPhaseAgentJob;
-use App\Models\Recherche\Projekt;
 use App\Models\PhaseAgentResult;
-use Livewire\Volt\Component;
+use App\Models\Recherche\Projekt;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public Projekt $projekt;
@@ -75,14 +76,61 @@ new class extends Component {
 
     protected function buildContextMessages(): array
     {
-        $context = "Forschungsfrage: {$this->projekt->forschungsfrage}";
+        $lines = [];
+
+        // --- Projekt-Identifikation (explizit im User-Message, nicht nur im System-Context) ---
+        $lines[] = "=== PROJEKTKONTEXT ===";
+        $lines[] = "Projekt-ID: {$this->projekt->id}";
+        $lines[] = "Forschungsfrage: {$this->projekt->forschungsfrage}";
 
         if ($this->projekt->review_typ) {
-            $context .= "\nReview-Typ: {$this->projekt->review_typ}";
+            $lines[] = "Review-Typ: {$this->projekt->review_typ}";
         }
 
+        // --- Ergebnisse abgeschlossener Vorphasen ---
+        $previousResults = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', '<', $this->phaseNr)
+            ->where('status', 'completed')
+            ->whereNotNull('content')
+            ->orderBy('phase_nr')
+            ->orderByDesc('created_at')
+            ->get()
+            ->unique('phase_nr');
+
+        if ($previousResults->isNotEmpty()) {
+            $lines[] = '';
+            $lines[] = "=== ERGEBNISSE VORHERIGER PHASEN ===";
+            foreach ($previousResults as $result) {
+                $lines[] = "--- Phase {$result->phase_nr} ---";
+                $lines[] = mb_substr((string) $result->content, 0, 800);
+            }
+        }
+
+        // --- Verfügbare Dokumente ---
+        $paperCount = (int) DB::selectOne(
+            'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
+            [$this->projekt->id]
+        )?->cnt;
+
+        $trefferCount = $this->projekt->p5Treffer()->count();
+
+        if ($paperCount > 0 || $trefferCount > 0) {
+            $lines[] = '';
+            $lines[] = "=== VORHANDENE DOKUMENTE ===";
+            if ($paperCount > 0) {
+                $lines[] = "Indexierte Dokument-Abschnitte (paper_embeddings): {$paperCount}";
+            }
+            if ($trefferCount > 0) {
+                $lines[] = "Importierte Treffer (p5_treffer): {$trefferCount}";
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = "Aktuelle Phase: P{$this->phaseNr}";
+        $lines[] = "Bitte nutze die oben genannte Projekt-ID für alle DB-Operationen (SET LOCAL app.current_projekt_id).";
+
         return [
-            ['role' => 'user', 'content' => $context],
+            ['role' => 'user', 'content' => implode("\n", $lines)],
         ];
     }
 }; ?>
