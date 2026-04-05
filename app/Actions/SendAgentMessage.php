@@ -48,7 +48,12 @@ class SendAgentMessage
         } catch (LangdockAgentException $e) {
             Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::error('SendAgentMessage: unerwartete Exception', [
+                'key'       => $configKey,
+                'exception' => $e::class,
+                'message'   => $e->getMessage(),
+            ]);
             return ['success' => false, 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.')];
         }
     }
