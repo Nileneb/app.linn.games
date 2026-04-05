@@ -55,6 +55,7 @@ return [
         'mayring_agent' => env('MAYRING_AGENT'),
         'price_per_1k_tokens_cents' => env('LANGDOCK_PRICE_PER_1K_TOKENS_CENTS', 2),
         'low_balance_threshold_percent' => env('LANGDOCK_LOW_BALANCE_THRESHOLD_PERCENT', 10),
+        'default_agent_daily_limit_cents' => (int) env('LANGDOCK_DEFAULT_AGENT_DAILY_LIMIT_CENTS', 500),
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
             // Default: 500 Cents = 5 EUR pro Agent/Tag (Schutz vor Token-Explosionen)

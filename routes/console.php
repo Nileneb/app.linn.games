@@ -41,8 +41,8 @@ Artisan::command('deploy:ensure-admin', function () {
         $this->info("Admin-User {$email} existiert bereits.");
     }
 
-    if (! $user->hasRole('admin')) {
-        $user->assignRole('admin');
+    if (! $user->hasRole(\App\Enums\UserRole::ADMIN)) {
+        $user->assignRole(\App\Enums\UserRole::ADMIN);
         $this->info('Admin-Rolle zugewiesen.');
     }
 })->purpose('Ensure admin user and role exist');

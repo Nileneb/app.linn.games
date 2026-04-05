@@ -1,14 +1,15 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Policies\ProjektPolicy;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
-    Role::firstOrCreate(['name' => 'admin',    'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'editor',   'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'mitglied', 'guard_name' => 'web']);
+    foreach (UserRole::all() as $roleName) {
+        Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+    }
 });
 
 test('owner can view their project', function () {
@@ -70,7 +71,7 @@ test('non-owner cannot delete project', function () {
 
 test('editor kann Projekt erstellen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $user->syncRoles(['editor']);
+    $user->syncRoles([UserRole::EDITOR]);
 
     $policy = new ProjektPolicy;
 
@@ -79,7 +80,7 @@ test('editor kann Projekt erstellen', function () {
 
 test('admin kann Projekt erstellen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $user->syncRoles(['admin']);
+    $user->syncRoles([UserRole::ADMIN]);
 
     $policy = new ProjektPolicy;
 
@@ -88,7 +89,7 @@ test('admin kann Projekt erstellen', function () {
 
 test('mitglied kann kein Projekt erstellen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $user->syncRoles(['mitglied']);
+    $user->syncRoles([UserRole::MITGLIED]);
 
     $policy = new ProjektPolicy;
 

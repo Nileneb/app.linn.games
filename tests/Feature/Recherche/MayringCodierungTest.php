@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Jobs\ProcessMayringBatchJob;
 use App\Jobs\ProcessMayringChunkJob;
 use App\Models\ChunkCodierung;
@@ -12,9 +13,9 @@ use Livewire\Volt\Volt;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
-    Role::firstOrCreate(['name' => 'admin',    'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'editor',   'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'mitglied', 'guard_name' => 'web']);
+    foreach (UserRole::all() as $roleName) {
+        Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+    }
 });
 
 test('mayring page renders for projekt owner', function () {
