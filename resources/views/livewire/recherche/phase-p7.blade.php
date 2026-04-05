@@ -262,12 +262,14 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $treffer = P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get();
+        $treffer = rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(), collect());
         return [
-            'syntheseMethoden' => P7SyntheseMethode::where('projekt_id', $pid)->get(),
-            'datenextraktionen' => P7Datenextraktion::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(),
-            'muster' => P7MusterKonsistenz::where('projekt_id', $pid)->get(),
-            'gradeEinschaetzungen' => P7GradeEinschaetzung::where('projekt_id', $pid)->get(),
+            'syntheseMethoden' => rescue(fn () => P7SyntheseMethode::where('projekt_id', $pid)->get(), collect()),
+            'datenextraktionen' => $treffer->isNotEmpty()
+                ? rescue(fn () => P7Datenextraktion::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(), collect())
+                : collect(),
+            'muster' => rescue(fn () => P7MusterKonsistenz::where('projekt_id', $pid)->get(), collect()),
+            'gradeEinschaetzungen' => rescue(fn () => P7GradeEinschaetzung::where('projekt_id', $pid)->get(), collect()),
             'treffer' => $treffer,
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first()),
         ];

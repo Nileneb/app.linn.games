@@ -161,6 +161,16 @@ class LangdockAgentService
                         'duration_ms'      => $durationMs,
                         'response_excerpt' => Str::limit($response->body(), 1000),
                     ]);
+
+                    // Sprechende Fehlermeldung für 404 (Agent nicht gefunden)
+                    if ($response->status() === 404) {
+                        $agentId = $body['agentId'] ?? 'unknown';
+                        throw new LangdockAgentException(
+                            "Agent '{$agentId}' nicht gefunden — bitte Agent-ID prüfen oder Agent in Langdock reaktivieren.",
+                            404,
+                        );
+                    }
+
                     throw new LangdockAgentException(
                         "Langdock API returned HTTP {$response->status()}",
                         $response->status(),
