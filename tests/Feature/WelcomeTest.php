@@ -10,6 +10,8 @@ test('welcome page returns successful response', function () {
 });
 
 test('welcome page increments visit counter', function () {
+    PageView::query()->delete();
+
     $this->get(route('home'));
 
     $this->assertDatabaseHas('page_views', ['visits' => 1]);
@@ -38,7 +40,7 @@ test('guest sees login and register links', function () {
 });
 
 test('authenticated user sees dashboard link', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
 
     $response = $this->actingAs($user)->get(route('home'));
 
