@@ -55,17 +55,19 @@ return [
         'mayring_agent' => env('MAYRING_AGENT'),
         'price_per_1k_tokens_cents' => env('LANGDOCK_PRICE_PER_1K_TOKENS_CENTS', 2),
         'low_balance_threshold_percent' => env('LANGDOCK_LOW_BALANCE_THRESHOLD_PERCENT', 10),
+        'default_agent_daily_limit_cents' => (int) env('LANGDOCK_DEFAULT_AGENT_DAILY_LIMIT_CENTS', 500),
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
-            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 0),
-            'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 0),
-            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 0),
-            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 0),
-            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 0),
-            'evaluation_agent'      => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 0),
-            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 0),
-            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 0),
-            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 0),
+            // Nutzt default_agent_daily_limit_cents falls spezifische Umgebungsvariable nicht gesetzt
+            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
+            'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 500),
+            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
+            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 500),
+            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 500),
+            'evaluation_agent'      => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 500),
+            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 500),
+            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 500),
+            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 500),
         ],
     ],
 

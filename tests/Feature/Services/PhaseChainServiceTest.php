@@ -88,3 +88,56 @@ test('maybeDispatchNext enthält vorherige phase-ergebnisse im context', functio
         return str_contains($messageContent, 'Ergebnis Phase 1');
     });
 });
+
+// ─── Quality-Gate Tests (Issue #122) ────────────────────────────────────
+
+test('isValidPhaseResult blocks content under 100 characters', function () {
+    $reflection = new ReflectionClass(PhaseChainService::class);
+    $method = $reflection->getMethod('isValidPhaseResult');
+    $method->setAccessible(true);
+
+    $service = app(PhaseChainService::class);
+
+    // Create a PhaseAgentResult with short content
+    $shortResult = new PhaseAgentResult([
+        'content' => 'Too short.',
+    ]);
+
+    expect($method->invoke($service, $shortResult))->toBeFalse();
+});
+
+test('isValidPhaseResult blocks confirmation-only responses', function () {
+    $reflection = new ReflectionClass(PhaseChainService::class);
+    $method = $reflection->getMethod('isValidPhaseResult');
+    $method->setAccessible(true);
+
+    $service = app(PhaseChainService::class);
+
+    $confirmations = [
+        'Okay, I understand. Let me proceed with the task at hand.',
+        'OK, understood. I will continue.',
+        'I understand the task.',
+        'Acknowledged, proceeding forward.',
+        'Roger, I will start now.',
+    ];
+
+    foreach ($confirmations as $text) {
+        $result = new PhaseAgentResult(['content' => $text]);
+        expect($method->invoke($service, $result))
+            ->toBeFalse("Failed for text: {$text}");
+    }
+});
+
+test('isValidPhaseResult accepts valid substantial content', function () {
+    $reflection = new ReflectionClass(PhaseChainService::class);
+    $method = $reflection->getMethod('isValidPhaseResult');
+    $method->setAccessible(true);
+
+    $service = app(PhaseChainService::class);
+
+    $validContent = 'X' . str_repeat('|', 110);  // >100 chars
+
+    $result = new PhaseAgentResult(['content' => $validContent]);
+
+    expect($method->invoke($service, $result))->toBeTrue();
+});

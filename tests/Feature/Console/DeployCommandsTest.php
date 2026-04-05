@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\CreditTransaction;
 use App\Models\User;
 use App\Models\Workspace;
@@ -22,7 +23,7 @@ test('deploy:ensure-admin erstellt admin-user und rolle', function () {
 
     $user = User::where('email', 'bene@linn.games')->first();
     expect($user)->not->toBeNull();
-    expect($user->hasRole('admin'))->toBeTrue();
+    expect($user->hasRole(UserRole::ADMIN))->toBeTrue();
     expect($user->email_verified_at)->not->toBeNull();
 });
 
@@ -37,13 +38,13 @@ test('deploy:ensure-admin ist idempotent bei wiederholtem aufruf', function () {
 
 test('deploy:ensure-admin weist admin-rolle zu wenn user existiert aber keine rolle hat', function () {
     User::factory()->withoutTwoFactor()->create(['email' => 'bene@linn.games']);
-    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => UserRole::ADMIN, 'guard_name' => 'web']);
 
     $this->artisan('deploy:ensure-admin')
         ->assertSuccessful()
         ->expectsOutputToContain('Admin-Rolle zugewiesen');
 
-    expect(User::where('email', 'bene@linn.games')->first()->hasRole('admin'))->toBeTrue();
+    expect(User::where('email', 'bene@linn.games')->first()->hasRole(UserRole::ADMIN))->toBeTrue();
 });
 
 // ─── deploy:ensure-workspace ─────────────────────────────────────
