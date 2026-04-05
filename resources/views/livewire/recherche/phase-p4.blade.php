@@ -1,13 +1,13 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Livewire\Forms\Recherche\{SuchstringForm, ThesaurusMappingForm, AnpassungsprotokollForm};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     public SuchstringForm        $ss;
     public ThesaurusMappingForm  $th;
@@ -167,11 +167,7 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 4)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(4),
         ];
     }
 }; ?>

@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Synthese-Methode ---
     public bool $showSmForm = false;
@@ -291,11 +291,7 @@ new class extends Component {
                 report: true,
             ),
             'treffer' => $treffer,
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(7),
         ];
     }
 }; ?>

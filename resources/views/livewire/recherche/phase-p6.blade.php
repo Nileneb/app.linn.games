@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P5Treffer, P6Qualitaetsbewertung, P6Luckenanalyse};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Qualitätsbewertung ---
     public bool $showQbForm = false;
@@ -165,11 +165,7 @@ new class extends Component {
                 report: true,
             ),
             'robVerteilung' => $bewertungen->groupBy('gesamturteil')->map->count(),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(6),
         ];
     }
 }; ?>

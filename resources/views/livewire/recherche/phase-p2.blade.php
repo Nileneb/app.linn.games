@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- ReviewTypEntscheidung ---
     public bool $showRevForm = false;
@@ -267,11 +267,7 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(2),
         ];
     }
 }; ?>
