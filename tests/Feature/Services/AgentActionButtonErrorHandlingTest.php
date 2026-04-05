@@ -21,34 +21,6 @@ function makeTestProject(): Projekt
     ]);
 }
 
-// ─── buildContextMessages() Error Handling ──────────────────
-
-test('buildContextMessages handles paper_embeddings query failure gracefully', function () {
-    Queue::fake();
-    config(['services.langdock.scoping_mapping_agent' => 'test-agent-id']);
-
-    $projekt = makeTestProject();
-
-    // Mock paper_embeddings query to fail without crashing
-    Livewire\Volt\Component::class;
-    // In practice: the rescue() in buildContextMessages() prevents this from throwing
-    // This test verifies that rescue() defaults to 0 when query fails
-
-    expect(true)->toBeTrue(); // Placeholder: actual integration test runs via browser/livewire component
-});
-
-test('buildContextMessages handles p5Treffer() failure gracefully', function () {
-    Queue::fake();
-    config(['services.langdock.scoping_mapping_agent' => 'test-agent-id']);
-
-    $projekt = makeTestProject();
-
-    // The rescue() in buildContextMessages() for $trefferCount defaults to 0
-    // preventing the component from crashing
-
-    expect(true)->toBeTrue(); // Placeholder: actual integration test runs via livewire
-});
-
 // ─── LangdockAgentService 404 Handling ──────────────────────
 
 test('LangdockAgentService handles 404 with descriptive error message', function () {
@@ -66,11 +38,13 @@ test('LangdockAgentService handles 404 with descriptive error message', function
 
     $service = app(LangdockAgentService::class);
 
-    expect(fn () => $service->call('unknown-agent-id', [['role' => 'user', 'content' => 'test']]))
-        ->toThrow(
-            \App\Services\LangdockAgentException::class,
-            'Agent \'unknown-agent-id\' nicht gefunden',
-        );
+    try {
+        $service->call('unknown-agent-id', [['role' => 'user', 'content' => 'test']]);
+        $this->fail('Expected LangdockAgentException was not thrown.');
+    } catch (\App\Services\LangdockAgentException $exception) {
+        expect($exception->getMessage())->toContain('unknown-agent-id');
+        expect($exception->getMessage())->toContain('nicht gefunden');
+    }
 });
 
 test('LangdockAgentService handles 500 with generic error message', function () {
@@ -92,6 +66,3 @@ test('LangdockAgentService handles 500 with generic error message', function () 
     expect(fn () => $service->call('test-agent', [['role' => 'user', 'content' => 'test']]))
         ->toThrow(\App\Services\LangdockAgentException::class);
 });
-
-// ─── Phase Query Resilience ────────────────────────────────
-

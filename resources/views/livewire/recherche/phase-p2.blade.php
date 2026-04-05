@@ -233,21 +233,45 @@ new class extends Component {
 
     public function hasRunningAgentJob(): bool
     {
-        return rescue(fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
-            ->where('phase_nr', 2)
-            ->where('status', 'pending')
-            ->exists(), false);
+        return rescue(
+            fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
+                ->where('phase_nr', 2)
+                ->where('status', 'pending')
+                ->exists(),
+            false,
+            report: true,
+        );
     }
 
     public function with(): array
     {
         $pid = $this->projekt->id;
         return [
-            'reviewTypen' => rescue(fn () => P2ReviewTypEntscheidung::where('projekt_id', $pid)->get(), collect()),
-            'cluster' => rescue(fn () => P2Cluster::where('projekt_id', $pid)->get(), collect()),
-            'mappings' => rescue(fn () => P2MappingSuchstringKomponente::where('projekt_id', $pid)->get(), collect()),
-            'trefferlisten' => rescue(fn () => P2Trefferliste::where('projekt_id', $pid)->orderBy('suchdatum', 'desc')->get(), collect()),
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first()),
+            'reviewTypen' => rescue(
+                fn () => P2ReviewTypEntscheidung::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'cluster' => rescue(
+                fn () => P2Cluster::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'mappings' => rescue(
+                fn () => P2MappingSuchstringKomponente::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'trefferlisten' => rescue(
+                fn () => P2Trefferliste::where('projekt_id', $pid)->orderBy('suchdatum', 'desc')->get(),
+                collect(),
+                report: true,
+            ),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>
