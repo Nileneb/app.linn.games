@@ -15,19 +15,9 @@ while ! php artisan tinker --execute="DB::connection()->getPdo();" > /dev/null 2
 done
 echo "Database is ready!"
 
-# Run migrations in production/staging
-if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
-    echo "Running database migrations..."
-    php artisan migrate --force
-fi
-
-# Clear and cache config/routes/views for production
-if [ "$APP_ENV" = "production" ]; then
-    echo "Caching configuration..."
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-fi
+# Migrations and cache are handled by deploy.sh — NOT here.
+# Running them in the entrypoint caused double execution and DNS failures
+# when deploy.sh already orchestrates these steps via `docker compose run --rm php-cli`.
 
 # Fix ownership after root-executed artisan commands so www-data can write
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
