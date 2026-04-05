@@ -283,7 +283,7 @@ new class extends Component {
             @endif
         </div>
 
-        <x-crud.form :visible="$showPrismaForm" save-action="savePrisma" cancel-action="cancelPrisma">
+        <x-crud.form :visible="$showPrismaForm" save-action="savePrisma" cancel-action="cancelPrisma" title="PRISMA-Zahlen {{ $editingPrismaId ? 'bearbeiten' : 'erfassen' }}">
             <div class="grid gap-3 sm:grid-cols-4">
                 <x-crud.field label="Identifiziert gesamt">
                     <input wire:model="prismaIdentGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
@@ -403,7 +403,7 @@ new class extends Component {
     {{-- ═══ Screening-Kriterien ═══ --}}
     <x-crud.section title="Screening-Kriterien" :count="$screeningKriterien->count()" new-action="newSk">
 
-        <x-crud.form :visible="$showSkForm" save-action="saveSk" cancel-action="cancelSk">
+        <x-crud.form :visible="$showSkForm" save-action="saveSk" cancel-action="cancelSk" title="Screening-Kriterium {{ $editingSkId ? 'bearbeiten' : 'hinzufügen' }}">
             <div class="grid gap-3 sm:grid-cols-2">
                 <x-crud.field label="Level" required>
                     <select wire:model="skLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
@@ -459,7 +459,7 @@ new class extends Component {
     {{-- ═══ Tool-Entscheidung ═══ --}}
     <x-crud.section title="Screening-Tool" :count="$tools->count()" new-action="newTool">
 
-        <x-crud.form :visible="$showToolForm" save-action="saveTool" cancel-action="cancelTool">
+        <x-crud.form :visible="$showToolForm" save-action="saveTool" cancel-action="cancelTool" title="Screening-Tool {{ $editingToolId ? 'bearbeiten' : 'hinzufügen' }}">
             <div class="grid gap-3 sm:grid-cols-2">
                 <x-crud.field label="Tool" required>
                     <select wire:model="toolName" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
@@ -523,32 +523,42 @@ new class extends Component {
         </div>
 
         @if ($showScreenForm)
-            <div class="border-b border-neutral-200 bg-amber-50/50 p-4 dark:border-neutral-700 dark:bg-amber-950/20">
-                <h4 class="mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">Screening-Entscheidung</h4>
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <x-crud.field label="Level">
-                        <select wire:model="screenLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
-                            <option value="L2_volltext">L2 — Volltext</option>
-                        </select>
-                    </x-crud.field>
-                    <x-crud.field label="Entscheidung" required>
-                        <select wire:model="screenEntscheidung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="eingeschlossen">Eingeschlossen</option>
-                            <option value="ausgeschlossen">Ausgeschlossen</option>
-                            <option value="unklar">Unklar</option>
-                        </select>
-                    </x-crud.field>
-                    <x-crud.field label="Reviewer">
-                        <input wire:model="screenReviewer" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </x-crud.field>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelScreen"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Screening-Entscheidung</h3>
+                    <button wire:click="cancelScreen" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                <x-crud.field label="Ausschlussgrund" class="mt-3">
-                    <input wire:model="screenAusschlussgrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </x-crud.field>
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveScreen" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelScreen" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <x-crud.field label="Level">
+                            <select wire:model="screenLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                                <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
+                                <option value="L2_volltext">L2 — Volltext</option>
+                            </select>
+                        </x-crud.field>
+                        <x-crud.field label="Entscheidung" required>
+                            <select wire:model="screenEntscheidung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                                <option value="eingeschlossen">Eingeschlossen</option>
+                                <option value="ausgeschlossen">Ausgeschlossen</option>
+                                <option value="unklar">Unklar</option>
+                            </select>
+                        </x-crud.field>
+                        <x-crud.field label="Reviewer">
+                            <input wire:model="screenReviewer" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </x-crud.field>
+                        <x-crud.field label="Ausschlussgrund">
+                            <input wire:model="screenAusschlussgrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </x-crud.field>
+                    </div>
+                </div>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelScreen" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveScreen" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif

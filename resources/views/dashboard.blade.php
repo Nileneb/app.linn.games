@@ -1,7 +1,7 @@
 <x-layouts.app :title="__('Dashboard')">
-    <div class="flex h-full w-full flex-1 flex-col gap-6 lg:flex-row">
+    <div class="flex w-full flex-col gap-6 lg:h-[calc(100vh-4rem)] lg:flex-row">
         {{-- Left: Dashboard content --}}
-        <div class="w-full space-y-6 lg:w-1/2">
+        <div class="w-full space-y-6 lg:w-1/2 lg:overflow-y-auto">
             <div>
                 <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Willkommen zurück, :name', ['name' => auth()->user()->name]) }}</h1>
                 <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Dein Forschungs-Dashboard') }}</p>
@@ -50,7 +50,7 @@
         </div>
 
         {{-- Right: Chat --}}
-        <div class="flex w-full flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 lg:w-1/2" style="min-height: calc(100vh - 10rem);">
+        <div class="flex w-full flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 lg:h-full lg:w-1/2">
             <livewire:chat.big-research-chat />
         </div>
     </div>

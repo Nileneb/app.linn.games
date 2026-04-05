@@ -181,53 +181,62 @@ new class extends Component {
         </div>
 
         @if ($showSsForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
-                        <input wire:model="ss.datenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Version</label>
-                        <input wire:model="ss.version" type="text" placeholder="z.B. v1.0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
-                        <input wire:model="ss.suchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelSs"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Suchstring {{ $editingSsId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelSs" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring</label>
-                    <textarea wire:model="ss.suchstring" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100" placeholder="(Population OR Patients) AND (Intervention OR Treatment) ..."></textarea>
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
+                            <input wire:model="ss.datenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Version</label>
+                            <input wire:model="ss.version" type="text" placeholder="z.B. v1.0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
+                            <input wire:model="ss.suchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer-Anzahl</label>
+                            <input wire:model="ss.trefferAnzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Feldeinschränkung</label>
+                            <input wire:model="ss.feldeinschraenkung" type="text" placeholder="z.B. [tiab]" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filter <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
+                            <input wire:model="ss.filter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring</label>
+                        <textarea wire:model="ss.suchstring" rows="4" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100" placeholder="(Population OR Patients) AND (Intervention OR Treatment) ..."></textarea>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Einschätzung</label>
+                            <input wire:model="ss.einschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anpassung</label>
+                            <input wire:model="ss.anpassung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                    </div>
+                    @error('ss.datenbank') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Feldeinschränkung</label>
-                        <input wire:model="ss.feldeinschraenkung" type="text" placeholder="z.B. [tiab]" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelSs" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveSs" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer-Anzahl</label>
-                        <input wire:model="ss.trefferAnzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filter <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                        <input wire:model="ss.filter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Einschätzung</label>
-                        <input wire:model="ss.einschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anpassung</label>
-                        <input wire:model="ss.anpassung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
-                @error('ss.datenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveSs" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelSs" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
                 </div>
             </div>
         @endif
@@ -308,15 +317,17 @@ new class extends Component {
 
     {{-- Anpassungsprotokoll Form (global, references suchstring_id) --}}
     @if ($showApForm)
-        <div class="overflow-hidden rounded-lg border border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20">
-            <div class="border-b border-amber-200 bg-amber-100/50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/30">
-                <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    {{ $editingApId ? 'Anpassung bearbeiten' : 'Neue Anpassung' }}
-                </h3>
+        <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelAp"></div>
+        <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+            <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{{ $editingApId ? 'Anpassung bearbeiten' : 'Neue Anpassung' }}</h3>
+                <button wire:click="cancelAp" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                </button>
             </div>
-            <div class="p-4">
+            <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                 @if (!$editingApId && !$ap->suchstringId)
-                    <div class="mb-3">
+                    <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring auswählen *</label>
                         <select wire:model="ap.suchstringId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                             <option value="">— Suchstring wählen —</option>
@@ -326,7 +337,7 @@ new class extends Component {
                         </select>
                     </div>
                 @endif
-                <div class="grid gap-3 sm:grid-cols-3">
+                <div class="grid gap-4 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Version</label>
                         <input wire:model="ap.version" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
@@ -340,11 +351,11 @@ new class extends Component {
                         <input wire:model="ap.entscheidung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
-                <div class="mt-3">
+                <div>
                     <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Änderung *</label>
-                    <textarea wire:model="ap.aenderung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                    <textarea wire:model="ap.aenderung" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div class="grid gap-4 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Grund</label>
                         <input wire:model="ap.grund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
@@ -358,11 +369,13 @@ new class extends Component {
                         <input wire:model="ap.trefferNachher" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
-                @error('ap.suchstringId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                @error('ap.aenderung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveAp" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelAp" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                @error('ap.suchstringId') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('ap.aenderung') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+            </div>
+            <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <div class="flex justify-end gap-2">
+                    <button wire:click="cancelAp" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                    <button wire:click="saveAp" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                 </div>
             </div>
         </div>
@@ -379,39 +392,48 @@ new class extends Component {
         </div>
 
         @if ($showThForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (DE) *</label>
-                        <input wire:model="th.freitextDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (EN)</label>
-                        <input wire:model="th.freitextEn" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelTh"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Thesaurus-Mapping {{ $editingThId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelTh" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">MeSH-Term</label>
-                        <input wire:model="th.mesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (DE) *</label>
+                            <input wire:model="th.freitextDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (EN)</label>
+                            <input wire:model="th.freitextEn" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">MeSH-Term</label>
+                            <input wire:model="th.mesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Emtree-Term</label>
+                            <input wire:model="th.emtree" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">PsycINFO-Term</label>
+                            <input wire:model="th.psycinfo" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
+                            <input wire:model="th.anmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Emtree-Term</label>
-                        <input wire:model="th.emtree" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">PsycINFO-Term</label>
-                        <input wire:model="th.psycinfo" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+                    @error('th.freitextDe') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                    <input wire:model="th.anmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                @error('th.freitextDe') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveTh" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelTh" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelTh" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveTh" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -419,7 +441,7 @@ new class extends Component {
         @if ($thesaurusMappings->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">DE</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">EN</th>

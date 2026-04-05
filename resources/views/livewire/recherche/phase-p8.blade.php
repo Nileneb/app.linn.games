@@ -10,6 +10,7 @@ new class extends Component {
 
     // --- Suchprotokoll ---
     public bool $showSpForm = false;
+    public ?string $expandedSp = null;
     public ?string $editingSpId = null;
     public string $spSuchstringId = '';
     public string $spDatenbank = '';
@@ -85,6 +86,11 @@ new class extends Component {
         $this->spTrefferGesamt = $r->treffer_gesamt;
         $this->spTrefferEindeutig = $r->treffer_eindeutig;
         $this->showSpForm = true;
+    }
+
+    public function toggleExpandSp(string $id): void
+    {
+        $this->expandedSp = $this->expandedSp === $id ? null : $id;
     }
 
     public function deleteSp(string $id): void
@@ -370,7 +376,7 @@ new class extends Component {
         @if ($suchprotokolle->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/30">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Datenbank</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Datum</th>
@@ -387,7 +393,19 @@ new class extends Component {
                                     @if ($sp->db_version) <span class="text-xs text-neutral-400">({{ $sp->db_version }})</span> @endif
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $sp->suchdatum?->format('d.m.Y') ?? '—' }}</td>
-                                <td class="max-w-xs truncate px-4 py-2 font-mono text-xs text-neutral-600 dark:text-neutral-300">{{ str()->limit($sp->suchstring_final, 60) }}</td>
+                                <td class="px-4 py-2">
+                                    @if ($sp->suchstring_final)
+                                        <button wire:click="toggleExpandSp('{{ $sp->id }}')" class="font-mono text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100">
+                                            {{ str()->limit($sp->suchstring_final, 60) }}
+                                            <span class="ml-1 text-[10px] text-neutral-400">{{ $expandedSp === $sp->id ? '▲' : '▼' }}</span>
+                                        </button>
+                                        @if ($expandedSp === $sp->id)
+                                            <pre class="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-neutral-100 p-2 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">{{ $sp->suchstring_final }}</pre>
+                                        @endif
+                                    @else
+                                        <span class="text-xs text-neutral-400">—</span>
+                                    @endif
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-2 text-right text-neutral-600 dark:text-neutral-300">
                                     {{ $sp->treffer_gesamt !== null ? number_format($sp->treffer_gesamt) : '—' }}
                                     @if ($sp->treffer_eindeutig !== null)
