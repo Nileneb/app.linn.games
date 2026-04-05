@@ -63,14 +63,18 @@ new class extends Component {
         }
 
         // --- Ergebnisse abgeschlossener Vorphasen ---
-        $previousResults = rescue(fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
-            ->where('phase_nr', '<', $this->phaseNr)
-            ->where('status', 'completed')
-            ->whereNotNull('content')
-            ->orderBy('phase_nr')
-            ->orderByDesc('created_at')
-            ->get()
-            ->unique('phase_nr'), collect());
+        $previousResults = rescue(
+            fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
+                ->where('phase_nr', '<', $this->phaseNr)
+                ->where('status', 'completed')
+                ->whereNotNull('content')
+                ->orderBy('phase_nr')
+                ->orderByDesc('created_at')
+                ->get()
+                ->unique('phase_nr'),
+            collect(),
+            report: true,
+        );
 
         if ($previousResults->isNotEmpty()) {
             $lines[] = '';
@@ -82,12 +86,20 @@ new class extends Component {
         }
 
         // --- Verfügbare Dokumente ---
-        $paperCount = rescue(fn () => (int) DB::selectOne(
-            'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
-            [$this->projekt->id]
-        )?->cnt, 0);
+        $paperCount = rescue(
+            fn () => (int) DB::selectOne(
+                'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
+                [$this->projekt->id]
+            )?->cnt,
+            0,
+            report: true,
+        );
 
-        $trefferCount = rescue(fn () => $this->projekt->p5Treffer()->count(), 0);
+        $trefferCount = rescue(
+            fn () => $this->projekt->p5Treffer()->count(),
+            0,
+            report: true,
+        );
 
         if ($paperCount > 0 || $trefferCount > 0) {
             $lines[] = '';

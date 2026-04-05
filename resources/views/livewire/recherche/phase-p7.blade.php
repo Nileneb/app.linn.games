@@ -262,16 +262,40 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $treffer = rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(), collect());
+        $treffer = rescue(
+            fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(),
+            collect(),
+            report: true,
+        );
         return [
-            'syntheseMethoden' => rescue(fn () => P7SyntheseMethode::where('projekt_id', $pid)->get(), collect()),
+            'syntheseMethoden' => rescue(
+                fn () => P7SyntheseMethode::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
             'datenextraktionen' => $treffer->isNotEmpty()
-                ? rescue(fn () => P7Datenextraktion::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(), collect())
+                ? rescue(
+                    fn () => P7Datenextraktion::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(),
+                    collect(),
+                    report: true,
+                )
                 : collect(),
-            'muster' => rescue(fn () => P7MusterKonsistenz::where('projekt_id', $pid)->get(), collect()),
-            'gradeEinschaetzungen' => rescue(fn () => P7GradeEinschaetzung::where('projekt_id', $pid)->get(), collect()),
+            'muster' => rescue(
+                fn () => P7MusterKonsistenz::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'gradeEinschaetzungen' => rescue(
+                fn () => P7GradeEinschaetzung::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
             'treffer' => $treffer,
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first()),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>
