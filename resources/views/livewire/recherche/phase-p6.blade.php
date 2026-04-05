@@ -151,7 +151,7 @@ new class extends Component {
             'bewertungen' => $bewertungen,
             'lucken' => P6Luckenanalyse::where('projekt_id', $pid)->get(),
             'robVerteilung' => $bewertungen->groupBy('gesamturteil')->map->count(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

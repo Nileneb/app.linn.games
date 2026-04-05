@@ -239,7 +239,7 @@ new class extends Component {
             'cluster' => P2Cluster::where('projekt_id', $pid)->get(),
             'mappings' => P2MappingSuchstringKomponente::where('projekt_id', $pid)->get(),
             'trefferlisten' => P2Trefferliste::where('projekt_id', $pid)->orderBy('suchdatum', 'desc')->get(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>
