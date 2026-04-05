@@ -13,7 +13,6 @@
         @endif
 
         {{-- Lokal konfiguriert, aber nicht in API vorhanden --}}
-        @php $orphaned = $this->orphanedConfigKeys(); @endphp
         @if (! empty($orphaned))
             <div class="rounded-lg bg-warning-50 dark:bg-warning-950 border border-warning-200 dark:border-warning-800 p-4">
                 <p class="text-sm font-semibold text-warning-800 dark:text-warning-200 mb-2">
@@ -56,7 +55,7 @@
                             @foreach ($agents as $agent)
                                 @php
                                     $agentId  = $agent['id'] ?? '';
-                                    $configKey = $this->configKeyForId($agentId);
+                                    $configKey = $configKeyMap[$agentId] ?? null;
                                 @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
