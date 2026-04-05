@@ -1,13 +1,13 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P5Treffer, P5ScreeningKriterium, P5ScreeningEntscheidung, P5ToolEntscheidung, P5PrismaZahlen};
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- PRISMA Zahlen ---
     public bool $showPrismaForm = false;
@@ -284,11 +284,7 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(5),
         ];
     }
 }; ?>

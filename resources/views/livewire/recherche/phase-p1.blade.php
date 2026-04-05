@@ -1,12 +1,11 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
-use App\Models\PhaseAgentResult;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\Recherche\{P1Strukturmodellwahl, P1Komponente, P1Kriterium, P1Warnsignal};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Strukturmodellwahl ---
     public bool $showSmwForm = false;
@@ -310,11 +309,7 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 1)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(1),
         ];
     }
 }; ?>

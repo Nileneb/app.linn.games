@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Datenbankmatrix ---
     public bool $showDbForm = false;
@@ -264,11 +264,7 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 3)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(3),
         ];
     }
 }; ?>

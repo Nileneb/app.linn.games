@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\HasProjektContext;
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Suchprotokoll ---
     public bool $showSpForm = false;
@@ -270,11 +270,7 @@ new class extends Component {
                 report: true,
             ),
             'suchstrings' => $suchstrings,
-            'latestAgentResult' => rescue(
-                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first(),
-                null,
-                report: true,
-            ),
+            'latestAgentResult' => $this->loadLatestAgentResult(8),
         ];
     }
 }; ?>
