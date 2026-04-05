@@ -30,6 +30,8 @@ test('ProcessPhaseAgentJob dispatches successfully', function () {
 });
 
 test('ProcessPhaseAgentJob creates pending result record', function () {
+    Queue::fake();
+
     // Mock the SendAgentMessage action to return a successful response
     $this->mock(SendAgentMessage::class, function ($mock) {
         $mock->shouldReceive('execute')
@@ -61,6 +63,8 @@ test('ProcessPhaseAgentJob creates pending result record', function () {
 });
 
 test('ProcessPhaseAgentJob marks result as completed on success', function () {
+    Queue::fake();
+
     $this->mock(SendAgentMessage::class, function ($mock) {
         $mock->shouldReceive('execute')
             ->once()
@@ -90,6 +94,8 @@ test('ProcessPhaseAgentJob marks result as completed on success', function () {
 });
 
 test('ProcessPhaseAgentJob marks result as failed on error', function () {
+    Queue::fake();
+
     $this->mock(SendAgentMessage::class, function ($mock) {
         $mock->shouldReceive('execute')
             ->once()
