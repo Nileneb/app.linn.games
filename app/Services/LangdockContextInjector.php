@@ -85,6 +85,8 @@ class LangdockContextInjector
         $projektId   = $context['projekt_id'] ?? null;
         $workspaceId = $context['workspace_id'] ?? null;
         $userId      = $context['user_id'] ?? null;
+        $structuredOutput = (bool) ($context['structured_output'] ?? false);
+        $triggerword = $context['triggerword'] ?? null;
 
         // Validate UUIDs defensively before using in SQL context
         if ($projektId !== null && !$this->isValidUuid((string) $projektId)) {
@@ -157,9 +159,32 @@ class LangdockContextInjector
                 'projekt_id' => $projektId,
                 'workspace_id' => $workspaceId,
                 'user_id' => $userId,
+            'triggerword' => $triggerword,
+            'structured_output' => $structuredOutput ?: null,
             ]),
             JSON_UNESCAPED_UNICODE,
         );
+
+        if ($structuredOutput) {
+          $lines[] = '';
+          $lines[] = '=== OUTPUT FORMAT (JSON ENVELOPE v1) ===';
+          $lines[] = 'Antworte mit exakt EINEM gültigen JSON-Objekt. Keine Markdown-Fences, kein Fließtext davor/danach.';
+          $lines[] = 'Wenn du unsicher bist oder Daten fehlen: trage es in warnings ein (statt zu halluzinieren).';
+          $lines[] = '';
+          $lines[] = 'Schema (MUSS diese Keys enthalten):';
+          $lines[] = '{';
+          $lines[] = '  "meta": {"projekt_id": string|null, "workspace_id": string|null, "user_id": string|null, "triggerword": string|null, "version": 1},';
+          $lines[] = '  "db": {"bootstrapped": boolean, "loaded": string[]},';
+          $lines[] = '  "result": {"type": string, "summary": string, "data": object},';
+          $lines[] = '  "next": {"route_to": string|null, "reason": string|null},';
+          $lines[] = '  "warnings": string[]';
+          $lines[] = '}';
+          $lines[] = '';
+          $lines[] = 'Arbeitsreihenfolge:';
+          $lines[] = '1) DB bootstrap (SET LOCAL...)';
+          $lines[] = '2) Lade dir deine Arbeitsgrundlage aus der DB (mindestens projekte + phasen + relevante p*-Tabellen)';
+          $lines[] = '3) Bearbeite den Auftrag und persistiere Ergebnisse in DB (wenn Schema mitgeliefert)';
+        }
 
         $contextMessage = [
             'id'    => 'system_context',

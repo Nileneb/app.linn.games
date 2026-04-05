@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Password;
 use Spatie\Permission\Models\Role;
 
+Artisan::addCommands([
+    \App\Console\Commands\Langdock\ApplyInstructionPatchFromExport::class,
+    \App\Console\Commands\Langdock\GenerateFleetMapFromExport::class,
+]);
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

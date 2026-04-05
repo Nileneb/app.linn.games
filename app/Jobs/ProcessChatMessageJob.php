@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Actions\SendAgentMessage;
 use App\Models\ChatMessage;
+use App\Services\ChatTriggerwordRouter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,8 +15,8 @@ class ProcessChatMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    // Dashboard chat agent config key — MUST match services.langdock.{KEY} in config/services.php
-    private const AGENT_CONFIG_KEY = 'agent_id';
+    // Default dashboard chat agent config key — MUST match services.langdock.{KEY} in config/services.php
+    private const DEFAULT_AGENT_CONFIG_KEY = 'agent_id';
 
     public int $tries   = 1;
     public int $timeout = 60;
@@ -35,9 +36,25 @@ class ProcessChatMessageJob implements ShouldQueue
             return;
         }
 
-        $history = ChatMessage::historyFor($this->workspaceId, $this->userId);
+        $route = app(ChatTriggerwordRouter::class)->route((string) $userMessage->content);
 
-        $result = app(SendAgentMessage::class)->execute(self::AGENT_CONFIG_KEY, $history, 60, $this->context);
+        $history = ChatMessage::historyFor($this->workspaceId, $this->userId);
+        if ($history !== []) {
+            $lastIndex = array_key_last($history);
+            if ($lastIndex !== null && ($history[$lastIndex]['role'] ?? null) === 'user') {
+                $history[$lastIndex]['content'] = $route['cleaned_message'];
+            }
+        }
+
+        $context = $this->context + array_filter([
+            'projekt_id' => $route['projekt_id'],
+            'triggerword' => $route['triggerword'],
+            'structured_output' => $route['structured_output'],
+        ], static fn ($v) => $v !== null && $v !== '');
+
+        $configKey = $route['config_key'] ?: self::DEFAULT_AGENT_CONFIG_KEY;
+
+        $result = app(SendAgentMessage::class)->execute($configKey, $history, 60, $context);
 
         ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $result['content']);
     }
