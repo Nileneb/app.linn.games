@@ -34,7 +34,11 @@ Wenn im Kontext `structured_output=true` gesetzt ist, gilt:
   "result": {
     "type": "string",
     "summary": "string",
-    "data": {}
+    "data": {
+      "md_files": [
+        {"path": "string.md", "content": "markdown string"}
+      ]
+    }
   },
   "next": {
     "route_to": "string|null",
@@ -48,6 +52,10 @@ Wenn im Kontext `structured_output=true` gesetzt ist, gilt:
 - `db.loaded`: Liste der Tabellen, die du tatsächlich gelesen hast.
 - `result.type`: z.B. `phase_p1_write`, `search_strategy`, `screening_rules`, `instruction_patch_proposal`.
 - `next.route_to`: z.B. `mapping`, `search`, `review`, `retrieval`, `db` (oder null).
+- `result.data.md_files` (optional, aber empfohlen): Wenn du ein „Dokument“ erzeugst (Report, Suchstrategie, Screening-Regeln, RoB-Tabellen), lege es als Markdown-Datei(en) ab.
+  - Jeder Eintrag: `{path, content}`.
+  - `path` ist relativ (keine führenden `/`, keine `..`).
+  - Nur Markdown (keine JSON-Fences). Die App persistiert diese Dateien serverseitig.
 
 ## 3) Stabilitätsregel
 Structured Output soll **nur** aktiviert werden, wenn App-Kontext es verlangt (Triggerwords). Agents sollen es nicht „immer“ erzwingen.
