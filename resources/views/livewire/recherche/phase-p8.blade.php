@@ -277,6 +277,13 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
 
+    {{-- Phase Progress Header --}}
+    <livewire:recherche.phase-group-status-header
+        :projekt="$projekt"
+        :current-phase-nr="8"
+        :key="'phase-header-'.$projekt->id.'-8'"
+    />
+
     <livewire:recherche.agent-action-button
         :projekt="$projekt"
         agent-config-key="review_agent"

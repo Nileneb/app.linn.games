@@ -48,6 +48,7 @@ FROM php:8.4-fpm AS production
 
 # Install runtime libraries required for PHP extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     libpq-dev \
     libicu-dev \
     libzip-dev \
@@ -57,6 +58,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 COPY --from=builder /usr/local/bin/docker-php-ext-* /usr/local/bin/
+
+# Copy Composer from builder stage for php-cli access
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
 
 # Use the default production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

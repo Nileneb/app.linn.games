@@ -136,6 +136,7 @@ new class extends Component {
             wire:click="runAgent"
             wire:loading.attr="disabled"
             wire:target="runAgent"
+            :disabled="$dispatched"
             class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
             <span wire:loading.remove wire:target="runAgent">{{ $label }}</span>

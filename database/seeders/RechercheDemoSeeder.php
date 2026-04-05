@@ -22,7 +22,12 @@ class RechercheDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::where('email', 'test@example.com')->firstOrFail();
+        // Demo seeder is optional — use admin user if available, otherwise skip
+        $user = User::where('email', 'hello@example.com')->first();
+        if (!$user) {
+            $this->command?->warn('ℹ️  Demo user (hello@example.com) not found. Skipping demo seeding.');
+            return;
+        }
 
         $projekt = $this->seedProjekt($user);
         $this->seedPhasen($projekt);

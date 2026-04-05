@@ -54,6 +54,7 @@ class DatabaseSeeder extends Seeder
         }
 
         if (app()->isLocal()) {
+            $this->call(DevSeeder::class);
             $this->call(RechercheDemoSeeder::class);
         }
     }
