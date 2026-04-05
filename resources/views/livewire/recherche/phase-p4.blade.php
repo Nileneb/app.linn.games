@@ -1,13 +1,13 @@
 <?php
 
+use App\Livewire\Concerns\HasProjektContext;
 use App\Livewire\Forms\Recherche\{SuchstringForm, ThesaurusMappingForm, AnpassungsprotokollForm};
 use App\Models\PhaseAgentResult;
-use App\Models\Recherche\{Projekt, P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
-use Livewire\Attributes\On;
+use App\Models\Recherche\{P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Projekt $projekt;
+    use HasProjektContext;
 
     public SuchstringForm        $ss;
     public ThesaurusMappingForm  $th;
@@ -21,18 +21,6 @@ new class extends Component {
 
     public bool $showApForm = false;
     public ?string $editingApId = null;
-
-    public function mount(Projekt $projekt): void
-    {
-        $this->authorize('view', $projekt);
-        $this->projekt = $projekt;
-    }
-
-    #[On('agent-result-accepted')]
-    public function refreshPhaseData(): void
-    {
-        // Re-render triggers with() which re-queries all phase data from DB
-    }
 
     // ─── Suchstring CRUD ─────────────────────────────────────
 

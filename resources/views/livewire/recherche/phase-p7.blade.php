@@ -1,12 +1,12 @@
 <?php
 
+use App\Livewire\Concerns\HasProjektContext;
 use App\Models\PhaseAgentResult;
-use App\Models\Recherche\{Projekt, P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
-use Livewire\Attributes\On;
+use App\Models\Recherche\{P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Projekt $projekt;
+    use HasProjektContext;
 
     // --- Synthese-Methode ---
     public bool $showSmForm = false;
@@ -46,18 +46,6 @@ new class extends Component {
     public string $grImpraezision = '';
     public string $grUrteil = 'moderat';
     public string $grBegruendung = '';
-
-    public function mount(Projekt $projekt): void
-    {
-        $this->authorize('view', $projekt);
-        $this->projekt = $projekt;
-    }
-
-    #[On('agent-result-accepted')]
-    public function refreshPhaseData(): void
-    {
-        // Re-render triggers with() which re-queries all phase data from DB
-    }
 
     // ─── Synthese-Methode CRUD ───────────────────────────────
 

@@ -1,12 +1,12 @@
 <?php
 
+use App\Livewire\Concerns\HasProjektContext;
 use App\Models\PhaseAgentResult;
-use App\Models\Recherche\{Projekt, P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
-use Livewire\Attributes\On;
+use App\Models\Recherche\{P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Projekt $projekt;
+    use HasProjektContext;
 
     // --- Datenbankmatrix ---
     public bool $showDbForm = false;
@@ -45,18 +45,6 @@ new class extends Component {
     public string $grauSuchpfad = '';
     public string $grauRelevanz = '';
     public string $grauAnmerkung = '';
-
-    public function mount(Projekt $projekt): void
-    {
-        $this->authorize('view', $projekt);
-        $this->projekt = $projekt;
-    }
-
-    #[On('agent-result-accepted')]
-    public function refreshPhaseData(): void
-    {
-        // Re-render triggers with() which re-queries all phase data from DB
-    }
 
     // ─── Datenbankmatrix CRUD ────────────────────────────────
 
