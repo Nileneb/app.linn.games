@@ -165,10 +165,8 @@ class LangdockAgentService
                     // Sprechende Fehlermeldung für 404 (Agent nicht gefunden)
                     if ($response->status() === 404) {
                         $agentId = $body['agentId'] ?? 'unknown';
-                        throw new LangdockAgentException(
-                            "Agent '{$agentId}' nicht gefunden - bitte Agent-ID prüfen oder Agent in Langdock reaktivieren.",
-                            404,
-                        );
+                        $message = __('langdock.errors.404_agent_not_found', ['agentId' => $agentId]);
+                        throw new LangdockAgentException($message, 404);
                     }
 
                     throw new LangdockAgentException(
