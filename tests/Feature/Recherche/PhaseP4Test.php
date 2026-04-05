@@ -14,11 +14,11 @@ test('P4: kann suchstring erstellen', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newSs')
-        ->set('ssDatenbank', 'PubMed')
-        ->set('ssSuchstring', '(Population OR Patients) AND (Intervention)')
-        ->set('ssVersion', 'v1.0')
-        ->set('ssTrefferAnzahl', 512)
-        ->set('ssSuchdatum', '2026-03-20')
+        ->set('ss.datenbank', 'PubMed')
+        ->set('ss.suchstring', '(Population OR Patients) AND (Intervention)')
+        ->set('ss.version', 'v1.0')
+        ->set('ss.trefferAnzahl', 512)
+        ->set('ss.suchdatum', '2026-03-20')
         ->call('saveSs')
         ->assertSet('showSsForm', false);
 
@@ -37,9 +37,9 @@ test('P4: suchstring validiert datenbank als pflichtfeld', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newSs')
-        ->set('ssDatenbank', '')
+        ->set('ss.datenbank', '')
         ->call('saveSs')
-        ->assertHasErrors(['ssDatenbank']);
+        ->assertHasErrors(['ss.datenbank']);
 });
 
 test('P4: suchstring filter werden als array gespeichert', function () {
@@ -50,9 +50,9 @@ test('P4: suchstring filter werden als array gespeichert', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newSs')
-        ->set('ssDatenbank', 'CINAHL')
-        ->set('ssSuchstring', 'test query')
-        ->set('ssFilter', 'English, 2020-2026, Peer Reviewed')
+        ->set('ss.datenbank', 'CINAHL')
+        ->set('ss.suchstring', 'test query')
+        ->set('ss.filter', 'English, 2020-2026, Peer Reviewed')
         ->call('saveSs');
 
     $ss = P4Suchstring::where('projekt_id', $projekt->id)->first();
@@ -75,9 +75,9 @@ test('P4: kann suchstring bearbeiten', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('editSs', $ss->id)
-        ->assertSet('ssDatenbank', 'PubMed')
-        ->set('ssDatenbank', 'Embase')
-        ->set('ssVersion', 'v2.0')
+        ->assertSet('ss.datenbank', 'PubMed')
+        ->set('ss.datenbank', 'Embase')
+        ->set('ss.version', 'v2.0')
         ->call('saveSs');
 
     $this->assertDatabaseHas('p4_suchstrings', ['id' => $ss->id, 'datenbank' => 'Embase', 'version' => 'v2.0']);
@@ -110,11 +110,11 @@ test('P4: kann thesaurus-mapping erstellen', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newTh')
-        ->set('thFreitextDe', 'Bluthochdruck')
-        ->set('thFreitextEn', 'Hypertension')
-        ->set('thMesh', 'Hypertension')
-        ->set('thEmtree', 'hypertension')
-        ->set('thPsycinfo', '')
+        ->set('th.freitextDe', 'Bluthochdruck')
+        ->set('th.freitextEn', 'Hypertension')
+        ->set('th.mesh', 'Hypertension')
+        ->set('th.emtree', 'hypertension')
+        ->set('th.psycinfo', '')
         ->call('saveTh')
         ->assertSet('showThForm', false);
 
@@ -133,9 +133,9 @@ test('P4: thesaurus validiert freitext_de als pflichtfeld', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newTh')
-        ->set('thFreitextDe', '')
+        ->set('th.freitextDe', '')
         ->call('saveTh')
-        ->assertHasErrors(['thFreitextDe']);
+        ->assertHasErrors(['th.freitextDe']);
 });
 
 test('P4: kann thesaurus bearbeiten', function () {
@@ -150,9 +150,9 @@ test('P4: kann thesaurus bearbeiten', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('editTh', $th->id)
-        ->assertSet('thFreitextDe', 'Alt')
-        ->set('thFreitextDe', 'Neu')
-        ->set('thMesh', 'NewMeSH')
+        ->assertSet('th.freitextDe', 'Alt')
+        ->set('th.freitextDe', 'Neu')
+        ->set('th.mesh', 'NewMeSH')
         ->call('saveTh');
 
     $this->assertDatabaseHas('p4_thesaurus_mapping', ['id' => $th->id, 'freitext_de' => 'Neu', 'mesh_term' => 'NewMeSH']);
@@ -189,14 +189,14 @@ test('P4: kann anpassungsprotokoll erstellen', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newAp', $ss->id)
-        ->assertSet('apSuchstringId', $ss->id)
-        ->set('apVersion', 'v1.1')
-        ->set('apDatum', '2026-03-25')
-        ->set('apAenderung', 'MeSH-Term hinzugefügt')
-        ->set('apGrund', 'Zu wenig Treffer')
-        ->set('apTrefferVorher', 50)
-        ->set('apTrefferNachher', 120)
-        ->set('apEntscheidung', 'Übernommen')
+        ->assertSet('ap.suchstringId', $ss->id)
+        ->set('ap.version', 'v1.1')
+        ->set('ap.datum', '2026-03-25')
+        ->set('ap.aenderung', 'MeSH-Term hinzugefügt')
+        ->set('ap.grund', 'Zu wenig Treffer')
+        ->set('ap.trefferVorher', 50)
+        ->set('ap.trefferNachher', 120)
+        ->set('ap.entscheidung', 'Übernommen')
         ->call('saveAp')
         ->assertSet('showApForm', false);
 
@@ -216,10 +216,10 @@ test('P4: anpassung validiert suchstring_id und aenderung', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newAp')
-        ->set('apSuchstringId', '')
-        ->set('apAenderung', '')
+        ->set('ap.suchstringId', '')
+        ->set('ap.aenderung', '')
         ->call('saveAp')
-        ->assertHasErrors(['apSuchstringId', 'apAenderung']);
+        ->assertHasErrors(['ap.suchstringId', 'ap.aenderung']);
 });
 
 test('P4: anpassung gehoert zu suchstring des eigenen projekts', function () {
@@ -239,7 +239,7 @@ test('P4: anpassung gehoert zu suchstring des eigenen projekts', function () {
     // Versuch eine Anpassung für einen fremden Suchstring zu erstellen — wirft ModelNotFoundException
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newAp', $foreignSs->id)
-        ->set('apAenderung', 'Hack-Versuch')
+        ->set('ap.aenderung', 'Hack-Versuch')
         ->call('saveAp')
         ->assertStatus(404);
 })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
@@ -262,8 +262,8 @@ test('P4: kann anpassung bearbeiten', function () {
 
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('editAp', $ap->id)
-        ->assertSet('apAenderung', 'Original')
-        ->set('apAenderung', 'Geändert')
+        ->assertSet('ap.aenderung', 'Original')
+        ->set('ap.aenderung', 'Geändert')
         ->call('saveAp');
 
     $this->assertDatabaseHas('p4_anpassungsprotokoll', ['id' => $ap->id, 'aenderung' => 'Geändert']);
@@ -336,8 +336,8 @@ test('P4: cancel setzt form zurück', function () {
     Volt::test('recherche.phase-p4', ['projekt' => $projekt])
         ->call('newSs')
         ->assertSet('showSsForm', true)
-        ->set('ssDatenbank', 'Test')
+        ->set('ss.datenbank', 'Test')
         ->call('cancelSs')
         ->assertSet('showSsForm', false)
-        ->assertSet('ssDatenbank', '');
+        ->assertSet('ss.datenbank', '');
 });

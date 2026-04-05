@@ -33,7 +33,7 @@ class SuchstringForm extends Form
         $this->suchdatum        = $r->suchdatum?->format('Y-m-d');
     }
 
-    public function toArray(string $projektId): array
+    public function toPersistArray(string $projektId): array
     {
         return [
             'projekt_id'        => $projektId,
