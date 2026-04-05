@@ -25,6 +25,16 @@ test('maybeDispatchNext dispatcht den nächsten job wenn konfiguriert', function
 
     $projekt = makeChainProjekt();
 
+    // Quality-Gate requires a substantial completed result for phase 1
+    PhaseAgentResult::create([
+        'projekt_id'       => $projekt->id,
+        'user_id'          => $projekt->user_id,
+        'phase_nr'         => 1,
+        'agent_config_key' => 'scoping_mapping_agent',
+        'status'           => 'completed',
+        'content'          => str_repeat('x', 150), // >100 chars to pass quality gate
+    ]);
+
     app(PhaseChainService::class)->maybeDispatchNext($projekt, 1);
 
     Queue::assertPushed(ProcessPhaseAgentJob::class, function ($job) use ($projekt) {
@@ -78,7 +88,7 @@ test('maybeDispatchNext enthält vorherige phase-ergebnisse im context', functio
         'phase_nr'         => 1,
         'agent_config_key' => 'scoping_mapping_agent',
         'status'           => 'completed',
-        'content'          => 'Ergebnis Phase 1',
+        'content'          => 'Ergebnis Phase 1 — ' . str_repeat('x', 120), // >100 chars to pass quality gate
     ]);
 
     app(PhaseChainService::class)->maybeDispatchNext($projekt, 1);
