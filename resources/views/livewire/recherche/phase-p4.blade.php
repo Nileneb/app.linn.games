@@ -41,9 +41,9 @@ new class extends Component {
     {
         $this->ss->validate();
         if ($this->editingSsId) {
-            P4Suchstring::where('projekt_id', $this->projekt->id)->find($this->editingSsId)?->update($this->ss->toArray($this->projekt->id));
+            P4Suchstring::where('projekt_id', $this->projekt->id)->find($this->editingSsId)?->update($this->ss->toPersistArray($this->projekt->id));
         } else {
-            P4Suchstring::create($this->ss->toArray($this->projekt->id));
+            P4Suchstring::create($this->ss->toPersistArray($this->projekt->id));
         }
         $this->cancelSs();
     }
@@ -77,9 +77,9 @@ new class extends Component {
     {
         $this->th->validate();
         if ($this->editingThId) {
-            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($this->editingThId)?->update($this->th->toArray($this->projekt->id));
+            P4ThesaurusMapping::where('projekt_id', $this->projekt->id)->find($this->editingThId)?->update($this->th->toPersistArray($this->projekt->id));
         } else {
-            P4ThesaurusMapping::create($this->th->toArray($this->projekt->id));
+            P4ThesaurusMapping::create($this->th->toPersistArray($this->projekt->id));
         }
         $this->cancelTh();
     }
@@ -117,17 +117,13 @@ new class extends Component {
     public function saveAp(): void
     {
         $this->ap->validate();
-        if (P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $this->ap->suchstringId)->doesntExist()) {
-            return;
-        }
+        P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $this->ap->suchstringId)->firstOrFail();
         if ($this->editingApId) {
-            $record = P4Anpassungsprotokoll::find($this->editingApId);
-            if ($record === null || P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $record->suchstring_id)->doesntExist()) {
-                return;
-            }
-            $record->update($this->ap->toArray());
+            $record = P4Anpassungsprotokoll::findOrFail($this->editingApId);
+            P4Suchstring::where('projekt_id', $this->projekt->id)->where('id', $record->suchstring_id)->firstOrFail();
+            $record->update($this->ap->toPersistArray());
         } else {
-            P4Anpassungsprotokoll::create($this->ap->toArray());
+            P4Anpassungsprotokoll::create($this->ap->toPersistArray());
         }
         $this->cancelAp();
     }
@@ -196,46 +192,46 @@ new class extends Component {
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
-                        <input wire:model="ssDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.datenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Version</label>
-                        <input wire:model="ssVersion" type="text" placeholder="z.B. v1.0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.version" type="text" placeholder="z.B. v1.0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
-                        <input wire:model="ssSuchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.suchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
                 <div class="mt-3">
                     <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring</label>
-                    <textarea wire:model="ssSuchstring" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100" placeholder="(Population OR Patients) AND (Intervention OR Treatment) ..."></textarea>
+                    <textarea wire:model="ss.suchstring" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100" placeholder="(Population OR Patients) AND (Intervention OR Treatment) ..."></textarea>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Feldeinschränkung</label>
-                        <input wire:model="ssFeldeinschraenkung" type="text" placeholder="z.B. [tiab]" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.feldeinschraenkung" type="text" placeholder="z.B. [tiab]" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer-Anzahl</label>
-                        <input wire:model="ssTrefferAnzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.trefferAnzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filter <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                        <input wire:model="ssFilter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.filter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Einschätzung</label>
-                        <input wire:model="ssEinschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.einschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anpassung</label>
-                        <input wire:model="ssAnpassung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ss.anpassung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
-                @error('ssDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('ss.datenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 <div class="mt-3 flex gap-2">
                     <button wire:click="saveSs" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                     <button wire:click="cancelSs" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
@@ -326,10 +322,10 @@ new class extends Component {
                 </h3>
             </div>
             <div class="p-4">
-                @if (!$editingApId && !$apSuchstringId)
+                @if (!$editingApId && !$ap->suchstringId)
                     <div class="mb-3">
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring auswählen *</label>
-                        <select wire:model="apSuchstringId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <select wire:model="ap.suchstringId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                             <option value="">— Suchstring wählen —</option>
                             @foreach ($suchstrings as $ss)
                                 <option value="{{ $ss->id }}">{{ $ss->datenbank }} {{ $ss->version ? '('.$ss->version.')' : '' }}</option>
@@ -340,37 +336,37 @@ new class extends Component {
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Version</label>
-                        <input wire:model="apVersion" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.version" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datum</label>
-                        <input wire:model="apDatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.datum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Entscheidung</label>
-                        <input wire:model="apEntscheidung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.entscheidung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
                 <div class="mt-3">
                     <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Änderung *</label>
-                    <textarea wire:model="apAenderung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                    <textarea wire:model="ap.aenderung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Grund</label>
-                        <input wire:model="apGrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.grund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer vorher</label>
-                        <input wire:model="apTrefferVorher" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.trefferVorher" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer nachher</label>
-                        <input wire:model="apTrefferNachher" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="ap.trefferNachher" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
-                @error('apSuchstringId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                @error('apAenderung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('ap.suchstringId') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('ap.aenderung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 <div class="mt-3 flex gap-2">
                     <button wire:click="saveAp" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                     <button wire:click="cancelAp" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
@@ -394,32 +390,32 @@ new class extends Component {
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (DE) *</label>
-                        <input wire:model="thFreitextDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="th.freitextDe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Freitext (EN)</label>
-                        <input wire:model="thFreitextEn" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="th.freitextEn" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">MeSH-Term</label>
-                        <input wire:model="thMesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="th.mesh" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Emtree-Term</label>
-                        <input wire:model="thEmtree" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="th.emtree" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">PsycINFO-Term</label>
-                        <input wire:model="thPsycinfo" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <input wire:model="th.psycinfo" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
                 <div class="mt-3">
                     <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                    <input wire:model="thAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="th.anmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                @error('thFreitextDe') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('th.freitextDe') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 <div class="mt-3 flex gap-2">
                     <button wire:click="saveTh" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
                     <button wire:click="cancelTh" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>

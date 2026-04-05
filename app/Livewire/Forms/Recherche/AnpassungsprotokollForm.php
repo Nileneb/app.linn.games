@@ -33,7 +33,7 @@ class AnpassungsprotokollForm extends Form
         $this->entscheidung   = $r->entscheidung ?? '';
     }
 
-    public function toArray(): array
+    public function toPersistArray(): array
     {
         return [
             'suchstring_id'    => $this->suchstringId,
