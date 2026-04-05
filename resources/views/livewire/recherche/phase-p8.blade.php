@@ -243,15 +243,38 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $suchstrings = rescue(fn () => P4Suchstring::where('projekt_id', $pid)->get(), collect());
-        $suchstringIds = $suchstrings->pluck('id');
+        $suchstrings = rescue(
+            fn () => P4Suchstring::where('projekt_id', $pid)->get(),
+            collect(),
+            report: true,
+        );
         return [
-            'suchprotokolle' => rescue(fn () => P8Suchprotokoll::where('projekt_id', $pid)->with('suchstring')->get(), collect()),
-            'limitationen' => rescue(fn () => P8Limitation::where('projekt_id', $pid)->get(), collect()),
-            'reproduzierbarkeit' => rescue(fn () => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(), collect()),
-            'updatePlaene' => rescue(fn () => P8UpdatePlan::where('projekt_id', $pid)->get(), collect()),
+            'suchprotokolle' => rescue(
+                fn () => P8Suchprotokoll::where('projekt_id', $pid)->with('suchstring')->get(),
+                collect(),
+                report: true,
+            ),
+            'limitationen' => rescue(
+                fn () => P8Limitation::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'reproduzierbarkeit' => rescue(
+                fn () => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'updatePlaene' => rescue(
+                fn () => P8UpdatePlan::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
             'suchstrings' => $suchstrings,
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first()),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>

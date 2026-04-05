@@ -157,9 +157,21 @@ new class extends Component {
     {
         $pid = $this->projekt->id;
         return [
-            'suchstrings' => rescue(fn () => P4Suchstring::where('projekt_id', $pid)->with('anpassungsprotokoll')->get(), collect()),
-            'thesaurusMappings' => rescue(fn () => P4ThesaurusMapping::where('projekt_id', $pid)->get(), collect()),
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 4)->whereNotNull('content')->latest()->first()),
+            'suchstrings' => rescue(
+                fn () => P4Suchstring::where('projekt_id', $pid)->with('anpassungsprotokoll')->get(),
+                collect(),
+                report: true,
+            ),
+            'thesaurusMappings' => rescue(
+                fn () => P4ThesaurusMapping::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 4)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>

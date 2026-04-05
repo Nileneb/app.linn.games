@@ -239,7 +239,11 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $trefferQuery = rescue(fn () => P5Treffer::where('projekt_id', $pid)->with('screeningEntscheidungen'), null);
+        $trefferQuery = rescue(
+            fn () => P5Treffer::where('projekt_id', $pid)->with('screeningEntscheidungen'),
+            null,
+            report: true,
+        );
         if ($trefferQuery) {
             if ($this->trefferFilter === 'duplikate') {
                 $trefferQuery->where('ist_duplikat', true);
@@ -248,13 +252,43 @@ new class extends Component {
             }
         }
         return [
-            'prismaZahlen' => rescue(fn () => P5PrismaZahlen::where('projekt_id', $pid)->first()),
-            'screeningKriterien' => rescue(fn () => P5ScreeningKriterium::where('projekt_id', $pid)->get(), collect()),
-            'treffer' => $trefferQuery ? rescue(fn () => $trefferQuery->orderBy('record_id')->get(), collect()) : collect(),
-            'trefferGesamt' => rescue(fn () => P5Treffer::where('projekt_id', $pid)->count(), 0),
-            'trefferDuplikate' => rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(), 0),
-            'tools' => rescue(fn () => P5ToolEntscheidung::where('projekt_id', $pid)->get(), collect()),
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first()),
+            'prismaZahlen' => rescue(
+                fn () => P5PrismaZahlen::where('projekt_id', $pid)->first(),
+                null,
+                report: true,
+            ),
+            'screeningKriterien' => rescue(
+                fn () => P5ScreeningKriterium::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'treffer' => $trefferQuery
+                ? rescue(
+                    fn () => $trefferQuery->orderBy('record_id')->get(),
+                    collect(),
+                    report: true,
+                )
+                : collect(),
+            'trefferGesamt' => rescue(
+                fn () => P5Treffer::where('projekt_id', $pid)->count(),
+                0,
+                report: true,
+            ),
+            'trefferDuplikate' => rescue(
+                fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(),
+                0,
+                report: true,
+            ),
+            'tools' => rescue(
+                fn () => P5ToolEntscheidung::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>

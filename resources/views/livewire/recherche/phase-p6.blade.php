@@ -144,16 +144,32 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $treffer = rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(), collect());
+        $treffer = rescue(
+            fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(),
+            collect(),
+            report: true,
+        );
         $bewertungen = $treffer->isNotEmpty()
-            ? rescue(fn () => P6Qualitaetsbewertung::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(), collect())
+            ? rescue(
+                fn () => P6Qualitaetsbewertung::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(),
+                collect(),
+                report: true,
+            )
             : collect();
         return [
             'treffer' => $treffer,
             'bewertungen' => $bewertungen,
-            'lucken' => rescue(fn () => P6Luckenanalyse::where('projekt_id', $pid)->get(), collect()),
+            'lucken' => rescue(
+                fn () => P6Luckenanalyse::where('projekt_id', $pid)->get(),
+                collect(),
+                report: true,
+            ),
             'robVerteilung' => $bewertungen->groupBy('gesamturteil')->map->count(),
-            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first()),
+            'latestAgentResult' => rescue(
+                fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first(),
+                null,
+                report: true,
+            ),
         ];
     }
 }; ?>
