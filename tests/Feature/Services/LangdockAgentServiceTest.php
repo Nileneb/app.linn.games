@@ -177,7 +177,7 @@ test('call retries on 5xx and succeeds on second attempt', function () {
             ->push(['messages' => [['id' => 'r-ok', 'role' => 'assistant', 'content' => 'Retry erfolgreich.']]], 200),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
     $result = $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -191,7 +191,7 @@ test('call throws after exhausting all retries on persistent 5xx', function () {
         '*' => Http::response('Service Unavailable', 503),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -202,7 +202,7 @@ test('call does not retry on 4xx client errors', function () {
         '*' => Http::response('Unauthorized', 401),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
 
     try {
         $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
@@ -221,7 +221,7 @@ test('retry_attempts config controls number of retries', function () {
         '*' => Http::response('Server Error', 500),
     ]);
 
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
 
     try {
         $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
@@ -238,7 +238,7 @@ test('retry_attempts config controls number of retries', function () {
 // ---------------------------------------------------------------------------
 
 test('estimateTokens accounts for non-ascii characters', function () {
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
     $reflection = new \ReflectionMethod($service, 'estimateTokens');
     $reflection->setAccessible(true);
 
@@ -253,7 +253,7 @@ test('estimateTokens accounts for non-ascii characters', function () {
 });
 
 test('estimateTokens adds per-message overhead', function () {
-    $service = new LangdockAgentService();
+    $service = new LangdockAgentService(new LangdockContextInjector());
     $reflection = new \ReflectionMethod($service, 'estimateTokens');
     $reflection->setAccessible(true);
 
