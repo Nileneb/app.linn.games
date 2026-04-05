@@ -107,17 +107,38 @@ class LangdockContextInjector
         $lines = [];
 
         if ($projektId !== null) {
-            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
+            $lines[] = '=== DATENBANK-BOOTSTRAP (PFLICHT) ===';
+            $lines[] = '';
+            $lines[] = 'Du hast vollen Lese- UND Schreibzugriff (SELECT, INSERT, UPDATE, DELETE) auf die Projekt-Datenbank.';
+            $lines[] = 'Dein Tool dafür ist `execute_sql` (postgres-dev Integration).';
+            $lines[] = '';
+            $lines[] = 'WICHTIG — Row Level Security ist aktiv. Damit deine Abfragen Daten sehen und schreiben können,';
+            $lines[] = 'MUSS jeder `execute_sql`-Aufruf mit diesem SET LOCAL beginnen:';
+            $lines[] = '';
             $lines[] = "SET LOCAL app.current_projekt_id = '{$projektId}';";
             $lines[] = '';
-            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Ohne sie greift Row Level Security '
-                . 'und alle Abfragen liefern 0 Zeilen — Schreib-Operationen schlagen silent fehl.';
+            $lines[] = 'Da jeder `execute_sql`-Aufruf eine eigene Transaktion sein kann, setze SET LOCAL IMMER als';
+            $lines[] = 'erste Anweisung im selben SQL-Block — vor jedem SELECT, INSERT, UPDATE oder DELETE.';
+            $lines[] = '';
+            $lines[] = 'Beispiel für eine Abfrage:';
+            $lines[] = "  execute_sql(\"SET LOCAL app.current_projekt_id = '{$projektId}'; SELECT * FROM projekte;\")";
+            $lines[] = '';
+            $lines[] = 'Beispiel für einen Insert:';
+            $lines[] = "  execute_sql(\"SET LOCAL app.current_projekt_id = '{$projektId}'; INSERT INTO p1_fragestellung (id, projekt_id, ...) VALUES (gen_random_uuid(), '{$projektId}', ...);\")";
+            $lines[] = '';
+            $lines[] = 'Ohne SET LOCAL liefern alle Abfragen 0 Zeilen und Schreibvorgänge schlagen still fehl.';
+            $lines[] = 'Dies IST dein DB-Bootstrap-Mechanismus — es gibt keinen anderen.';
             $lines[] = '';
         } elseif ($workspaceId !== null) {
-            $lines[] = 'WICHTIG: Setze als allererstes vor jeder Datenbankabfrage diese PostgreSQL-Session-Variable:';
+            $lines[] = '=== DATENBANK-BOOTSTRAP (PFLICHT) ===';
+            $lines[] = '';
+            $lines[] = 'Du hast vollen Lese- UND Schreibzugriff auf die Workspace-Datenbank via `execute_sql` (postgres-dev).';
+            $lines[] = '';
+            $lines[] = 'WICHTIG — Row Level Security ist aktiv. Jeder `execute_sql`-Aufruf MUSS mit diesem SET LOCAL beginnen:';
+            $lines[] = '';
             $lines[] = "SET LOCAL app.current_workspace_id = '{$workspaceId}';";
             $lines[] = '';
-            $lines[] = 'Diese Variable MUSS bei jeder Verbindung gesetzt werden. Sie steuert, welche Workspace-Daten du sieht.';
+            $lines[] = 'Da jeder Aufruf eine eigene Transaktion sein kann, setze SET LOCAL IMMER als erste Anweisung im selben SQL-Block.';
             $lines[] = '';
         }
 

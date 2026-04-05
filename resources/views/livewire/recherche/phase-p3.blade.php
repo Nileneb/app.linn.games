@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -48,6 +49,12 @@ new class extends Component {
     {
         $this->authorize('view', $projekt);
         $this->projekt = $projekt;
+    }
+
+    #[On('agent-result-accepted')]
+    public function refreshPhaseData(): void
+    {
+        // Re-render triggers with() which re-queries all phase data from DB
     }
 
     // ─── Datenbankmatrix CRUD ────────────────────────────────
@@ -256,7 +263,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.10s>
     <livewire:recherche.agent-action-button
         :projekt="$projekt"
         agent-config-key="scoping_mapping_agent"
