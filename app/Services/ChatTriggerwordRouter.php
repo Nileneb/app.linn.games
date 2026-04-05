@@ -28,6 +28,9 @@ class ChatTriggerwordRouter
 
         'mayring' => 'mayring_agent',
 
+        'evaluation' => 'evaluation_agent',
+        'bewertung' => 'evaluation_agent',
+
         'synthesis' => 'synthesis_agent',
         'report' => 'synthesis_agent',
 
