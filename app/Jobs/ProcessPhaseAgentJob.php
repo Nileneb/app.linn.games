@@ -6,6 +6,7 @@ use App\Actions\SendAgentMessage;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Services\LangdockArtifactService;
+use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,11 +23,11 @@ class ProcessPhaseAgentJob implements ShouldQueue
     public int $timeout = 180; // Queue worker timeout (not HTTP)
 
     public function __construct(
-        private readonly string $projektId,
-        private readonly int    $phaseNr,
-        private readonly string $agentConfigKey,
-        private readonly array  $messages,
-        private readonly array  $context,
+        public readonly string $projektId,
+        public readonly int    $phaseNr,
+        public readonly string $agentConfigKey,
+        public readonly array  $messages,
+        public readonly array  $context,
     ) {}
 
     public function handle(): void
@@ -72,6 +73,8 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'phase_nr' => $this->phaseNr,
                     'agent_config_key' => $this->agentConfigKey,
                 ]);
+
+                app(PhaseChainService::class)->maybeDispatchNext($projekt, $this->phaseNr);
             } else {
                 $result->markFailed($response['content']);
                 Log::warning('Phase agent job failed', [
