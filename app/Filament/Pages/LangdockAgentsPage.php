@@ -27,6 +27,12 @@ class LangdockAgentsPage extends Page
     /** @var array<string, string> */
     public array $configuredAgents = [];
 
+    /** @var array<string, string>  Key => UUID für lokal konfigurierte Agenten die in der API nicht gefunden wurden */
+    public array $orphaned = [];
+
+    /** @var array<string, string>  agentId => configKey (umgekehrte Lookup-Map) */
+    public array $configKeyMap = [];
+
     public ?string $error = null;
 
     public function mount(): void
@@ -41,6 +47,15 @@ class LangdockAgentsPage extends Page
         } catch (LangdockAgentException $e) {
             $this->error = $e->getMessage();
         }
+
+        $apiIds = array_column($this->agents, 'id');
+
+        $this->orphaned = array_filter(
+            $this->configuredAgents,
+            fn (string $uuid) => ! in_array($uuid, $apiIds, true),
+        );
+
+        $this->configKeyMap = array_flip($this->configuredAgents);
     }
 
     /**
