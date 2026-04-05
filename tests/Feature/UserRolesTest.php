@@ -38,3 +38,21 @@ test('RoleSeeder legt admin, editor und mitglied an', function () {
     $this->assertDatabaseHas('roles', ['name' => 'editor',   'guard_name' => 'web']);
     $this->assertDatabaseHas('roles', ['name' => 'mitglied', 'guard_name' => 'web']);
 });
+
+test('admin wird von /admin ins Filament-Dashboard weitergeleitet', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['admin']);
+
+    $this->actingAs($user)
+        ->get('/admin')
+        ->assertOk();
+});
+
+test('nicht-admin wird von /admin auf Login weitergeleitet', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['mitglied']);
+
+    $this->actingAs($user)
+        ->get('/admin')
+        ->assertForbidden();
+});

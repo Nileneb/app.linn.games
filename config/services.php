@@ -57,15 +57,16 @@ return [
         'low_balance_threshold_percent' => env('LANGDOCK_LOW_BALANCE_THRESHOLD_PERCENT', 10),
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
-            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 0),
-            'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 0),
-            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 0),
-            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 0),
-            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 0),
-            'evaluation_agent'      => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 0),
-            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 0),
-            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 0),
-            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 0),
+            // Default: 500 Cents = 5 EUR pro Agent/Tag (Schutz vor Token-Explosionen)
+            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
+            'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 500),
+            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
+            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 500),
+            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 500),
+            'evaluation_agent'      => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 500),
+            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 500),
+            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 500),
+            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 500),
         ],
     ],
 
