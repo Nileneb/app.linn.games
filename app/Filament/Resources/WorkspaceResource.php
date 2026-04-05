@@ -6,6 +6,7 @@ use App\Filament\Resources\WorkspaceResource\Pages;
 use App\Filament\Resources\WorkspaceResource\RelationManagers;
 use App\Models\Workspace;
 use App\Services\CreditService;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
@@ -14,6 +15,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -29,7 +32,15 @@ class WorkspaceResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('name')->required()->maxLength(160),
+            TextInput::make('name')
+                ->required()
+                ->maxLength(160),
+            Select::make('owner_id')
+                ->label('Inhaber')
+                ->relationship('owner', 'name')
+                ->searchable()
+                ->preload()
+                ->required(),
         ]);
     }
 
@@ -93,21 +104,44 @@ class WorkspaceResource extends Resource
                             ->success()
                             ->send();
                     }),
+                EditAction::make(),
+                DeleteAction::make()
+                    ->modalHeading('Workspace löschen?')
+                    ->modalDescription(fn (Workspace $record): string => static::deleteModalDescription($record))
+                    ->requiresConfirmation(),
             ]);
+    }
+
+    public static function deleteModalDescription(Workspace $record): string
+    {
+        $lines = ["Der Workspace \"{$record->name}\" wird unwiderruflich gelöscht."];
+
+        if (($count = $record->projekte()->count()) > 0) {
+            $lines[] = "Achtung: {$count} Projekt(e) werden ebenfalls gelöscht.";
+        }
+
+        if ($record->credits_balance_cents > 0) {
+            $lines[] = 'Achtung: Guthaben von ' . number_format($record->credits_balance_cents / 100, 2, ',', '.') . ' € geht verloren.';
+        }
+
+        return implode(' ', $lines);
     }
 
     public static function getRelationManagers(): array
     {
         return [
             RelationManagers\CreditTransactionsRelationManager::class,
+            RelationManagers\WorkspaceUsersRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWorkspaces::route('/'),
-            'view'  => Pages\ViewWorkspace::route('/{record}'),
+            'index'  => Pages\ListWorkspaces::route('/'),
+            'create' => Pages\CreateWorkspace::route('/create'),
+            'edit'   => Pages\EditWorkspace::route('/{record}/edit'),
+            'view'   => Pages\ViewWorkspace::route('/{record}'),
         ];
     }
 }

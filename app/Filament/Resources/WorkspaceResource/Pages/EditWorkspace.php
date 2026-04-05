@@ -2,19 +2,17 @@
 
 namespace App\Filament\Resources\WorkspaceResource\Pages;
 
-use App\Filament\Actions\DeleteAction;
-use App\Filament\Actions\EditAction;
 use App\Filament\Resources\WorkspaceResource;
-use Filament\Resources\Pages\ViewRecord;
+use Filament\Resources\Pages\EditRecord;
 
-class ViewWorkspace extends ViewRecord
+class EditWorkspace extends EditRecord
 {
     protected static string $resource = WorkspaceResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\EditAction::make(),
+            \Filament\Actions\ViewAction::make(),
             \Filament\Actions\DeleteAction::make()
                 ->modalDescription(fn (): string => WorkspaceResource::deleteModalDescription($this->record))
                 ->requiresConfirmation(),
