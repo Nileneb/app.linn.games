@@ -3,6 +3,13 @@
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Policies\ProjektPolicy;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function () {
+    Role::firstOrCreate(['name' => 'admin',    'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'editor',   'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'mitglied', 'guard_name' => 'web']);
+});
 
 test('owner can view their project', function () {
     $user = User::factory()->withoutTwoFactor()->create();
@@ -61,10 +68,37 @@ test('non-owner cannot delete project', function () {
     expect($policy->delete($other, $projekt))->toBeFalse();
 });
 
-test('any authenticated user can create a project', function () {
+test('editor kann Projekt erstellen', function () {
     $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['editor']);
 
     $policy = new ProjektPolicy;
 
     expect($policy->create($user))->toBeTrue();
+});
+
+test('admin kann Projekt erstellen', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['admin']);
+
+    $policy = new ProjektPolicy;
+
+    expect($policy->create($user))->toBeTrue();
+});
+
+test('mitglied kann kein Projekt erstellen', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['mitglied']);
+
+    $policy = new ProjektPolicy;
+
+    expect($policy->create($user))->toBeFalse();
+});
+
+test('user ohne Rolle kann kein Projekt erstellen', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+
+    $policy = new ProjektPolicy;
+
+    expect($policy->create($user))->toBeFalse();
 });
