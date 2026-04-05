@@ -127,3 +127,46 @@ test('ingest queues job successfully', function () {
     expect($response->json('status'))->toBe('queued');
     Queue::assertPushed(IngestPaperJob::class);
 });
+
+test('search rejects query exceeding 2000 characters', function () {
+    $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
+        ->getJson('/api/papers/rag-search?q=' . str_repeat('a', 2001));
+
+    expect($response->status())->toBe(422);
+});
+
+test('search rejects max_results above 50', function () {
+    $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
+        ->getJson('/api/papers/rag-search?q=test&max_results=51');
+
+    expect($response->status())->toBe(422);
+});
+
+test('ingest rejects missing required fields', function () {
+    Queue::fake();
+
+    $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
+        ->postJson('/api/papers/ingest', [
+            'paper_id' => 'paper-123',
+            // source, title, text missing
+        ]);
+
+    expect($response->status())->toBe(422);
+    Queue::assertNothingPushed();
+});
+
+test('ingest rejects invalid projekt_id', function () {
+    Queue::fake();
+
+    $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
+        ->postJson('/api/papers/ingest', [
+            'paper_id'   => 'paper-123',
+            'source'     => 'pubmed',
+            'title'      => 'Test',
+            'text'       => 'Content',
+            'projekt_id' => 'not-a-uuid',
+        ]);
+
+    expect($response->status())->toBe(422);
+    Queue::assertNothingPushed();
+});

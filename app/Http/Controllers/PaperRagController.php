@@ -41,7 +41,7 @@ class PaperRagController extends Controller
     public function search(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'q'           => ['required', 'string'],
+            'q'           => ['required', 'string', 'max:2000'],
             'projekt_id'  => ['nullable', 'uuid'],
             'max_results' => ['nullable', 'integer', 'min:1', 'max:50'],
             'offset'      => ['nullable', 'integer', 'min:0', 'max:10000'],

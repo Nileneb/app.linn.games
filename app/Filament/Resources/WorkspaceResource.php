@@ -73,6 +73,7 @@ class WorkspaceResource extends Resource
                             ->label('Oder individueller Betrag (EUR)')
                             ->numeric()
                             ->minValue(0.01)
+                            ->maxValue(500.00)
                             ->step(0.01)
                             ->required()
                             ->default('5.00')
