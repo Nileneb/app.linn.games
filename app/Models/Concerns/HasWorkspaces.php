@@ -36,14 +36,14 @@ trait HasWorkspaces
     {
         return $this->workspaceMemberships()
             ->where('workspace_id', $workspaceId)
-            ->value('role');
+            ->value('workspace_users.role');
     }
 
     public function activeWorkspaceId(): ?string
     {
         if (! $this->workspaceIdLoaded) {
             $this->cachedWorkspaceId = $this->workspaces()
-                ->orderBy('workspaces.created_at')
+                ->oldest('workspaces.created_at')
                 ->value('workspaces.id');
             $this->workspaceIdLoaded = true;
         }
