@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
-    Config::set('services.langdock.api_key', 'test-api-key');
+    // api_key is provided via LANGDOCK_API_KEY in phpunit.xml
     Config::set('services.langdock.search_agent', 'search-uuid');
 });
 
