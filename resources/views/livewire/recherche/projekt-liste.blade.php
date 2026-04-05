@@ -44,7 +44,7 @@ new class extends Component {
             <h1 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{{ __('Meine Recherche-Projekte') }}</h1>
             <p class="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{{ __('Systematische Literaturrecherchen verwalten') }}</p>
         </div>
-        <a href="{{ route('recherche.neu') }}" wire:navigate
+        <a href="{{ route('recherche') }}" wire:navigate
            class="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4">
                 <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
@@ -91,7 +91,7 @@ new class extends Component {
                 </svg>
                 <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ __('Noch keine Recherche-Projekte vorhanden.') }}</p>
                 <p class="mt-1 text-xs text-neutral-400 dark:text-neutral-500">{{ __('Starte deine erste systematische Literaturrecherche.') }}</p>
-                <a href="{{ route('recherche.neu') }}" wire:navigate
+                <a href="{{ route('recherche') }}" wire:navigate
                    class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
                     {{ __('Recherche starten') }} &rarr;
                 </a>
