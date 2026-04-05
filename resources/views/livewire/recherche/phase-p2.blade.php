@@ -267,27 +267,35 @@ new class extends Component {
         </div>
 
         @if ($showRevForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Review-Typ *</label>
-                        <input wire:model="revReviewTyp" type="text" placeholder="z.B. systematic_review" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Passt</label>
-                        <label class="mt-1 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="revPasst" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Ja
-                        </label>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                        <input wire:model="revBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelRev"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Review-Typ-Entscheidung {{ $editingRevId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelRev" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                @error('revReviewTyp') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveRev" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelRev" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Review-Typ *</label>
+                            <input wire:model="revReviewTyp" type="text" placeholder="z.B. systematic_review" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                            @error('revReviewTyp') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
+                            <input wire:model="revBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input wire:model="revPasst" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Passt zum Review-Typ
+                    </label>
+                </div>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelRev" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveRev" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -295,7 +303,7 @@ new class extends Component {
         @if ($reviewTypen->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Review-Typ</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Passt</th>
@@ -340,35 +348,44 @@ new class extends Component {
         </div>
 
         @if ($showCluForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Cluster-ID</label>
-                        <input wire:model="cluClusterId" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Label *</label>
-                        <input wire:model="cluLabel" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer-Schätzung</label>
-                        <input wire:model="cluTrefferSchaetzung" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelClu"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Cluster {{ $editingCluId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelClu" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Relevanz</label>
-                        <input wire:model="cluRelevanz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Cluster-ID</label>
+                            <input wire:model="cluClusterId" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Label *</label>
+                            <input wire:model="cluLabel" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                            @error('cluLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer-Schätzung</label>
+                            <input wire:model="cluTrefferSchaetzung" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Relevanz</label>
+                            <input wire:model="cluRelevanz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beschreibung</label>
                         <input wire:model="cluBeschreibung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                 </div>
-                @error('cluLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveClu" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelClu" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelClu" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveClu" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -376,7 +393,7 @@ new class extends Component {
         @if ($cluster->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">ID</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Label</th>
@@ -419,35 +436,43 @@ new class extends Component {
         </div>
 
         @if ($showMapForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Komponente *</label>
-                        <input wire:model="mapKomponenteLabel" type="text" placeholder="z.B. Population" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelMap"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Suchstring-Mapping {{ $editingMapId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelMap" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Komponente *</label>
+                            <input wire:model="mapKomponenteLabel" type="text" placeholder="z.B. Population" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                            @error('mapKomponenteLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Sprache</label>
+                            <input wire:model="mapSprache" type="text" placeholder="z.B. DE, EN" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Sprache</label>
-                        <input wire:model="mapSprache" type="text" placeholder="z.B. DE, EN" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchbegriffe <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
+                        <input wire:model="mapSuchbegriffe" type="text" placeholder="Begriff 1, Begriff 2, ..." class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Trunkierung</label>
-                        <label class="mt-1 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="mapTrunkierung" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Genutzt
-                        </label>
+                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
+                        <input wire:model="mapAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                     </div>
+                    <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input wire:model="mapTrunkierung" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Trunkierung genutzt
+                    </label>
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchbegriffe <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                    <input wire:model="mapSuchbegriffe" type="text" placeholder="Begriff 1, Begriff 2, ..." class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                    <input wire:model="mapAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                @error('mapKomponenteLabel') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveMap" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelMap" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelMap" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveMap" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -455,7 +480,7 @@ new class extends Component {
         @if ($mappings->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Komponente</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Suchbegriffe</th>
@@ -507,41 +532,47 @@ new class extends Component {
         </div>
 
         @if ($showTrefForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
-                        <input wire:model="trefDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer gesamt</label>
-                        <input wire:model="trefTrefferGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
-                        <input wire:model="trefSuchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelTref"></div>
+            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
+                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Trefferliste {{ $editingTrefId ? 'bearbeiten' : 'hinzufügen' }}</h3>
+                    <button wire:click="cancelTref" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                    </button>
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring</label>
-                    <textarea wire:model="trefSuchstring" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Einschätzung</label>
-                        <input wire:model="trefEinschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
+                            <input wire:model="trefDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                            @error('trefDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer gesamt</label>
+                            <input wire:model="trefTrefferGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
+                            <input wire:model="trefSuchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Einschätzung</label>
+                            <input wire:model="trefEinschaetzung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anpassung notwendig</label>
-                        <label class="mt-1 flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="trefAnpassungNotwendig" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Ja
-                        </label>
+                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring</label>
+                        <textarea wire:model="trefSuchstring" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
                     </div>
+                    <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                        <input wire:model="trefAnpassungNotwendig" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Anpassung notwendig
+                    </label>
                 </div>
-                @error('trefDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveTref" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelTref" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cancelTref" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                        <button wire:click="saveTref" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -549,7 +580,7 @@ new class extends Component {
         @if ($trefferlisten->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Datenbank</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Treffer</th>

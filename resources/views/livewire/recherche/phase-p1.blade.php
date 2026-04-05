@@ -335,7 +335,7 @@ new class extends Component {
         @if ($strukturmodelle->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Modell</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Gewählt</th>
@@ -407,7 +407,7 @@ new class extends Component {
         @if ($komponenten->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Kürzel</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Label</th>
@@ -467,7 +467,7 @@ new class extends Component {
         @if ($kriterien->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Typ</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Beschreibung</th>
@@ -522,7 +522,7 @@ new class extends Component {
         @if ($warnsignale->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="bg-neutral-50/50 dark:bg-neutral-800/50">
+                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">#</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Warnsignal</th>

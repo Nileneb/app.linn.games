@@ -38,6 +38,21 @@ new class extends Component {
 }; ?>
 
 <section>
+    {{-- Header --}}
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{{ __('Meine Recherche-Projekte') }}</h1>
+            <p class="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{{ __('Systematische Literaturrecherchen verwalten') }}</p>
+        </div>
+        <a href="{{ route('recherche.neu') }}" wire:navigate
+           class="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4">
+                <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+            </svg>
+            {{ __('Neue Recherche') }}
+        </a>
+    </div>
+
     <div class="space-y-4">
         @forelse ($projekte as $projekt)
             <div class="rounded-lg border border-neutral-200 p-4 transition hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
@@ -70,9 +85,17 @@ new class extends Component {
                 </div>
             </div>
         @empty
-            <p class="text-neutral-500 dark:text-neutral-400">
-                {{ __('Noch keine Recherche-Projekte vorhanden.') }}
-            </p>
+            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 py-16 dark:border-neutral-600">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mb-4 size-10 text-neutral-300 dark:text-neutral-600">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400">{{ __('Noch keine Recherche-Projekte vorhanden.') }}</p>
+                <p class="mt-1 text-xs text-neutral-400 dark:text-neutral-500">{{ __('Starte deine erste systematische Literaturrecherche.') }}</p>
+                <a href="{{ route('recherche.neu') }}" wire:navigate
+                   class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
+                    {{ __('Recherche starten') }} &rarr;
+                </a>
+            </div>
         @endforelse
     </div>
 </section>
