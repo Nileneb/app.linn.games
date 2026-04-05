@@ -22,6 +22,23 @@ class PhaseChainService
             return; // No successor defined for this phase
         }
 
+        // Quality-Gate: Validate that the previous phase result has substance (Issue #122)
+        // Prevents auto-dispatch of next phase when previous agent returned only confirmations
+        $lastResult = PhaseAgentResult::where('projekt_id', $projekt->id)
+            ->where('phase_nr', $completedPhaseNr)
+            ->where('status', 'completed')
+            ->latest()
+            ->first();
+
+        if (! $lastResult || ! $this->isValidPhaseResult($lastResult)) {
+            Log::warning('PhaseChain: skipping auto-dispatch, previous result validation failed', [
+                'projekt_id'      => $projekt->id,
+                'completed_phase' => $completedPhaseNr,
+                'content_length'  => $lastResult ? mb_strlen(trim($lastResult->content ?? '')) : 0,
+            ]);
+            return;
+        }
+
         $nextPhase = (int) $chain['next_phase'];
         $agentKey  = (string) $chain['agent_config_key'];
 
@@ -124,5 +141,36 @@ class PhaseChainService
         return [
             ['role' => 'user', 'content' => implode("\n", $lines)],
         ];
+    }
+
+    /**
+     * Validates that a phase result contains meaningful content (not just confirmations).
+     * Prevents chain dispatch when agent returns only "Okay", "understood", etc. (Issue #122)
+     *
+     * @return bool True if result is valid and substantial enough for chain dispatch
+     */
+    private function isValidPhaseResult(PhaseAgentResult $result): bool
+    {
+        $content = trim($result->content ?? '');
+
+        // Minimum length check: at least 100 characters of substance
+        if (mb_strlen($content) < 100) {
+            return false;
+        }
+
+        // Pattern-based filter: block confirmation-only responses
+        $confirmationPatterns = [
+            '/^(okay|ok|understood|i understand|understood|will proceed)/i',
+            '/^(i will use|i\'ll use|let me|lass mich)/i',
+            '/^(acknowledged|copy that|roger|confirmed)/i',
+        ];
+
+        foreach ($confirmationPatterns as $pattern) {
+            if (preg_match($pattern, $content)) {
+                return false; // Content starts with a confirmation, not actual work
+            }
+        }
+
+        return true;
     }
 }
