@@ -6,6 +6,7 @@ use App\Services\LangdockAgentException;
 use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
     Config::set('services.langdock.api_key', 'test-api-key');
@@ -53,6 +54,8 @@ test('execute gibt fehlermeldung bei langdock api fehler', function () {
 });
 
 test('execute gibt fehlermeldung bei unerwarteter exception', function () {
+    Log::spy();
+
     $mockService = Mockery::mock(LangdockAgentService::class);
     $mockService->shouldReceive('callByConfigKey')
         ->andThrow(new \RuntimeException('Connection refused'));
@@ -62,4 +65,10 @@ test('execute gibt fehlermeldung bei unerwarteter exception', function () {
 
     expect($result['success'])->toBeFalse();
     expect($result['content'])->toContain('Verbindung');
+
+    Log::shouldHaveReceived('error')
+        ->once()
+        ->with('SendAgentMessage: unerwartete Exception', Mockery::on(
+            fn ($ctx) => $ctx['key'] === 'search_agent' && str_contains($ctx['message'], 'Connection refused')
+        ));
 });
