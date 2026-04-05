@@ -74,16 +74,24 @@ test('toCents berechnet korrekt bei konfigurierbarem preis', function () {
     expect($service->toCents(2000))->toBe(4);
 });
 
-test('topUp und deduct sind atomar bei datenbankfehler', function () {
-    $workspace = makeWorkspace();
-    $initialBalance = $workspace->credits_balance_cents;
+test('deduct wirft exception wenn guthaben nicht ausreicht', function () {
+    $workspace = makeWorkspace(10); // 10 Cent Guthaben
 
-    // topUp sollte atomar sein
-    app(CreditService::class)->topUp($workspace, 200, 'atomar');
-    $workspace->refresh();
+    expect(fn () => app(CreditService::class)->deduct($workspace->fresh(), 100000, 'search_agent'))
+        ->toThrow(InsufficientCreditsException::class);
 
-    expect($workspace->credits_balance_cents)->toBe($initialBalance + 200);
-    expect(CreditTransaction::where('workspace_id', $workspace->id)->count())->toBe(1);
+    // Kein Guthaben wurde abgezogen, keine Usage-Transaktion erstellt
+    expect($workspace->fresh()->credits_balance_cents)->toBe(10);
+    expect(CreditTransaction::where('workspace_id', $workspace->id)->where('type', 'usage')->count())->toBe(0);
+});
+
+test('deduct mit 0 tokens erstellt keine transaktion', function () {
+    $workspace = makeWorkspace(1000);
+
+    app(CreditService::class)->deduct($workspace->fresh(), 0, 'search_agent');
+
+    expect($workspace->fresh()->credits_balance_cents)->toBe(1000);
+    expect(CreditTransaction::where('workspace_id', $workspace->id)->where('type', 'usage')->count())->toBe(0);
 });
 
 // ─── Low-Balance-Warnung ───────────────────────────────────────────
