@@ -166,7 +166,7 @@ class LangdockAgentService
                     if ($response->status() === 404) {
                         $agentId = $body['agentId'] ?? 'unknown';
                         throw new LangdockAgentException(
-                            "Agent '{$agentId}' nicht gefunden — bitte Agent-ID prüfen oder Agent in Langdock reaktivieren.",
+                            "Agent '{$agentId}' nicht gefunden - bitte Agent-ID prüfen oder Agent in Langdock reaktivieren.",
                             404,
                         );
                     }
