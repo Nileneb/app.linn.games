@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Actions\SendAgentMessage;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
+use App\Services\LangdockArtifactService;
 use App\Services\RetrieverService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,7 +53,20 @@ class ProcessPhaseAgentJob implements ShouldQueue
             );
 
             if ($response['success']) {
-                $result->markCompleted($response['content']);
+                $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+                    (string) $response['content'],
+                    $this->context,
+                    [
+                        'scope' => 'phase',
+                        'phase_nr' => $this->phaseNr,
+                        'config_key' => $this->agentConfigKey,
+                        'basename' => "p{$this->phaseNr}-{$this->agentConfigKey}",
+                        // "Am Ende" immer als Markdown-Artefakt persistieren.
+                        'always_write_md' => $this->phaseNr === 8,
+                    ],
+                );
+
+                $result->markCompleted($artifact['display_content']);
                 Log::info('Phase agent job completed', [
                     'projekt_id' => $this->projektId,
                     'phase_nr' => $this->phaseNr,

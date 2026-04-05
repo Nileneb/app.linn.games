@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Actions\SendAgentMessage;
 use App\Models\ChatMessage;
 use App\Services\ChatTriggerwordRouter;
+use App\Services\LangdockArtifactService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -56,6 +57,18 @@ class ProcessChatMessageJob implements ShouldQueue
 
         $result = app(SendAgentMessage::class)->execute($configKey, $history, 60, $context);
 
-        ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $result['content']);
+        $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+            (string) $result['content'],
+            $context,
+            [
+                'scope' => 'chat',
+                'config_key' => $configKey,
+                'basename' => 'chat-' . $this->userMessageId,
+                // For explicit "report"/synthesis calls we always want a .md file.
+                'always_write_md' => $configKey === 'synthesis_agent' || ($route['triggerword'] ?? null) === 'report',
+            ],
+        );
+
+        ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $artifact['display_content']);
     }
 }

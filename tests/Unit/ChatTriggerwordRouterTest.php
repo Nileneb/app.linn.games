@@ -32,3 +32,14 @@ test('it keeps second token as message when not a uuid', function () {
         ->and($r['projekt_id'])->toBeNull()
         ->and($r['cleaned_message'])->toBe('not-a-uuid Screen this');
 });
+
+test('it routes evaluation trigger', function () {
+    $router = new ChatTriggerwordRouter();
+
+    $r = $router->route('@bewertung 123e4567-e89b-12d3-a456-426614174000 Bitte bewerte RoB2');
+
+    expect($r['config_key'])->toBe('evaluation_agent')
+        ->and($r['projekt_id'])->toBe('123e4567-e89b-12d3-a456-426614174000')
+        ->and($r['cleaned_message'])->toBe('Bitte bewerte RoB2')
+        ->and($r['structured_output'])->toBeTrue();
+});
