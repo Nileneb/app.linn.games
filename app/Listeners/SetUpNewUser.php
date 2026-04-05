@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Models\User;
 use App\Services\CreditService;
+use Illuminate\Support\Facades\Log;
 
 class SetUpNewUser
 {
@@ -11,11 +12,18 @@ class SetUpNewUser
 
     public function __invoke(User $user): void
     {
-        $workspace = $user->ensureDefaultWorkspace();
+        try {
+            $workspace = $user->ensureDefaultWorkspace();
 
-        $starterCents = (int) config('services.credits.starter_amount_cents', 100);
-        if ($starterCents > 0) {
-            $this->creditService->topUp($workspace, $starterCents, 'Startguthaben');
+            $starterCents = (int) config('services.credits.starter_amount_cents', 100);
+            if ($starterCents > 0) {
+                $this->creditService->topUp($workspace, $starterCents, 'Startguthaben');
+            }
+        } catch (\Throwable $e) {
+            Log::error('User-Initialisierung fehlgeschlagen', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
         }
     }
 }

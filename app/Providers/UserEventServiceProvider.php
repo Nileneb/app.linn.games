@@ -10,6 +10,6 @@ class UserEventServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        User::created(app(SetUpNewUser::class));
+        User::created(fn (User $user) => app(SetUpNewUser::class)($user));
     }
 }
