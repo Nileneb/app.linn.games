@@ -46,4 +46,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('recherche/{projekt}', fn (Projekt $projekt) => view('recherche.show', ['projekt' => $projekt]))
         ->middleware('can:view,projekt')
         ->name('recherche.projekt');
+
+    Route::get('recherche/{projekt}/mayring', fn (Projekt $projekt) => view('recherche.mayring', ['projekt' => $projekt]))
+        ->middleware('can:view,projekt')
+        ->name('recherche.mayring');
 });

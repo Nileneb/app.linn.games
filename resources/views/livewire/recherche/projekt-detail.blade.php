@@ -42,10 +42,16 @@ new class extends Component {
                     @endif
                 </p>
             </div>
-            <a href="{{ route('recherche') }}" wire:navigate
-               class="text-sm text-blue-600 hover:underline dark:text-blue-400">
-                &larr; {{ __('Zurück') }}
-            </a>
+            <div class="flex items-center gap-4">
+                <a href="{{ route('recherche.mayring', $projekt) }}" wire:navigate
+                   class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                    Mayring-Codierung
+                </a>
+                <a href="{{ route('recherche') }}" wire:navigate
+                   class="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                    &larr; {{ __('Zurück') }}
+                </a>
+            </div>
         </div>
 
         @if ($projekt->forschungsfrage)
