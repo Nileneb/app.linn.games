@@ -248,7 +248,7 @@ new class extends Component {
             'disziplinen' => P3Disziplin::where('projekt_id', $pid)->get(),
             'geoFilter' => P3GeografischerFilter::where('projekt_id', $pid)->get(),
             'graueLiteratur' => P3GraueLiteratur::where('projekt_id', $pid)->get(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 3)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 3)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

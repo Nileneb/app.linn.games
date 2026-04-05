@@ -294,7 +294,7 @@ new class extends Component {
             'komponenten' => P1Komponente::where('projekt_id', $pid)->get(),
             'kriterien' => P1Kriterium::where('projekt_id', $pid)->get(),
             'warnsignale' => P1Warnsignal::where('projekt_id', $pid)->orderBy('lfd_nr')->get(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 1)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 1)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

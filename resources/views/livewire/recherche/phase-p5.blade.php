@@ -252,7 +252,7 @@ new class extends Component {
             'trefferGesamt' => P5Treffer::where('projekt_id', $pid)->count(),
             'trefferDuplikate' => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(),
             'tools' => P5ToolEntscheidung::where('projekt_id', $pid)->get(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

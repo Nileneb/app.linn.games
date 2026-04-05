@@ -251,7 +251,7 @@ new class extends Component {
             'reproduzierbarkeit' => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(),
             'updatePlaene' => P8UpdatePlan::where('projekt_id', $pid)->get(),
             'suchstrings' => $suchstrings,
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

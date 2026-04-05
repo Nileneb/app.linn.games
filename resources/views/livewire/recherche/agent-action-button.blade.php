@@ -4,6 +4,7 @@ use App\Jobs\ProcessPhaseAgentJob;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
@@ -20,34 +21,49 @@ new class extends Component {
     {
         $this->loadingPhase = (string) $this->phaseNr;
 
-        $messages = $this->buildContextMessages();
+        try {
+            $messages = $this->buildContextMessages();
 
-        ProcessPhaseAgentJob::dispatch(
-            $this->projekt->id,
-            $this->phaseNr,
-            $this->agentConfigKey,
-            $messages,
-            [
-                'source' => 'recherche_phase_agent',
+            ProcessPhaseAgentJob::dispatch(
+                $this->projekt->id,
+                $this->phaseNr,
+                $this->agentConfigKey,
+                $messages,
+                [
+                    'source' => 'recherche_phase_agent',
+                    'projekt_id' => $this->projekt->id,
+                    'workspace_id' => $this->projekt->workspace_id,
+                    'phase_nr' => $this->phaseNr,
+                    'user_id' => $this->projekt->user_id,
+                    'label' => $this->label,
+                ]
+            );
+
+            $this->showModal = true;
+        } catch (\Throwable $e) {
+            $this->loadingPhase = null;
+            $this->dispatch('notify', type: 'error', message: __('KI-Agent konnte nicht gestartet werden. Bitte versuche es erneut.'));
+            Log::error('runAgent failed', [
                 'projekt_id' => $this->projekt->id,
-                'workspace_id' => $this->projekt->workspace_id,
                 'phase_nr' => $this->phaseNr,
-                'user_id' => $this->projekt->user_id,
-                'label' => $this->label,
-            ]
-        );
-
-        $this->showModal = true;
+                'agent_config_key' => $this->agentConfigKey,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     #[Computed]
     public function latestResult(): ?PhaseAgentResult
     {
-        return PhaseAgentResult::latestPending(
-            $this->projekt->id,
-            $this->phaseNr,
-            $this->agentConfigKey
-        );
+        try {
+            return PhaseAgentResult::latestPending(
+                $this->projekt->id,
+                $this->phaseNr,
+                $this->agentConfigKey
+            );
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function pollForResult(): void
@@ -88,14 +104,14 @@ new class extends Component {
         }
 
         // --- Ergebnisse abgeschlossener Vorphasen ---
-        $previousResults = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+        $previousResults = rescue(fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
             ->where('phase_nr', '<', $this->phaseNr)
             ->where('status', 'completed')
             ->whereNotNull('content')
             ->orderBy('phase_nr')
             ->orderByDesc('created_at')
             ->get()
-            ->unique('phase_nr');
+            ->unique('phase_nr'), collect());
 
         if ($previousResults->isNotEmpty()) {
             $lines[] = '';
@@ -107,10 +123,14 @@ new class extends Component {
         }
 
         // --- Verfügbare Dokumente ---
-        $paperCount = (int) DB::selectOne(
-            'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
-            [$this->projekt->id]
-        )?->cnt;
+        try {
+            $paperCount = (int) DB::selectOne(
+                'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
+                [$this->projekt->id]
+            )?->cnt;
+        } catch (\Throwable) {
+            $paperCount = 0;
+        }
 
         $trefferCount = $this->projekt->p5Treffer()->count();
 

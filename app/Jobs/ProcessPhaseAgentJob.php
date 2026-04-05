@@ -32,20 +32,22 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
     public function handle(): void
     {
-        $projekt = Projekt::findOrFail($this->projektId);
-
-        $messages = $this->prependRetrieverContext($projekt, $this->messages);
-
-        // Create pending result record
-        $result = PhaseAgentResult::create([
-            'projekt_id' => $this->projektId,
-            'user_id' => $projekt->user_id,
-            'phase_nr' => $this->phaseNr,
-            'agent_config_key' => $this->agentConfigKey,
-            'status' => 'pending',
-        ]);
+        $result = null;
 
         try {
+            $projekt = Projekt::findOrFail($this->projektId);
+
+            $messages = $this->prependRetrieverContext($projekt, $this->messages);
+
+            // Create pending result record
+            $result = PhaseAgentResult::create([
+                'projekt_id' => $this->projektId,
+                'user_id' => $projekt->user_id,
+                'phase_nr' => $this->phaseNr,
+                'agent_config_key' => $this->agentConfigKey,
+                'status' => 'pending',
+            ]);
+
             $response = app(SendAgentMessage::class)->execute(
                 $this->agentConfigKey,
                 $messages,
@@ -85,7 +87,9 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 ]);
             }
         } catch (\Throwable $e) {
-            $result->markFailed(__('Verarbeitung fehlgeschlagen: ') . $e->getMessage());
+            if ($result !== null) {
+                $result->markFailed(__('Verarbeitung fehlgeschlagen: ') . $e->getMessage());
+            }
             Log::error('Phase agent job exception', [
                 'projekt_id' => $this->projektId,
                 'phase_nr' => $this->phaseNr,

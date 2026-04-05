@@ -269,7 +269,7 @@ new class extends Component {
             'muster' => P7MusterKonsistenz::where('projekt_id', $pid)->get(),
             'gradeEinschaetzungen' => P7GradeEinschaetzung::where('projekt_id', $pid)->get(),
             'treffer' => $treffer,
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 7)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>

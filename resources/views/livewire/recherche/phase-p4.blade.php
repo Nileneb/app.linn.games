@@ -159,7 +159,7 @@ new class extends Component {
         return [
             'suchstrings' => P4Suchstring::where('projekt_id', $pid)->with('anpassungsprotokoll')->get(),
             'thesaurusMappings' => P4ThesaurusMapping::where('projekt_id', $pid)->get(),
-            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 4)->whereNotNull('content')->latest()->first(),
+            'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 4)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>
