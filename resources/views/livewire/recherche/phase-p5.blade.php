@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{Projekt, P5Treffer, P5ScreeningKriterium, P5ScreeningEntscheidung, P5ToolEntscheidung, P5PrismaZahlen};
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
@@ -263,6 +264,7 @@ new class extends Component {
             'trefferGesamt' => P5Treffer::where('projekt_id', $pid)->count(),
             'trefferDuplikate' => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(),
             'tools' => P5ToolEntscheidung::where('projekt_id', $pid)->get(),
+            'latestAgentResult' => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first(),
         ];
     }
 }; ?>
@@ -277,6 +279,17 @@ new class extends Component {
         :phase-nr="5"
         :key="'agent-p5-'.$projekt->id"
     />
+    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
+    @if ($latestAgentResult?->content)
+        <div class="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
+            <div class="mb-2 flex items-center gap-2">
+                <span class="text-xs font-semibold text-blue-700 dark:text-blue-400">🤖 KI-Vorschlag</span>
+                <span class="text-xs text-neutral-400">{{ $latestAgentResult->created_at->diffForHumans() }}</span>
+            </div>
+            <pre class="max-h-64 overflow-auto whitespace-pre-wrap text-xs text-neutral-700 dark:text-neutral-300">{{ $latestAgentResult->content }}</pre>
+        </div>
+    @endif
+
 
     {{-- ═══ PRISMA Flowchart Zahlen ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
