@@ -13,12 +13,12 @@
                     <div class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Recherche') }}</div>
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('Neue systematische Recherche starten oder bestehende Projekte verwalten') }}</p>
                 </a>
-                @can('viewAny', \App\Models\Contact::class)
-                    <a href="/admin" class="group rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
+                @role('admin')
+                    <a href="{{ url('/admin') }}" class="group rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
                         <div class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Admin') }}</div>
                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('Kontakte, Benutzer und Plattformeinstellungen verwalten') }}</p>
                     </a>
-                @endcan
+                @endrole
             </div>
 
             {{-- Recent projects --}}
