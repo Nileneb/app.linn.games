@@ -2,6 +2,19 @@
 
 > **app.linn.games** — Research-Management-Plattform mit KI-gestützter systematischer Literaturrecherche.
 
+## 🚀 Quick Start (Local Development)
+
+**Siehe: [`.github/instructions/local-dev-setup.md`](.github/instructions/local-dev-setup.md)** für vollständige lokale Entwicklungs-Anleitung.
+
+**TL;DR:**
+```bash
+composer setup
+docker compose up -d
+# Öffne http://localhost:6480 → Login: editor@test.local / password
+```
+
+---
+
 ## Stack
 
 | Komponente | Version |

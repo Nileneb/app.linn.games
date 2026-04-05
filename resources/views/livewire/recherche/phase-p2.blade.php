@@ -277,6 +277,13 @@ new class extends Component {
 @else
     <div class="space-y-6">
 @endif
+    {{-- Phase Progress Header --}}
+    <livewire:recherche.phase-group-status-header
+        :projekt="$projekt"
+        :current-phase-nr="2"
+        :key="'phase-header-'.$projekt->id.'-2'"
+    />
+
     <livewire:recherche.agent-action-button
         :projekt="$projekt"
         agent-config-key="scoping_mapping_agent"
