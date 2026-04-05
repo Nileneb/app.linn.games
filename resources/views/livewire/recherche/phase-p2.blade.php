@@ -1,12 +1,12 @@
 <?php
 
+use App\Livewire\Concerns\HasProjektContext;
 use App\Models\PhaseAgentResult;
-use App\Models\Recherche\{Projekt, P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
-use Livewire\Attributes\On;
+use App\Models\Recherche\{P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Projekt $projekt;
+    use HasProjektContext;
 
     // --- ReviewTypEntscheidung ---
     public bool $showRevForm = false;
@@ -42,18 +42,6 @@ new class extends Component {
     public string $trefEinschaetzung = '';
     public bool $trefAnpassungNotwendig = false;
     public ?string $trefSuchdatum = null;
-
-    public function mount(Projekt $projekt): void
-    {
-        $this->authorize('view', $projekt);
-        $this->projekt = $projekt;
-    }
-
-    #[On('agent-result-accepted')]
-    public function refreshPhaseData(): void
-    {
-        // Re-render triggers with() which re-queries all phase data from DB
-    }
 
     // ─── ReviewTypEntscheidung CRUD ──────────────────────────
 

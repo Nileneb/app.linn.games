@@ -1,12 +1,12 @@
 <?php
 
+use App\Livewire\Concerns\HasProjektContext;
 use App\Models\PhaseAgentResult;
-use App\Models\Recherche\{Projekt, P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
-use Livewire\Attributes\On;
+use App\Models\Recherche\{P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Projekt $projekt;
+    use HasProjektContext;
 
     // --- Suchprotokoll ---
     public bool $showSpForm = false;
@@ -42,18 +42,6 @@ new class extends Component {
     public string $upVerantwortlich = '';
     public string $upTool = '';
     public ?string $upNaechstesUpdate = null;
-
-    public function mount(Projekt $projekt): void
-    {
-        $this->authorize('view', $projekt);
-        $this->projekt = $projekt;
-    }
-
-    #[On('agent-result-accepted')]
-    public function refreshPhaseData(): void
-    {
-        // Re-render triggers with() which re-queries all phase data from DB
-    }
 
     // ─── Suchprotokoll CRUD ─────────────────────────────────
 
