@@ -290,10 +290,10 @@ new class extends Component {
     {
         $pid = $this->projekt->id;
         return [
-            'strukturmodelle' => P1Strukturmodellwahl::where('projekt_id', $pid)->get(),
-            'komponenten' => P1Komponente::where('projekt_id', $pid)->get(),
-            'kriterien' => P1Kriterium::where('projekt_id', $pid)->get(),
-            'warnsignale' => P1Warnsignal::where('projekt_id', $pid)->orderBy('lfd_nr')->get(),
+            'strukturmodelle' => rescue(fn () => P1Strukturmodellwahl::where('projekt_id', $pid)->get(), collect()),
+            'komponenten' => rescue(fn () => P1Komponente::where('projekt_id', $pid)->get(), collect()),
+            'kriterien' => rescue(fn () => P1Kriterium::where('projekt_id', $pid)->get(), collect()),
+            'warnsignale' => rescue(fn () => P1Warnsignal::where('projekt_id', $pid)->orderBy('lfd_nr')->get(), collect()),
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 1)->whereNotNull('content')->latest()->first()),
         ];
     }

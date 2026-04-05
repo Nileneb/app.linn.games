@@ -244,10 +244,10 @@ new class extends Component {
     {
         $pid = $this->projekt->id;
         return [
-            'datenbanken' => P3Datenbankmatrix::where('projekt_id', $pid)->get(),
-            'disziplinen' => P3Disziplin::where('projekt_id', $pid)->get(),
-            'geoFilter' => P3GeografischerFilter::where('projekt_id', $pid)->get(),
-            'graueLiteratur' => P3GraueLiteratur::where('projekt_id', $pid)->get(),
+            'datenbanken' => rescue(fn () => P3Datenbankmatrix::where('projekt_id', $pid)->get(), collect()),
+            'disziplinen' => rescue(fn () => P3Disziplin::where('projekt_id', $pid)->get(), collect()),
+            'geoFilter' => rescue(fn () => P3GeografischerFilter::where('projekt_id', $pid)->get(), collect()),
+            'graueLiteratur' => rescue(fn () => P3GraueLiteratur::where('projekt_id', $pid)->get(), collect()),
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 3)->whereNotNull('content')->latest()->first()),
         ];
     }

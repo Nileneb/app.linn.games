@@ -243,13 +243,13 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $suchstrings = P4Suchstring::where('projekt_id', $pid)->get();
+        $suchstrings = rescue(fn () => P4Suchstring::where('projekt_id', $pid)->get(), collect());
         $suchstringIds = $suchstrings->pluck('id');
         return [
-            'suchprotokolle' => P8Suchprotokoll::where('projekt_id', $pid)->with('suchstring')->get(),
-            'limitationen' => P8Limitation::where('projekt_id', $pid)->get(),
-            'reproduzierbarkeit' => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(),
-            'updatePlaene' => P8UpdatePlan::where('projekt_id', $pid)->get(),
+            'suchprotokolle' => rescue(fn () => P8Suchprotokoll::where('projekt_id', $pid)->with('suchstring')->get(), collect()),
+            'limitationen' => rescue(fn () => P8Limitation::where('projekt_id', $pid)->get(), collect()),
+            'reproduzierbarkeit' => rescue(fn () => P8Reproduzierbarkeitspruefung::where('projekt_id', $pid)->get(), collect()),
+            'updatePlaene' => rescue(fn () => P8UpdatePlan::where('projekt_id', $pid)->get(), collect()),
             'suchstrings' => $suchstrings,
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 8)->whereNotNull('content')->latest()->first()),
         ];

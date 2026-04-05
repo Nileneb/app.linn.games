@@ -231,20 +231,32 @@ new class extends Component {
 
     // ─── Data ────────────────────────────────────────────────
 
+    public function hasRunningAgentJob(): bool
+    {
+        return rescue(fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', 2)
+            ->where('status', 'pending')
+            ->exists(), false);
+    }
+
     public function with(): array
     {
         $pid = $this->projekt->id;
         return [
-            'reviewTypen' => P2ReviewTypEntscheidung::where('projekt_id', $pid)->get(),
-            'cluster' => P2Cluster::where('projekt_id', $pid)->get(),
-            'mappings' => P2MappingSuchstringKomponente::where('projekt_id', $pid)->get(),
-            'trefferlisten' => P2Trefferliste::where('projekt_id', $pid)->orderBy('suchdatum', 'desc')->get(),
+            'reviewTypen' => rescue(fn () => P2ReviewTypEntscheidung::where('projekt_id', $pid)->get(), collect()),
+            'cluster' => rescue(fn () => P2Cluster::where('projekt_id', $pid)->get(), collect()),
+            'mappings' => rescue(fn () => P2MappingSuchstringKomponente::where('projekt_id', $pid)->get(), collect()),
+            'trefferlisten' => rescue(fn () => P2Trefferliste::where('projekt_id', $pid)->orderBy('suchdatum', 'desc')->get(), collect()),
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 2)->whereNotNull('content')->latest()->first()),
         ];
     }
 }; ?>
 
-<div class="space-y-6" wire:poll.10s>
+@if($this->hasRunningAgentJob())
+    <div class="space-y-6" wire:poll.10s>
+@else
+    <div class="space-y-6">
+@endif
     <livewire:recherche.agent-action-button
         :projekt="$projekt"
         agent-config-key="scoping_mapping_agent"
