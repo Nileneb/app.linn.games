@@ -3,13 +3,14 @@ set -euo pipefail
 
 # ──────────────────────────────────────────────
 # deploy.sh — Production build & deploy for app.linn.games
-# Usage: ./deploy.sh [--skip-build] [--skip-migrate] [--seed] [--fresh]
+# Usage: ./deploy.sh [--skip-build] [--skip-migrate] [--seed] [--fresh] [--with-mcp]
 # ──────────────────────────────────────────────
 
 SKIP_BUILD=false
 SKIP_MIGRATE=false
 RUN_SEED=false
 FRESH_DB=false
+WITH_MCP=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -17,11 +18,17 @@ for arg in "$@"; do
     --skip-migrate) SKIP_MIGRATE=true ;;
     --seed)         RUN_SEED=true ;;
     --fresh)        FRESH_DB=true ;;
+    --with-mcp)     WITH_MCP=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
 
 cd "$(dirname "$0")"
+
+DC=(docker compose)
+if [ "$WITH_MCP" = true ]; then
+  DC+=(--profile mcp)
+fi
 
 # ── Pre-flight checks ──────────────────────────
 if ! command -v docker &>/dev/null; then
@@ -35,27 +42,30 @@ if [ ! -f .env ]; then
 fi
 
 echo "==> Pulling latest images..."
-docker compose pull postgres redis postgres-mcp
-
+"${DC[@]}" pull postgres redis postgres-mcp
 # ── Build ──────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building production images..."
-  docker compose build --no-cache postgres web php-fpm queue-worker php-cli
+  if [ "$WITH_MCP" = true ]; then
+    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli mcp-paper-search
+  else
+    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli
+  fi
 else
   echo "==> Skipping build (--skip-build)"
 fi
 
 # ── Start infrastructure ───────────────────────
 echo "==> Starting postgres & redis..."
-docker compose up -d postgres redis
+"${DC[@]}" up -d postgres redis
 echo "==> Waiting for postgres healthcheck..."
-docker compose exec postgres pg_isready -q --timeout=30 || {
+"${DC[@]}" exec postgres pg_isready -q --timeout=30 || {
   echo "ERROR: Postgres did not become ready." >&2
   exit 1
 }
 
 echo "==> Ensuring required Postgres extensions..."
-docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
+"${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
 
 # ── Backup ─────────────────────────────────────
 BACKUP_DIR="./backups"
@@ -63,7 +73,7 @@ mkdir -p "$BACKUP_DIR"
 BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).sql"
 
 echo "==> Creating database backup..."
-docker compose exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl' > "$BACKUP_FILE" 2>/dev/null || {
+"${DC[@]}" exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-acl' > "$BACKUP_FILE" 2>/dev/null || {
   echo "ERROR: Database backup failed." >&2
   exit 1
 }
@@ -73,13 +83,13 @@ echo "    Backup saved to $BACKUP_FILE"
 if [ "$FRESH_DB" = true ]; then
   echo "==> Dropping and recreating database (--fresh)..."
   # Terminate all active connections, then drop — connect to 'postgres' system DB to avoid "cannot drop currently open database"
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '"'"'"$POSTGRES_DB"'"'"' AND pid <> pg_backend_pid();"' || true
+  "${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '"'"'"$POSTGRES_DB"'"'"' AND pid <> pg_backend_pid();"' || true
   sleep 1
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "CREATE DATABASE \"$POSTGRES_DB\";"'
+  "${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
+  "${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d postgres -tc "CREATE DATABASE \"$POSTGRES_DB\";"'
   echo "    Database reset complete."
   echo "==> Recreating Postgres extensions..."
-  docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
+  "${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS hypopg; CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"'
   # After fresh DB, we must run migrations
   SKIP_MIGRATE=false
 fi
@@ -87,9 +97,9 @@ fi
 # ── Migrate ────────────────────────────────────
 if [ "$SKIP_MIGRATE" = false ]; then
   echo "==> Running database migrations..."
-  if ! docker compose run --rm php-cli php artisan migrate --force; then
+  if ! "${DC[@]}" run --rm php-cli php artisan migrate --force; then
     echo "ERROR: Migration failed. Rolling back from backup..." >&2
-    docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "$BACKUP_FILE" || {
+    "${DC[@]}" exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "$BACKUP_FILE" || {
       echo "CRITICAL: Rollback also failed! Manual restore needed from: $BACKUP_FILE" >&2
     }
     exit 1
@@ -101,31 +111,31 @@ fi
 # ── Seed ───────────────────────────────────────
 if [ "$RUN_SEED" = true ]; then
   echo "==> Seeding database (admin user + roles)..."
-  docker compose run --rm php-cli php artisan db:seed --force
+  "${DC[@]}" run --rm php-cli php artisan db:seed --force
 else
   echo "==> Skipping seed (use --seed for first deploy)"
 fi
 
 # ── Cache optimisation ─────────────────────────
 echo "==> Caching config, routes & views..."
-docker compose run --rm php-cli php artisan config:cache
-docker compose run --rm php-cli php artisan route:cache
-docker compose run --rm php-cli php artisan view:cache
+"${DC[@]}" run --rm php-cli php artisan config:cache
+"${DC[@]}" run --rm php-cli php artisan route:cache
+"${DC[@]}" run --rm php-cli php artisan view:cache
 
 # ── Start all services ─────────────────────────
 echo "==> Clearing stale build-asset volume..."
-docker compose down --remove-orphans 2>/dev/null || true
+"${DC[@]}" down --remove-orphans 2>/dev/null || true
 docker volume rm applinngames_linn-build-assets 2>/dev/null || true
 
 echo "==> Starting all services..."
-docker compose up -d
+"${DC[@]}" up -d
 
 # ── Verify ─────────────────────────────────────
 echo "==> Waiting for services to settle..."
 sleep 5
 
 echo "==> Service status:"
-docker compose ps
+"${DC[@]}" ps
 
 # ── Health check ───────────────────────────────
 echo "==> Running health check..."
@@ -140,14 +150,14 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
   if [ "$i" -eq "$MAX_RETRIES" ]; then
     echo "WARN: App did not respond after $((MAX_RETRIES * RETRY_INTERVAL))s (last status: $HTTP_STATUS)." >&2
-    echo "      Check logs: docker compose logs php-fpm"
+    echo "      Check logs: ${DC[*]} logs php-fpm"
   fi
   sleep "$RETRY_INTERVAL"
 done
 
 # ── Post-deploy: ensure admin + send password reset ───────
 echo "==> Running post-deploy (admin user + password reset)..."
-docker compose run --rm php-cli php artisan deploy:post-deploy || echo "WARN: Post-deploy failed."
+"${DC[@]}" run --rm php-cli php artisan deploy:post-deploy || echo "WARN: Post-deploy failed."
 
 echo ""
 echo "==> Deployment complete."
