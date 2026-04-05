@@ -142,7 +142,7 @@ new class extends Component {
                             </div>
                         @elseif ($result && $result->status === 'completed' && $result->content)
                             <div class="prose prose-sm max-w-none dark:prose-invert">
-                                {!! nl2br(e($result->content)) !!}
+                                {!! Illuminate\Support\Str::markdown($result->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
                         @endif
                     @endif
