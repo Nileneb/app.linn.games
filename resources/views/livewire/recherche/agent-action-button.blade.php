@@ -43,6 +43,9 @@ new class extends Component {
                 'agent_config_key' => $this->agentConfigKey,
                 'exception' => $e->getMessage(),
             ]);
+
+            // Zeige dem User-Fehler-Feedback statt stillem Hang
+            $this->dispatch('notify', type: 'error', message: __('Der KI-Agent konnte nicht gestartet werden. Bitte versuche es erneut.'));
         }
     }
 
@@ -79,16 +82,12 @@ new class extends Component {
         }
 
         // --- Verfügbare Dokumente ---
-        try {
-            $paperCount = (int) DB::selectOne(
-                'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
-                [$this->projekt->id]
-            )?->cnt;
-        } catch (\Throwable) {
-            $paperCount = 0;
-        }
+        $paperCount = rescue(fn () => (int) DB::selectOne(
+            'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
+            [$this->projekt->id]
+        )?->cnt, 0);
 
-        $trefferCount = $this->projekt->p5Treffer()->count();
+        $trefferCount = rescue(fn () => $this->projekt->p5Treffer()->count(), 0);
 
         if ($paperCount > 0 || $trefferCount > 0) {
             $lines[] = '';

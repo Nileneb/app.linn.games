@@ -144,12 +144,14 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $treffer = P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get();
-        $bewertungen = P6Qualitaetsbewertung::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get();
+        $treffer = rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(), collect());
+        $bewertungen = $treffer->isNotEmpty()
+            ? rescue(fn () => P6Qualitaetsbewertung::whereIn('treffer_id', $treffer->pluck('id'))->with('treffer')->get(), collect())
+            : collect();
         return [
             'treffer' => $treffer,
             'bewertungen' => $bewertungen,
-            'lucken' => P6Luckenanalyse::where('projekt_id', $pid)->get(),
+            'lucken' => rescue(fn () => P6Luckenanalyse::where('projekt_id', $pid)->get(), collect()),
             'robVerteilung' => $bewertungen->groupBy('gesamturteil')->map->count(),
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 6)->whereNotNull('content')->latest()->first()),
         ];

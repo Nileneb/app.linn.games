@@ -239,19 +239,21 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
-        $trefferQuery = P5Treffer::where('projekt_id', $pid)->with('screeningEntscheidungen');
-        if ($this->trefferFilter === 'duplikate') {
-            $trefferQuery->where('ist_duplikat', true);
-        } elseif ($this->trefferFilter === 'unique') {
-            $trefferQuery->where('ist_duplikat', false);
+        $trefferQuery = rescue(fn () => P5Treffer::where('projekt_id', $pid)->with('screeningEntscheidungen'), null);
+        if ($trefferQuery) {
+            if ($this->trefferFilter === 'duplikate') {
+                $trefferQuery->where('ist_duplikat', true);
+            } elseif ($this->trefferFilter === 'unique') {
+                $trefferQuery->where('ist_duplikat', false);
+            }
         }
         return [
-            'prismaZahlen' => P5PrismaZahlen::where('projekt_id', $pid)->first(),
-            'screeningKriterien' => P5ScreeningKriterium::where('projekt_id', $pid)->get(),
-            'treffer' => $trefferQuery->orderBy('record_id')->get(),
-            'trefferGesamt' => P5Treffer::where('projekt_id', $pid)->count(),
-            'trefferDuplikate' => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(),
-            'tools' => P5ToolEntscheidung::where('projekt_id', $pid)->get(),
+            'prismaZahlen' => rescue(fn () => P5PrismaZahlen::where('projekt_id', $pid)->first()),
+            'screeningKriterien' => rescue(fn () => P5ScreeningKriterium::where('projekt_id', $pid)->get(), collect()),
+            'treffer' => $trefferQuery ? rescue(fn () => $trefferQuery->orderBy('record_id')->get(), collect()) : collect(),
+            'trefferGesamt' => rescue(fn () => P5Treffer::where('projekt_id', $pid)->count(), 0),
+            'trefferDuplikate' => rescue(fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', true)->count(), 0),
+            'tools' => rescue(fn () => P5ToolEntscheidung::where('projekt_id', $pid)->get(), collect()),
             'latestAgentResult' => rescue(fn () => PhaseAgentResult::where('projekt_id', $pid)->where('phase_nr', 5)->whereNotNull('content')->latest()->first()),
         ];
     }
