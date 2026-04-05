@@ -280,57 +280,52 @@ new class extends Component {
             <button wire:click="newSp" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showSpForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
-                        <input wire:model="spDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
-                        <input wire:model="spSuchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">DB-Version</label>
-                        <input wire:model="spDbVersion" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+        <x-crud.form :visible="$showSpForm" save-action="saveSp" cancel-action="cancelSp"
+            title="Suchprotokoll {{ $editingSpId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
+                    <input wire:model="spDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    @error('spDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring (final) *</label>
-                    <textarea wire:model="spSuchstringFinal" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchdatum</label>
+                    <input wire:model="spSuchdatum" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Verknüpfter Suchstring</label>
-                        <select wire:model="spSuchstringId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="">— keiner —</option>
-                            @foreach ($suchstrings as $ss)
-                                <option value="{{ $ss->id }}">{{ $ss->datenbank }} {{ $ss->version ? '('.$ss->version.')' : '' }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer gesamt</label>
-                        <input wire:model="spTrefferGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer eindeutig</label>
-                        <input wire:model="spTrefferEindeutig" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">DB-Version</label>
+                    <input wire:model="spDbVersion" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filter <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                    <input wire:model="spFilter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                @error('spDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                @error('spSuchstringFinal') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveSp" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelSp" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Verknüpfter Suchstring</label>
+                    <select wire:model="spSuchstringId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="">— keiner —</option>
+                        @foreach ($suchstrings as $ss)
+                            <option value="{{ $ss->id }}">{{ $ss->datenbank }} {{ $ss->version ? '('.$ss->version.')' : '' }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchstring (final) *</label>
+                <textarea wire:model="spSuchstringFinal" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+                @error('spSuchstringFinal') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer gesamt</label>
+                    <input wire:model="spTrefferGesamt" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer eindeutig</label>
+                    <input wire:model="spTrefferEindeutig" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filter <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
+                <input wire:model="spFilter" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+        </x-crud.form>
 
         {{-- Treffer-pro-Datenbank Balkendiagramm --}}
         @if ($suchprotokolle->isNotEmpty())
@@ -436,27 +431,22 @@ new class extends Component {
             <button wire:click="newLim" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showLimForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Limitationstyp *</label>
-                    <input wire:model="limTyp" type="text" placeholder="z.B. Sprachbias, Zeitliche Einschränkung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beschreibung</label>
-                    <textarea wire:model="limBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
-                <div class="mt-3">
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Auswirkung auf Vollständigkeit</label>
-                    <textarea wire:model="limAuswirkung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                </div>
+        <x-crud.form :visible="$showLimForm" save-action="saveLim" cancel-action="cancelLim"
+            title="Limitation {{ $editingLimId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Limitationstyp *</label>
+                <input wire:model="limTyp" type="text" placeholder="z.B. Sprachbias, Zeitliche Einschränkung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 @error('limTyp') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveLim" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelLim" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Beschreibung</label>
+                <textarea wire:model="limBeschreibung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Auswirkung auf Vollständigkeit</label>
+                <textarea wire:model="limAuswirkung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+        </x-crud.form>
 
         @if ($limitationen->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -494,33 +484,28 @@ new class extends Component {
             <button wire:click="newRep" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showRepForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Prüfpunkt *</label>
-                    <input wire:model="repPruefpunkt" type="text" placeholder="z.B. Suchstring dokumentiert, PRISMA-Diagramm erstellt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Status</label>
-                        <select wire:model="repErfuellt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="">— Offen —</option>
-                            <option value="1">Erfüllt</option>
-                            <option value="0">Nicht erfüllt</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                        <input wire:model="repAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                </div>
+        <x-crud.form :visible="$showRepForm" save-action="saveRep" cancel-action="cancelRep"
+            title="Reproduzierbarkeit {{ $editingRepId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Prüfpunkt *</label>
+                <input wire:model="repPruefpunkt" type="text" placeholder="z.B. Suchstring dokumentiert, PRISMA-Diagramm erstellt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 @error('repPruefpunkt') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveRep" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelRep" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Status</label>
+                    <select wire:model="repErfuellt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="">— Offen —</option>
+                        <option value="1">Erfüllt</option>
+                        <option value="0">Nicht erfüllt</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
+                    <input wire:model="repAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
             </div>
-        @endif
+        </x-crud.form>
 
         @if ($reproduzierbarkeit->isNotEmpty())
             @php
@@ -583,41 +568,34 @@ new class extends Component {
             <button wire:click="newUp" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showUpForm)
-            <div class="border-b border-neutral-200 bg-blue-50/50 p-4 dark:border-neutral-700 dark:bg-blue-950/20">
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Typ</label>
-                        <select wire:model="upTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="periodisch">Periodisch</option>
-                            <option value="living_review">Living Review</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Intervall</label>
-                        <input wire:model="upIntervall" type="text" placeholder="z.B. 6 Monate" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Nächstes Update</label>
-                        <input wire:model="upNaechstesUpdate" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+        <x-crud.form :visible="$showUpForm" save-action="saveUp" cancel-action="cancelUp"
+            title="Update-Plan {{ $editingUpId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Typ</label>
+                    <select wire:model="upTyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="periodisch">Periodisch</option>
+                        <option value="living_review">Living Review</option>
+                    </select>
                 </div>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Verantwortlich</label>
-                        <input wire:model="upVerantwortlich" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Tool</label>
-                        <input wire:model="upTool" type="text" placeholder="z.B. PubMed Alerts" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                    </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Intervall</label>
+                    <input wire:model="upIntervall" type="text" placeholder="z.B. 6 Monate" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="saveUp" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    <button wire:click="cancelUp" class="rounded px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Nächstes Update</label>
+                    <input wire:model="upNaechstesUpdate" type="date" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Verantwortlich</label>
+                    <input wire:model="upVerantwortlich" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Tool</label>
+                <input wire:model="upTool" type="text" placeholder="z.B. PubMed Alerts" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+        </x-crud.form>
 
         @if ($updatePlaene->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
