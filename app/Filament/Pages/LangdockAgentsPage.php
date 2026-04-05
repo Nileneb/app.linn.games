@@ -44,8 +44,10 @@ class LangdockAgentsPage extends Page
 
         try {
             $this->agents = $service->listAgents();
-        } catch (LangdockAgentException $e) {
-            $this->error = $e->getMessage();
+        } catch (\Throwable $e) {
+            $this->error = $e instanceof LangdockAgentException
+                ? $e->getMessage()
+                : 'Unerwarteter Fehler: ' . $e->getMessage();
         }
 
         $apiIds = array_column($this->agents, 'id');

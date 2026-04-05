@@ -203,70 +203,85 @@ class LangdockAgentService
     }
 
     /**
-     * Listet alle in Langdock vorhandenen Agenten auf.
+     * Ruft für jeden lokal konfigurierten Agenten die Details via Agent Get API ab.
      *
-     * Endpoint: GET https://api.langdock.com/agent/v1/list
+     * Endpoint: GET https://api.langdock.com/agent/v1/get?agentId=UUID
      * Antwort wird 5 Minuten gecacht.
      *
-     * @return array<int, array{id: string, name: string, description: string|null, status: string|null}>
+     * @return array<int, array{id: string, name: string, description: string|null}>
      *
      * @throws \App\Services\LangdockAgentException
      */
     public function listAgents(): array
     {
-        $apiKey  = config('services.langdock.api_key');
-        $listUrl = config('services.langdock.list_url');
+        $apiKey = config('services.langdock.api_key');
+        $getUrl = config('services.langdock.get_url');
 
         if (! $apiKey) {
             throw new LangdockAgentException('Langdock API-Key nicht konfiguriert.');
         }
 
-        return Cache::remember('langdock.agents.list', 300, function () use ($apiKey, $listUrl) {
-            Log::info('Langdock agent list requested', ['url' => $listUrl]);
+        return Cache::remember('langdock.agents.list', 300, function () use ($apiKey, $getUrl) {
+            $configured = $this->configuredAgents();
+            $agents = [];
+            $errors = [];
 
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type'  => 'application/json',
-                ])->timeout(15)->get($listUrl);
+            Log::info('Langdock agent details requested', [
+                'url'   => $getUrl,
+                'count' => count($configured),
+            ]);
 
-                if ($response->failed()) {
-                    Log::error('Langdock agent list request failed', [
-                        'status'           => $response->status(),
-                        'response_excerpt' => Str::limit($response->body(), 500),
+            foreach ($configured as $configKey => $agentId) {
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $apiKey,
+                    ])->timeout(10)->get($getUrl, ['agentId' => $agentId]);
+
+                    if ($response->successful()) {
+                        $raw   = $response->json() ?? [];
+                        $agent = $raw['agent'] ?? null;
+
+                        if (is_array($agent) && isset($agent['id'])) {
+                            $agents[] = $agent;
+                        } else {
+                            Log::warning('Langdock agent get: unexpected response shape', [
+                                'config_key' => $configKey,
+                                'agent_id'   => $agentId,
+                                'raw'        => $raw,
+                            ]);
+                        }
+                    } else {
+                        $errors[] = "{$configKey} ({$agentId}): HTTP {$response->status()}";
+                        Log::warning('Langdock agent get failed', [
+                            'config_key'       => $configKey,
+                            'agent_id'         => $agentId,
+                            'status'           => $response->status(),
+                            'response_excerpt' => Str::limit($response->body(), 300),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = "{$configKey} ({$agentId}): {$e->getMessage()}";
+                    Log::warning('Langdock agent get crashed', [
+                        'config_key' => $configKey,
+                        'agent_id'   => $agentId,
+                        'exception'  => $e::class,
+                        'message'    => $e->getMessage(),
                     ]);
-
-                    throw new LangdockAgentException(
-                        "Langdock Agent-Liste: HTTP {$response->status()}",
-                        $response->status(),
-                    );
                 }
+            }
 
-                $raw    = $response->json() ?? [];
-                $agents = $raw['agents'] ?? $raw['data'] ?? $raw;
+            Log::info('Langdock agent details fetched', [
+                'found'  => count($agents),
+                'errors' => count($errors),
+            ]);
 
-                if (! is_array($agents)) {
-                    Log::warning('Langdock agent list: unexpected response shape', ['raw' => $raw]);
-                    return [];
-                }
-
-                Log::info('Langdock agent list fetched', ['count' => count($agents)]);
-
-                return $agents;
-            } catch (LangdockAgentException $e) {
-                throw $e;
-            } catch (\Throwable $e) {
-                Log::error('Langdock agent list crashed', [
-                    'exception' => $e::class,
-                    'message'   => $e->getMessage(),
-                ]);
-
+            if ($agents === [] && $errors !== []) {
                 throw new LangdockAgentException(
-                    'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
-                    0,
-                    $e,
+                    'Kein Agent konnte abgerufen werden: ' . implode('; ', array_slice($errors, 0, 3)),
                 );
             }
+
+            return $agents;
         });
     }
 
@@ -278,7 +293,7 @@ class LangdockAgentService
      */
     public function configuredAgents(): array
     {
-        $skip = ['base_url', 'list_url', 'api_key', 'price_per_1k_tokens_cents', 'low_balance_threshold_percent', 'agent_daily_limits'];
+        $skip = ['base_url', 'get_url', 'api_key', 'price_per_1k_tokens_cents', 'low_balance_threshold_percent', 'agent_daily_limits'];
 
         return collect(config('services.langdock', []))
             ->except($skip)

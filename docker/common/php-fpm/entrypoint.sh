@@ -29,5 +29,8 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan view:cache
 fi
 
+# Fix ownership after root-executed artisan commands so www-data can write
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
 # Execute the main command (php-fpm or queue:work)
 exec "$@"
