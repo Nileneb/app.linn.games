@@ -14,16 +14,24 @@ class WorkspacePolicy
 
     public function view(User $user, Workspace $workspace): bool
     {
+        if ($user->hasRole('admin')) return true;
         return $user->workspaceRole($workspace->id) !== null;
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Workspace $workspace): bool
     {
+        if ($user->hasRole('admin')) return true;
         return in_array($user->workspaceRole($workspace->id), ['owner', 'editor'], true);
     }
 
     public function delete(User $user, Workspace $workspace): bool
     {
+        if ($user->hasRole('admin')) return true;
         return $user->workspaceRole($workspace->id) === 'owner';
     }
 }
