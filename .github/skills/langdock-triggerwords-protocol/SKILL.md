@@ -22,6 +22,7 @@ Beispiele:
 - `search` → `search_agent`
 - `review` → `review_agent`
 - `retrieval` → `retrieval_agent`
+- `evaluation` / `bewertung` → `evaluation_agent`
 - `mayring` → `mayring_agent`
 - `synthesis` → `synthesis_agent`
 - `report` → `synthesis_agent`
