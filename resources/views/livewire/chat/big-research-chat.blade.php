@@ -2,34 +2,14 @@
 
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
-use Illuminate\Support\Collection;
+use App\Services\ChatService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string  $message            = '';
-    public bool    $loading            = false;
-    public ?string $pendingUserMsgId   = null;
-
-    private function activeWorkspaceId(): ?string
-    {
-        return Auth::user()?->activeWorkspaceId();
-    }
-
-    public function getChatMessages(): Collection
-    {
-        $workspaceId = $this->activeWorkspaceId();
-
-        if ($workspaceId === null) {
-            return collect();
-        }
-
-        return ChatMessage::where('workspace_id', $workspaceId)
-            ->where('user_id', Auth::id())
-            ->orderBy('created_at')
-            ->limit(50)
-            ->get();
-    }
+    public string  $message          = '';
+    public bool    $loading          = false;
+    public ?string $pendingUserMsgId = null;
 
     public function sendMessage(): void
     {
@@ -37,21 +17,16 @@ new class extends Component {
             'message' => ['required', 'string', 'max:10000'],
         ]);
 
-        $workspaceId = $this->activeWorkspaceId();
+        $workspaceId = Auth::user()?->activeWorkspaceId();
 
         if ($workspaceId === null) {
             return;
         }
 
-        $userMessage = $this->message;
+        $userMessage   = $this->message;
         $this->message = '';
 
-        $userMsg = ChatMessage::create([
-            'user_id'      => Auth::id(),
-            'workspace_id' => $workspaceId,
-            'role'         => 'user',
-            'content'      => $userMessage,
-        ]);
+        $userMsg = app(ChatService::class)->saveUserMessage($workspaceId, Auth::id(), $userMessage);
 
         $this->pendingUserMsgId = $userMsg->id;
         $this->loading          = true;
@@ -79,18 +54,12 @@ new class extends Component {
         $userMsg = ChatMessage::find($this->pendingUserMsgId);
 
         if ($userMsg === null) {
-            $this->loading        = false;
+            $this->loading          = false;
             $this->pendingUserMsgId = null;
             return;
         }
 
-        $hasResponse = ChatMessage::where('workspace_id', $userMsg->workspace_id)
-            ->where('user_id', Auth::id())
-            ->where('role', 'assistant')
-            ->where('created_at', '>=', $userMsg->created_at)
-            ->exists();
-
-        if ($hasResponse) {
+        if (app(ChatService::class)->hasResponseAfter($userMsg, Auth::id())) {
             $this->loading          = false;
             $this->pendingUserMsgId = null;
             $this->dispatch('chat-updated');
@@ -99,12 +68,10 @@ new class extends Component {
 
     public function clearHistory(): void
     {
-        $workspaceId = $this->activeWorkspaceId();
+        $workspaceId = Auth::user()?->activeWorkspaceId();
 
         if ($workspaceId !== null) {
-            ChatMessage::where('workspace_id', $workspaceId)
-                ->where('user_id', Auth::id())
-                ->delete();
+            app(ChatService::class)->clearMessages($workspaceId, Auth::id());
         }
 
         $this->loading          = false;
@@ -113,7 +80,13 @@ new class extends Component {
 
     public function with(): array
     {
-        return ['chatMessages' => $this->getChatMessages()];
+        $workspaceId = Auth::user()?->activeWorkspaceId();
+
+        return [
+            'chatMessages' => $workspaceId
+                ? app(ChatService::class)->getMessages($workspaceId, Auth::id())
+                : collect(),
+        ];
     }
 }; ?>
 
