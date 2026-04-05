@@ -123,10 +123,6 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-white/5">
                             @foreach ($configuredAgents as $key => $uuid)
-                                @php
-                                    $apiIds  = array_column($agents, 'id');
-                                    $found   = in_array($uuid, $apiIds, true);
-                                @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <td class="px-4 py-3 font-mono text-gray-800 dark:text-gray-200 text-xs">{{ $key }}</td>
                                     <td class="px-4 py-3">
@@ -137,7 +133,7 @@
                                     <td class="px-4 py-3">
                                         @if ($error)
                                             <span class="text-xs text-gray-400">unbekannt (API-Fehler)</span>
-                                        @elseif ($found)
+                                        @elseif (! isset($orphaned[$key]))
                                             <span class="inline-flex items-center gap-1 text-xs bg-success-100 dark:bg-success-950 text-success-800 dark:text-success-300 px-2 py-0.5 rounded-full font-medium">✓ ja</span>
                                         @else
                                             <span class="inline-flex items-center gap-1 text-xs bg-danger-100 dark:bg-danger-950 text-danger-800 dark:text-danger-300 px-2 py-0.5 rounded-full font-medium">✗ nein</span>

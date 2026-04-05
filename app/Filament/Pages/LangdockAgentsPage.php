@@ -60,32 +60,4 @@ class LangdockAgentsPage extends Page
         $this->configKeyMap = array_flip($this->configuredAgents);
     }
 
-    /**
-     * Gibt zu einer Agent-UUID den lokalen config-Key zurück (oder null).
-     */
-    public function configKeyForId(string $agentId): ?string
-    {
-        foreach ($this->configuredAgents as $key => $uuid) {
-            if ($uuid === $agentId) {
-                return $key;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Lokal konfigurierte Agent-UUIDs, die NICHT in der API-Antwort auftauchen.
-     *
-     * @return array<string, string>  Key => UUID
-     */
-    public function orphanedConfigKeys(): array
-    {
-        $apiIds = array_column($this->agents, 'id');
-
-        return array_filter(
-            $this->configuredAgents,
-            fn (string $uuid) => ! in_array($uuid, $apiIds, true),
-        );
-    }
 }
