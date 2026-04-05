@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Recherche\{Projekt, P5Treffer, P6Qualitaetsbewertung, P6Luckenanalyse};
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -30,6 +31,12 @@ new class extends Component {
     {
         $this->authorize('view', $projekt);
         $this->projekt = $projekt;
+    }
+
+    #[On('agent-result-accepted')]
+    public function refreshPhaseData(): void
+    {
+        // Re-render triggers with() which re-queries all phase data from DB
     }
 
     // ─── Qualitätsbewertung CRUD ─────────────────────────────
@@ -159,7 +166,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.10s>
 
     {{-- KI-Agent Button --}}
     <livewire:recherche.agent-action-button

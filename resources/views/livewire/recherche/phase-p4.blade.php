@@ -2,6 +2,7 @@
 
 use App\Livewire\Forms\Recherche\{SuchstringForm, ThesaurusMappingForm, AnpassungsprotokollForm};
 use App\Models\Recherche\{Projekt, P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -24,6 +25,12 @@ new class extends Component {
     {
         $this->authorize('view', $projekt);
         $this->projekt = $projekt;
+    }
+
+    #[On('agent-result-accepted')]
+    public function refreshPhaseData(): void
+    {
+        // Re-render triggers with() which re-queries all phase data from DB
     }
 
     // ─── Suchstring CRUD ─────────────────────────────────────
@@ -164,7 +171,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Button --}}
     <livewire:recherche.agent-action-button
         :projekt="$projekt"

@@ -2,6 +2,7 @@
 
 use App\Models\Recherche\{Projekt, P5Treffer, P5ScreeningKriterium, P5ScreeningEntscheidung, P5ToolEntscheidung, P5PrismaZahlen};
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -50,6 +51,12 @@ new class extends Component {
     {
         $this->authorize('view', $projekt);
         $this->projekt = $projekt;
+    }
+
+    #[On('agent-result-accepted')]
+    public function refreshPhaseData(): void
+    {
+        // Re-render triggers with() which re-queries all phase data from DB
     }
 
     // ─── PRISMA CRUD ─────────────────────────────────────────
@@ -260,7 +267,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.10s>
 
     {{-- KI-Agent Button --}}
     <livewire:recherche.agent-action-button
