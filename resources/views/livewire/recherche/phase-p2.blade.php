@@ -253,9 +253,9 @@ new class extends Component {
 }; ?>
 
 @if($this->hasRunningAgentJob())
-    <div class=\"space-y-6\" wire:poll.10s>
+    <div class="space-y-6" wire:poll.10s>
 @else
-    <div class=\"space-y-6\">
+    <div class="space-y-6">
 @endif
     <livewire:recherche.agent-action-button
         :projekt="$projekt"

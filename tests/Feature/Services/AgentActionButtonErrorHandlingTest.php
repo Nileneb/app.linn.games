@@ -95,11 +95,3 @@ test('LangdockAgentService handles 500 with generic error message', function () 
 
 // ─── Phase Query Resilience ────────────────────────────────
 
-test('phase-p1 with() returns empty collections on database error', function () {
-    $projekt = makeTestProject();
-
-    // This would be tested via Livewire component testing in practice
-    // The rescue() in with() ensures collect() is returned on failure
-
-    expect(true)->toBeTrue(); // Placeholder
-});
