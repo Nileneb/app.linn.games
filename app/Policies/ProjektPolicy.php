@@ -24,7 +24,8 @@ class ProjektPolicy
 
     public function create(User $user): bool
     {
-        return $user->activeWorkspaceId() !== null;
+        return $user->activeWorkspaceId() !== null
+            && $user->hasAnyRole(['admin', 'editor']);
     }
 
     public function update(User $user, Projekt $projekt): bool

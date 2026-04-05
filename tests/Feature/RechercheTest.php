@@ -3,9 +3,17 @@
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function () {
+    Role::firstOrCreate(['name' => 'admin',    'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'editor',   'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'mitglied', 'guard_name' => 'web']);
+});
 
 test('authenticated user can create a research project', function () {
     $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['editor']);
 
     $this->actingAs($user);
 
@@ -23,6 +31,7 @@ test('authenticated user can create a research project', function () {
 
 test('research project creation redirects to project detail', function () {
     $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['editor']);
 
     $this->actingAs($user);
 
@@ -37,6 +46,7 @@ test('research project creation redirects to project detail', function () {
 
 test('research input requires eingabe field', function () {
     $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles(['editor']);
 
     $this->actingAs($user);
 

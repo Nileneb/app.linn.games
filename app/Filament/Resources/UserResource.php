@@ -25,6 +25,12 @@ class UserResource extends Resource
             Forms\Components\Select::make('roles')
                 ->label('Rolle')
                 ->relationship('roles', 'name')
+                ->getOptionLabelFromRecordUsing(fn ($record) => match ($record->name) {
+                    'admin'    => 'Admin – Voller Zugriff',
+                    'editor'   => 'Editor – Projekte erstellen & bearbeiten',
+                    'mitglied' => 'Mitglied – Zugewiesene Projekte sehen & bearbeiten',
+                    default    => $record->name,
+                })
                 ->multiple()
                 ->minItems(1)
                 ->maxItems(1)
