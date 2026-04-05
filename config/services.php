@@ -58,7 +58,7 @@ return [
         'default_agent_daily_limit_cents' => (int) env('LANGDOCK_DEFAULT_AGENT_DAILY_LIMIT_CENTS', 500),
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
-            // Nutzt default_agent_daily_limit_cents falls spezifische Umgebungsvariable nicht gesetzt
+            // Default: 500 Cents = 5 EUR pro Agent/Tag (Schutz vor Token-Explosionen)
             'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
             'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 500),
             'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
