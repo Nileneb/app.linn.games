@@ -283,15 +283,7 @@ new class extends Component {
 @else
     <div class="space-y-6">
 @endif
-    <livewire:recherche.agent-action-button
-        :projekt="$projekt"
-        agent-config-key="scoping_mapping_agent"
-        label="🧭 KI: Mapping schärfen"
-        :phase-nr="2"
-        :key="'agent-p2-'.$projekt->id"
-    />
     {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-    <x-agent-suggestion :result="$latestAgentResult" />
 
 
     {{-- ═══ Review-Typ-Entscheidung ═══ --}}

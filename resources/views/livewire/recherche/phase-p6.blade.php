@@ -173,15 +173,7 @@ new class extends Component {
 <div class="space-y-6" wire:poll.10s>
 
     {{-- KI-Agent Button --}}
-    <livewire:recherche.agent-action-button
-        :projekt="$projekt"
-        agent-config-key="review_agent"
-        label="📝 KI: Codierung starten"
-        :phase-nr="6"
-        :key="'agent-p6-'.$projekt->id"
-    />
     {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-    <x-agent-suggestion :result="$latestAgentResult" />
 
 
     {{-- ═══ Qualitätsbewertung (Risk of Bias) ═══ --}}
