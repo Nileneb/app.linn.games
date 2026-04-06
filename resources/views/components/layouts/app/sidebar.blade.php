@@ -53,6 +53,18 @@
                 <livewire:credits.workspace-balance wire:poll.30s />
             @endauth
 
+            {{-- Theme Toggle --}}
+            <div class="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+                <button @click="$nextTick(() => document.documentElement.classList.toggle('dark'))" 
+                        class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200/50 dark:text-zinc-300 dark:hover:bg-zinc-700/30"
+                        title="Design-Modus umschalten">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/>
+                    </svg>
+                    {{ __('Modus') }}
+                </button>
+            </div>
+
             {{-- Bottom links --}}
             <nav class="space-y-1">
                 <a href="https://github.com/laravel/livewire-starter-kit" target="_blank"
@@ -68,14 +80,17 @@
             </nav>
 
             {{-- Desktop User Menu --}}
-            <div class="relative mt-4 hidden lg:block" x-data="{ userMenu: false }">
+            <div class="relative mt-4 hidden lg:block border-t border-zinc-200 pt-3 dark:border-zinc-700" x-data="{ userMenu: false }">
                 <button @click="userMenu = !userMenu" data-test="sidebar-menu-button"
-                        class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-start text-sm hover:bg-zinc-200/50 dark:hover:bg-zinc-700/30">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-200 text-sm font-medium text-black dark:bg-neutral-700 dark:text-white">
+                        class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition bg-zinc-100 text-zinc-900 hover:bg-zinc-200/80 dark:bg-zinc-700/50 dark:text-zinc-100 dark:hover:bg-zinc-700/70">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-sm font-semibold text-zinc-900 dark:bg-zinc-600 dark:text-white">
                         {{ auth()->user()->initials() }}
                     </span>
-                    <span class="flex-1 truncate font-medium text-zinc-900 dark:text-zinc-100">{{ auth()->user()->name }}</span>
-                    <svg class="h-4 w-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 15 3.75-3.75L15.75 15m-7.5-6L12 5.25 15.75 9"/></svg>
+                    <div class="flex-1 truncate text-start">
+                        <div class="truncate text-xs font-semibold">{{ auth()->user()->first_name ?? substr(auth()->user()->name, 0, strpos(auth()->user()->name, ' ')) }}</div>
+                        <div class="truncate text-xs text-zinc-600 dark:text-zinc-400">{{ auth()->user()->email }}</div>
+                    </div>
+                    <svg :class="userMenu ? 'rotate-180' : ''" class="h-4 w-4 text-zinc-500 dark:text-zinc-400 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 15 3.75-3.75L15.75 15m-7.5-6L12 5.25 15.75 9"/></svg>
                 </button>
 
                 <div x-show="userMenu" @click.outside="userMenu = false" x-transition
