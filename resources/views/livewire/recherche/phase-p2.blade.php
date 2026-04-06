@@ -243,6 +243,12 @@ new class extends Component {
         );
     }
 
+    public function checkAgentStatus(): void
+    {
+        // Polling method to refresh component state while agent is running.
+        // This method is called by wire:poll.10s to check if the agent job has completed.
+    }
+
     public function with(): array
     {
         $pid = $this->projekt->id;
@@ -273,7 +279,7 @@ new class extends Component {
 }; ?>
 
 @if($this->hasRunningAgentJob())
-    <div class="space-y-6" wire:poll.10s>
+    <div class="space-y-6" wire:poll.10s="checkAgentStatus">
 @else
     <div class="space-y-6">
 @endif
