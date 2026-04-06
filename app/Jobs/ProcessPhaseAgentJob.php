@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Actions\SendAgentMessage;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
+use App\Services\AgentPayloadService;
 use App\Services\LangdockArtifactService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
@@ -60,6 +61,24 @@ class ProcessPhaseAgentJob implements ShouldQueue
             );
 
             if ($response['success']) {
+                // Parse agent response for db_payload processing
+                $parsed = $this->parseStructuredResponse((string) $response['content']);
+
+                // Persist db_payload to database if present
+                if ($parsed !== null) {
+                    $payloadResult = app(AgentPayloadService::class)->persistPayload(
+                        $parsed,
+                        $this->projektId
+                    );
+
+                    Log::info('Phase agent job: db_payload processed', [
+                        'projekt_id' => $this->projektId,
+                        'phase_nr' => $this->phaseNr,
+                        'tables_written' => $payloadResult['tables_written'],
+                        'rows_written' => $payloadResult['rows_written'],
+                    ]);
+                }
+
                 // Enhance agent response with synthesis markdown if chunks were retrieved
                 $enhancedContent = $this->enrichResponseWithSynthesis(
                     (string) $response['content'],
@@ -85,6 +104,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'phase_nr' => $this->phaseNr,
                     'agent_config_key' => $this->agentConfigKey,
                     'chunks_used' => count($this->retrievedChunks ?? []),
+                    'artifacts_stored' => count($artifact['stored_paths'] ?? []),
                 ]);
 
                 app(PhaseChainService::class)->maybeDispatchNext($projekt, $this->phaseNr);
