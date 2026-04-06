@@ -100,6 +100,8 @@ test('button disables immediately after click', function () {
 });
 
 test('button re-enables when agent job completes', function () {
+    Queue::fake();
+
     $component = Volt::test('recherche.phase-group-status-header', [
         'projekt' => $this->projekt,
         'currentPhaseNr' => 1,

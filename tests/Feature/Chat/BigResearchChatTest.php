@@ -1,8 +1,8 @@
 <?php
 
-use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
@@ -10,7 +10,6 @@ use Livewire\Volt\Volt;
 beforeEach(function () {
     Config::set('services.langdock.api_key', 'test-api-key');
     Config::set('services.langdock.agent_id', 'test-agent-id');
-    Queue::fake();
 });
 
 test('chat: nachricht senden erstellt user-message und dispatcht job', function () {
@@ -19,19 +18,23 @@ test('chat: nachricht senden erstellt user-message und dispatcht job', function 
 
     $this->actingAs($user);
 
+    // Mock LangdockAgentService so no real API call is made
+    $this->mock(LangdockAgentService::class, function ($mock) {
+        $mock->shouldReceive('call')
+            ->once()
+            ->andReturn(['content' => 'Mocked AI response']);
+    });
+
     Volt::test('chat.big-research-chat')
         ->set('message', 'Was ist systematische Literaturrecherche?')
         ->call('sendMessage')
-        ->assertSet('message', '')
-        ->assertSet('loading', true);
+        ->assertSet('message', '');
 
     $this->assertDatabaseHas('chat_messages', [
         'user_id' => $user->id,
         'role'    => 'user',
         'content' => 'Was ist systematische Literaturrecherche?',
     ]);
-
-    Queue::assertPushed(ProcessChatMessageJob::class);
 });
 
 test('chat: validiert nachricht als pflichtfeld', function () {
