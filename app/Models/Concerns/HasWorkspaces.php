@@ -36,7 +36,7 @@ trait HasWorkspaces
     {
         return $this->workspaceMemberships()
             ->where('workspace_id', $workspaceId)
-            ->value('workspace_users.role');
+            ->value('role');
     }
 
     public function activeWorkspaceId(): ?string
