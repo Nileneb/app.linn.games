@@ -11,6 +11,10 @@ beforeEach(function () {
 });
 
 test('md viewer displays markdown files', function () {
+<<<<<<< HEAD
+    Storage::disk('local')->makeDirectory("recherche/{$this->projekt->id}/screening", true);
+=======
+>>>>>>> origin/main
     Storage::disk('local')->put(
         "recherche/{$this->projekt->id}/screening/results.md",
         "# Screening Results\n\nThis is the screening report."
@@ -25,8 +29,12 @@ test('md viewer displays markdown files', function () {
 });
 
 test('md viewer enforces projekt policy', function () {
+<<<<<<< HEAD
+    Storage::disk('local')->makeDirectory("recherche/{$this->projekt->id}/screening", true);
+=======
     $nonOwner = User::factory()->withoutTwoFactor()->create();
 
+>>>>>>> origin/main
     Storage::disk('local')->put(
         "recherche/{$this->projekt->id}/screening/results.md",
         "# Screening Results"
@@ -46,6 +54,12 @@ test('md viewer returns 404 for missing files', function () {
 });
 
 test('md viewer handles multiple markdown files', function () {
+<<<<<<< HEAD
+    Storage::disk('local')->makeDirectory("recherche/{$this->projekt->id}/screening", true);
+    Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/file1.md", "# File 1\n\nContent 1");
+    Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/file2.md", "# File 2\n\nContent 2");
+    Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/data.txt", "Some text file");
+=======
     Storage::disk('local')->put(
         "recherche/{$this->projekt->id}/screening/report.md",
         "# Screening Report\n\nFirst report."
@@ -58,6 +72,7 @@ test('md viewer handles multiple markdown files', function () {
         "recherche/{$this->projekt->id}/screening/data.txt",
         "Some text file"
     );
+>>>>>>> origin/main
 
     $response = $this->actingAs($this->owner)
         ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");

@@ -114,12 +114,32 @@ class AgentResultWebhookController extends Controller
             return false;
         }
 
+        // Validate timestamp to prevent replay attacks
+        $timestamp = $request->header('X-Langdock-Timestamp');
+
+        // Ensure header exists and is a digit-only string
+        if (!is_string($timestamp) || !ctype_digit($timestamp)) {
+            return false;
+        }
+
+        // Cast once to integer for further validation
+        $timestamp = (int) $timestamp;
+
+        // Reject requests older than 5 minutes
+        $maxAge = 300; // seconds
+        $currentTime = time();
+        if (abs($currentTime - $timestamp) > $maxAge) {
+            return false;
+        }
+
         $secret = config('services.langdock.webhook_secret');
         if (!$secret) {
             return false;
         }
 
-        $payload = $request->getContent();
+        // Include timestamp in signed payload to prevent replay attacks
+        // where an attacker reuses an old signature with a new timestamp
+        $payload = $request->header('X-Langdock-Timestamp') . '.' . $request->getContent();
         $expectedHash = hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($hash, $expectedHash);
