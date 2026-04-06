@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Recherche\Projekt;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
@@ -24,6 +25,12 @@ new class extends Component {
     public function getPhaseStatus(int $nr): ?string
     {
         return $this->projekt->phasen->firstWhere('phase_nr', $nr)?->status;
+    }
+
+    #[On('phase-override-confirmed')]
+    public function handleOverrideConfirmed(int $phaseNr): void
+    {
+        $this->switchTab($phaseNr + 1);
     }
 }; ?>
 
