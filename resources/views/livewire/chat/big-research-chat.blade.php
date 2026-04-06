@@ -154,6 +154,9 @@ new class extends Component {
             'chatMessages' => $workspaceId
                 ? app(ChatService::class)->getMessages($workspaceId, Auth::id())
                 : collect(),
+            'loading' => $this->loading,
+            'message' => $this->message,
+            'pendingUserMsgId' => $this->pendingUserMsgId,
         ];
     }
 }; ?>
