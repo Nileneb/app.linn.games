@@ -45,6 +45,12 @@ echo "==> Pulling latest images..."
 "${DC[@]}" pull postgres redis postgres-mcp
 
 # ── Frontend: Vite build ────────────────────────
+echo "==> Installing npm dependencies..."
+if ! npm install --frozen-lockfile; then
+  echo "ERROR: npm install failed." >&2
+  exit 1
+fi
+
 echo "==> Building frontend assets with Vite..."
 if ! npm run build; then
   echo "ERROR: Vite build failed." >&2
