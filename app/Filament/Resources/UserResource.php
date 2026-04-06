@@ -86,7 +86,7 @@ class UserResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),
-                Tables\Actions\Action::make('resend_invitation')
+                \Filament\Actions\Action::make('resend_invitation')
                     ->label('Einladung erneut senden')
                     ->icon('heroicon-o-envelope')
                     ->color('gray')
@@ -111,7 +111,7 @@ class UserResource extends Resource
                                 ->send();
                         }
                     }),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->hidden(fn (User $record) => $record->id === auth()->id())
                     ->requiresConfirmation()
                     ->modalDescription(fn (User $record) => 'Nutzer "' . $record->name . '" und alle zugehörigen Daten unwiderruflich löschen?'),
