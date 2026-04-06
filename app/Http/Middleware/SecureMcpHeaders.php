@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * Add security headers to MCP API responses.
+ *
+ * Protects against CSRF, XSS, and other common web vulnerabilities.
+ */
+class SecureMcpHeaders
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = $next($request);
+
+        // Prevent CSRF attacks
+        $response->header('X-CSRF-Token', csrf_token());
+
+        // Content Security Policy - restrict to same origin + our Langdock MCP
+        $response->header(
+            'Content-Security-Policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.langdock.com;",
+        );
+
+        // Prevent MIME-sniffing
+        $response->header('X-Content-Type-Options', 'nosniff');
+
+        // Clickjacking protection
+        $response->header('X-Frame-Options', 'DENY');
+
+        // XSS protection
+        $response->header('X-XSS-Protection', '1; mode=block');
+
+        // Referrer Policy
+        $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+        // Feature Policy (Permissions Policy)
+        $response->header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+        return $response;
+    }
+}
