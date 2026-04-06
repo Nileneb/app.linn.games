@@ -224,7 +224,7 @@ new class extends Component {
         </div>
 
         {{-- Start / Status Display --}}
-        @php($runningGroups = $this->getRunningGroups())
+        <?php $runningGroups = $this->getRunningGroups(); ?>
         @if ($pipelineStarted && !empty($runningGroups))
             <div class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-6 py-3 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
                 <svg class="h-5 w-5 animate-spin text-amber-600 dark:text-amber-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
