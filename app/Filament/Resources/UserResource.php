@@ -4,10 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Models\User;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Password;
 
 class UserResource extends Resource
 {
@@ -84,6 +86,35 @@ class UserResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),
+                Tables\Actions\Action::make('resend_invitation')
+                    ->label('Einladung erneut senden')
+                    ->icon('heroicon-o-envelope')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading('Einladung erneut senden')
+                    ->modalDescription(fn (User $record) => 'Einen neuen Einladungslink an ' . $record->email . ' senden?')
+                    ->modalSubmitActionLabel('Senden')
+                    ->action(function (User $record) {
+                        $status = Password::broker()->sendResetLink(['email' => $record->email]);
+
+                        if ($status === Password::RESET_LINK_SENT) {
+                            Notification::make()
+                                ->title('Einladung gesendet')
+                                ->body('Ein neuer Einladungslink wurde an ' . $record->email . ' verschickt.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Fehler')
+                                ->body('Die E-Mail konnte nicht gesendet werden.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (User $record) => $record->id === auth()->id())
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (User $record) => 'Nutzer "' . $record->name . '" und alle zugehörigen Daten unwiderruflich löschen?'),
             ]);
     }
 
