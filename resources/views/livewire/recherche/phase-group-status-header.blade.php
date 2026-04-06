@@ -1,6 +1,7 @@
 <?php
 
-use App\Models\Recherche\{Projekt, Phase, PhaseAgentResult};
+use App\Models\PhaseAgentResult;
+use App\Models\Recherche\{Projekt, Phase};
 use Livewire\Volt\Component;
 
 new class extends Component {

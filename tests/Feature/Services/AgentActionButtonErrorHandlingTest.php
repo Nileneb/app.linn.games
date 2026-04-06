@@ -34,6 +34,7 @@ test('LangdockAgentService handles 404 with descriptive error message', function
     config([
         'services.langdock.api_key' => 'test-key',
         'services.langdock.base_url' => 'https://api.langdock.com/agent/v1/chat/completions',
+        'app.locale' => 'de',
     ]);
 
     $service = app(LangdockAgentService::class);

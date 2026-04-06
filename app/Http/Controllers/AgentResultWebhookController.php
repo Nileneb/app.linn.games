@@ -90,6 +90,24 @@ class AgentResultWebhookController extends Controller
             return false;
         }
 
+        // Validate timestamp to prevent replay attacks
+        $timestamp = $request->header('X-Langdock-Timestamp');
+        if (!$timestamp) {
+            return false;
+        }
+
+        // Verify timestamp is a valid Unix timestamp
+        if (!is_numeric($timestamp) || $timestamp != (int) $timestamp) {
+            return false;
+        }
+
+        // Reject requests older than 5 minutes
+        $maxAge = 300; // seconds
+        $currentTime = time();
+        if (abs($currentTime - (int) $timestamp) > $maxAge) {
+            return false;
+        }
+
         $secret = config('services.langdock.webhook_secret');
         if (!$secret) {
             return false;
