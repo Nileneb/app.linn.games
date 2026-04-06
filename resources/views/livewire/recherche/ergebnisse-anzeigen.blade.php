@@ -10,6 +10,8 @@ new class extends Component {
     public string $phase;
     public string $renderedContent = '';
 
+    private const ALLOWED_PHASES = ['recherche', 'screening', 'auswertung'];
+
     public function mount(Projekt $projekt, string $phase): void
     {
         $this->projekt = $projekt;
@@ -18,9 +20,18 @@ new class extends Component {
         // Authorize using ProjektPolicy
         $this->authorize('view', $this->projekt);
 
+        // Validate phase parameter to prevent path traversal
+        if (!in_array($this->phase, self::ALLOWED_PHASES, true)) {
+            abort(404, "Phase '{$this->phase}' nicht gefunden.");
+        }
+
         $basePath = "recherche/{$this->projekt->id}/{$this->phase}";
 
         // List files in the directory
+        if (!Storage::disk('local')->exists($basePath)) {
+            abort(404, "Ergebnisse für Phase '{$this->phase}' nicht gefunden.");
+        }
+
         $files = Storage::disk('local')->files($basePath);
 
         // Filter for markdown files only
@@ -36,7 +47,14 @@ new class extends Component {
             $combinedContent .= $content . "\n\n---\n\n";
         }
 
-        $this->renderedContent = Str::markdown($combinedContent);
+        // Render markdown with safety options to prevent XSS
+        $this->renderedContent = Str::markdown(
+            $combinedContent,
+            [
+                'html_input' => 'strip',      // Strip HTML tags from markdown source
+                'allow_unsafe_links' => false, // Reject javascript: and data: URLs
+            ]
+        );
     }
 }; ?>
 

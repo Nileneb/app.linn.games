@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
