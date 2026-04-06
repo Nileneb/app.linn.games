@@ -30,9 +30,13 @@ test('webhook handler persists markdown files', function () {
         ],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($payload);
+    $signature = 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret'));
+
     $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => $signature,
+        'X-Langdock-Timestamp' => $timestamp,
     ]);
 
     $response->assertStatus(200);
@@ -64,9 +68,13 @@ test('webhook handler rejects invalid signature', function () {
 test('webhook handler validates required fields', function () {
     $invalidPayload = ['meta' => [], 'result' => []];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($invalidPayload);
+    $signature = 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret'));
+
     $response = $this->postJson('/api/webhooks/langdock/agent-result', $invalidPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($invalidPayload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => $signature,
+        'X-Langdock-Timestamp' => $timestamp,
     ]);
 
     $response->assertStatus(422)
@@ -89,9 +97,13 @@ test('webhook handler rejects path traversal attempts', function () {
         ],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($payload);
+    $signature = 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret'));
+
     $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => $signature,
+        'X-Langdock-Timestamp' => $timestamp,
     ]);
 
     $response->assertStatus(400);
@@ -113,9 +125,13 @@ test('webhook handler rejects absolute paths', function () {
         ],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($payload);
+    $signature = 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret'));
+
     $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => $signature,
+        'X-Langdock-Timestamp' => $timestamp,
     ]);
 
     $response->assertStatus(400);
