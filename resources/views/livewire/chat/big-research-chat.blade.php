@@ -4,6 +4,7 @@ use App\Models\ChatMessage;
 use App\Services\ChatService;
 use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Auth;
+use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -63,9 +64,10 @@ new class extends Component {
                 ], $messages),
                 120,
                 [
-                    'workspace_id' => $workspaceId,
-                    'user_id'      => $userId,
-                    'source'       => 'dashboard_chat',
+                    'workspace_id'   => $workspaceId,
+                    'user_id'        => $userId,
+                    'user_name'      => Auth::user()?->name,
+                    'source'         => 'dashboard_chat',
                 ],
             );
 
@@ -122,6 +124,18 @@ new class extends Component {
         $this->pendingUserMsgId = null;
     }
 
+    public function renderMarkdown(string $content): string
+    {
+        static $converter = null;
+        if ($converter === null) {
+            $converter = new GithubFlavoredMarkdownConverter([
+                'html_input'         => 'strip',
+                'allow_unsafe_links' => false,
+            ]);
+        }
+        return $converter->convert($content)->getContent();
+    }
+
     public function with(): array
     {
         $workspaceId = Auth::user()?->activeWorkspaceId();
@@ -139,7 +153,9 @@ new class extends Component {
     <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
         <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ __('Dashboard Chat') }}</h3>
         @if($chatMessages->isNotEmpty())
-            <button wire:click="clearHistory" wire:confirm="{{ __('Chat-Verlauf wirklich löschen?') }}" class="text-xs text-zinc-400 hover:text-red-500 dark:hover:text-red-400">
+            <button wire:click="clearHistory" wire:confirm="{{ __('Chat-Verlauf wirklich löschen?') }}"
+                    class="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30">
+                <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
                 {{ __('Verlauf löschen') }}
             </button>
         @endif
@@ -148,14 +164,25 @@ new class extends Component {
     {{-- Messages --}}
     <div id="chat-scroll-container" class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         @forelse($chatMessages as $msg)
-            <div class="flex {{ $msg->role === 'user' ? 'justify-end' : 'justify-start' }}">
-                <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm {{ $msg->role === 'user'
-                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' }}">
-                    <div class="whitespace-pre-wrap break-words">{{ $msg->content }}</div>
-                    <div class="mt-1 text-[10px] opacity-50">{{ $msg->created_at?->format('H:i') }}</div>
+            @if($msg->role === 'user')
+                <div class="flex justify-end">
+                    <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                        <div class="whitespace-pre-wrap break-words">{{ $msg->content }}</div>
+                        <div class="mt-1 text-[10px] opacity-50">{{ $msg->created_at?->format('H:i') }}</div>
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="flex justify-start gap-2">
+                    {{-- Bot-Avatar --}}
+                    <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                        <x-app-logo-icon class="h-3.5 w-3.5 fill-current" />
+                    </div>
+                    <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100">
+                        <div class="chat-markdown break-words">{!! $this->renderMarkdown($msg->content) !!}</div>
+                        <div class="mt-1 text-[10px] opacity-50">{{ $msg->created_at?->format('H:i') }}</div>
+                    </div>
+                </div>
+            @endif
         @empty
             <div class="flex h-full items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
                 {{ __('Stelle eine Frage …') }}
@@ -164,7 +191,10 @@ new class extends Component {
 
         {{-- Loading indicator with 3s poll --}}
         @if($loading)
-            <div wire:poll.3s="checkForResponse" class="flex justify-start">
+            <div wire:poll.3s="checkForResponse" class="flex justify-start gap-2">
+                <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                    <x-app-logo-icon class="h-3.5 w-3.5 fill-current" />
+                </div>
                 <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
                     <span class="inline-flex items-center gap-1">
                         <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -185,7 +215,7 @@ new class extends Component {
                 autocomplete="off"
                 wire:loading.attr="disabled"
                 wire:target="sendMessage"
-                class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-600/50"
             />
             <button
                 type="submit"
