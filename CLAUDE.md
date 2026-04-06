@@ -30,7 +30,61 @@ npm run build              # Vite build für Production
 docker compose exec php-cli php artisan view:clear
 docker compose exec php-cli php artisan filament:assets
 
-# MCP Paper Search (optionales Profil)
+# MCP Servers
+docker compose --profile mcp up -d mcp-paper-search  # Optional: Paper search via SSE
+```
+
+## MCP Servers
+
+### Langdock Agent MCP (Master Key Access)
+
+The Langdock MCP server enables direct agent management and API access via MCP interface.
+
+**Setup (local machine):**
+```bash
+git clone https://github.com/Flissel/langdock-mcp.git
+cd langdock-mcp
+pip install -r requirements.txt
+
+# Set API key in environment
+export LANGDOCK_API_KEY="<your-master-key>"
+
+# Start the MCP server (runs on local machine)
+python server.py
+```
+
+**Register in Claude Code** (`~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "langdock": {
+      "command": "python",
+      "args": ["/path/to/langdock-mcp/server.py"],
+      "env": {
+        "LANGDOCK_API_KEY": "<your-master-key>"
+      }
+    }
+  }
+}
+```
+
+After restart, Claude Code can:
+- Query agent metadata
+- Trigger agent completions API
+- Manage agent configurations
+- Access webhooks and context injection
+
+**Current Agents in Use:**
+- `scoping_mapping_agent` — P1 & P2 phases
+- `search_agent` — P3 & P4 phases
+- `review_agent` — P5, P6, P7 phases
+
+See `LangdockAgentService` and `AgentPayloadService` for implementation details.
+
+### MCP Paper Search (Optional)
+
+Paper search via SSE streaming (Docker profile):
+```bash
 docker compose --profile mcp up -d mcp-paper-search
 ```
 
