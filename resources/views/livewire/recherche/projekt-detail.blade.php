@@ -32,10 +32,10 @@ new class extends Component {
     <div>
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                <h2 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
                     {{ $projekt->titel }}
                 </h2>
-                <p class="mt-1 text-sm text-neutral-500">
+                <p class="mt-1 text-sm text-zinc-500">
                     {{ __('Erstellt') }}: {{ $projekt->erstellt_am?->format('d.m.Y H:i') }}
                     @if ($projekt->review_typ)
                         &middot; {{ $projekt->review_typ }}
@@ -44,7 +44,7 @@ new class extends Component {
             </div>
             <div class="flex items-center gap-4">
                 <a href="{{ route('recherche.mayring', $projekt) }}" wire:navigate
-                   class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                   class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
                     Mayring-Codierung
                 </a>
                 <a href="{{ route('recherche') }}" wire:navigate
@@ -55,9 +55,9 @@ new class extends Component {
         </div>
 
         @if ($projekt->forschungsfrage)
-            <div class="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">
-                <h3 class="text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{{ __('Forschungsfrage') }}</h3>
-                <p class="mt-1 text-neutral-900 dark:text-neutral-100">{{ $projekt->forschungsfrage }}</p>
+            <div class="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+                <h3 class="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{{ __('Forschungsfrage') }}</h3>
+                <p class="mt-1 text-zinc-900 dark:text-zinc-100">{{ $projekt->forschungsfrage }}</p>
             </div>
         @endif
 
@@ -67,11 +67,11 @@ new class extends Component {
             $progressPercent = (int) round($completedCount / 8 * 100);
         @endphp
         <div class="mt-4">
-            <div class="flex items-center justify-between mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <div class="flex items-center justify-between mb-1 text-xs text-zinc-500 dark:text-zinc-400">
                 <span>{{ __('Fortschritt') }}</span>
                 <span>{{ $completedCount }}/8 {{ __('Phasen abgeschlossen') }}</span>
             </div>
-            <div class="w-full rounded-full bg-neutral-200 dark:bg-neutral-700 h-2">
+            <div class="w-full rounded-full bg-zinc-200 dark:bg-zinc-700 h-2">
                 <div
                     class="h-2 rounded-full bg-blue-500 dark:bg-blue-400 transition-all duration-500"
                     style="width: {{ $progressPercent }}%"
@@ -81,7 +81,7 @@ new class extends Component {
     </div>
 
     {{-- Tab Bar --}}
-    <div class="border-b border-neutral-200 dark:border-neutral-700">
+    <div class="border-b border-zinc-200 dark:border-zinc-700">
         <nav class="-mb-px flex space-x-1 overflow-x-auto">
             @php
                 $tabLabels = [
@@ -102,7 +102,7 @@ new class extends Component {
                     @class([
                         'whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
                         'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400' => $activeTab === $i,
-                        'border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300' => $activeTab !== $i,
+                        'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300' => $activeTab !== $i,
                     ])
                 >
                     <span class="flex items-center gap-1.5">

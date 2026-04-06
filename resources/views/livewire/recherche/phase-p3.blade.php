@@ -270,15 +270,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    <livewire:recherche.agent-action-button
-        :projekt="$projekt"
-        agent-config-key="scoping_mapping_agent"
-        label="🗂️ KI: Datenbankauswahl schärfen"
-        :phase-nr="3"
-        :key="'agent-p3-'.$projekt->id"
-    />
     {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-    <x-agent-suggestion :result="$latestAgentResult" />
 
 
     {{-- ═══ Datenbankmatrix ═══ --}}

@@ -316,15 +316,7 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Button --}}
-    <livewire:recherche.agent-action-button
-        :projekt="$projekt"
-        agent-config-key="scoping_mapping_agent"
-        label="🎯 KI: Strukturierung starten"
-        :phase-nr="1"
-        :key="'agent-p1-'.$projekt->id"
-    />
     {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-    <x-agent-suggestion :result="$latestAgentResult" />
 
 
     {{-- ═══ Strukturmodellwahl ═══ --}}
