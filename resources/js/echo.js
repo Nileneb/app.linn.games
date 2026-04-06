@@ -10,6 +10,9 @@ const _reverbPort   = import.meta.env.VITE_REVERB_PORT   ?? window.location.port
 const _reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? window.location.protocol.replace(':', '');
 const _tls          = _reverbScheme === 'https';
 
+// Resolve CSRF token only if meta tag exists
+const csrf = document.head.querySelector('meta[name="csrf-token"]')?.content;
+
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -18,9 +21,5 @@ window.Echo = new Echo({
     wssPort: Number(_reverbPort) || 443,
     forceTLS: _tls,
     enabledTransports: ['ws', 'wss'],
-    auth: {
-        headers: {
-            'X-CSRF-TOKEN': document.head.querySelector('meta[name="csrf-token"]')?.content,
-        },
-    },
+    auth: csrf ? { headers: { 'X-CSRF-TOKEN': csrf } } : {},
 });
