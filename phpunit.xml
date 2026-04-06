@@ -35,6 +35,7 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="LANGDOCK_API_KEY" value="test-api-key-phpunit"/>
+        <env name="LANGDOCK_WEBHOOK_SECRET" value="test-webhook-secret-phpunit"/>
         <env name="SCOPING_MAPPING_AGENT" value="00000000-0000-0000-0000-000000000001"/>
     </php>
 </phpunit>
