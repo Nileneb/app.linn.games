@@ -481,7 +481,7 @@ new class extends Component {
                             </thead>
                             <tbody>
                                 @foreach ($laender as $land)
-                                    <tr>
+                                    <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
                                         <td class="whitespace-nowrap px-2 py-1 font-medium text-neutral-700 dark:text-neutral-300">{{ $land }}</td>
                                         @foreach ($outcomes as $o)
                                             @php $val = $pivot[$land][$o] ?? 0; @endphp
