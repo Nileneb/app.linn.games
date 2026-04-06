@@ -43,6 +43,14 @@ fi
 
 echo "==> Pulling latest images..."
 "${DC[@]}" pull postgres redis postgres-mcp
+
+# ── Frontend: Vite build ────────────────────────
+echo "==> Building frontend assets with Vite..."
+if ! npm run build; then
+  echo "ERROR: Vite build failed." >&2
+  exit 1
+fi
+
 # ── Build ──────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building production images..."
