@@ -15,7 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware([VerifyMcpToken::class, 'throttle:mcp'])->group(function () {
     Route::post('/papers/ingest', [PaperRagController::class, 'ingest']);
     Route::get('/papers/rag-search', [PaperRagController::class, 'search']);
-    Route::post('/mcp/agent-call', [McpAgentController::class, 'call']);
+    Route::post('/mcp/agent-call', [McpAgentController::class, 'call'])->name('mcp.agent-call');
 });
 
 Route::post('/webhooks/langdock/agent-result', [AgentResultWebhookController::class, 'handleAgentResult']);

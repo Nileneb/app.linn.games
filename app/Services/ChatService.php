@@ -45,4 +45,31 @@ class ChatService
             ->where('user_id', $userId)
             ->delete();
     }
+
+    public function saveAssistantMessage(
+        string $workspaceId,
+        int $userId,
+        string $content,
+        ?string $relatedUserMsgId = null,
+    ): ChatMessage {
+        return ChatMessage::create([
+            'user_id'      => $userId,
+            'workspace_id' => $workspaceId,
+            'role'         => 'assistant',
+            'content'      => $content,
+        ]);
+    }
+
+    public function updateLastAssistantMessage(
+        string $workspaceId,
+        int $userId,
+        string $content,
+    ): void {
+        ChatMessage::where('workspace_id', $workspaceId)
+            ->where('user_id', $userId)
+            ->where('role', 'assistant')
+            ->orderByDesc('created_at')
+            ->limit(1)
+            ->update(['content' => $content]);
+    }
 }
