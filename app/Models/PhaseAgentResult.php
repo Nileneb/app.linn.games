@@ -15,15 +15,18 @@ class PhaseAgentResult extends Model
         'projekt_id',
         'user_id',
         'phase_nr',
+        'phase',
         'agent_config_key',
         'status',
         'content',
         'error_message',
+        'result_data',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'result_data' => 'json',
     ];
 
     public function projekt(): BelongsTo
