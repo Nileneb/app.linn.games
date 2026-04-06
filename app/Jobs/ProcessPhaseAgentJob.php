@@ -8,6 +8,7 @@ use App\Models\Recherche\Projekt;
 use App\Services\LangdockArtifactService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
+use App\Services\SynthesisMarkdownService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,6 +22,9 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
     public int $tries = 1;
     public int $timeout = 180; // Queue worker timeout (not HTTP)
+
+    /** @var array<object>|null Retrieved chunks for synthesis */
+    private ?array $retrievedChunks = null;
 
     public function __construct(
         public readonly string $projektId,
@@ -56,8 +60,14 @@ class ProcessPhaseAgentJob implements ShouldQueue
             );
 
             if ($response['success']) {
-                $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+                // Enhance agent response with synthesis markdown if chunks were retrieved
+                $enhancedContent = $this->enrichResponseWithSynthesis(
                     (string) $response['content'],
+                    $this->retrievedChunks ?? []
+                );
+
+                $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+                    $enhancedContent,
                     $this->context,
                     [
                         'scope' => 'phase',
@@ -74,6 +84,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'projekt_id' => $this->projektId,
                     'phase_nr' => $this->phaseNr,
                     'agent_config_key' => $this->agentConfigKey,
+                    'chunks_used' => count($this->retrievedChunks ?? []),
                 ]);
 
                 app(PhaseChainService::class)->maybeDispatchNext($projekt, $this->phaseNr);
@@ -103,6 +114,8 @@ class ProcessPhaseAgentJob implements ShouldQueue
      * Optionally prepend relevant document chunks to the messages array.
      * Skips silently when no paper_embeddings exist or Ollama is unavailable.
      *
+     * Stores retrieved chunks for later synthesis generation.
+     *
      * @param  array<int, array{role: string, content: string}>  $messages
      * @return array<int, array{role: string, content: string}>
      */
@@ -121,6 +134,9 @@ class ProcessPhaseAgentJob implements ShouldQueue
             return $messages;
         }
 
+        // Store chunks for synthesis generation
+        $this->retrievedChunks = $chunks;
+
         $contextText = $retriever->formatAsContext($chunks);
 
         Log::info('Retriever: ' . count($chunks) . ' Chunks für Phase-Agent vorbereitet', [
@@ -130,5 +146,112 @@ class ProcessPhaseAgentJob implements ShouldQueue
         ]);
 
         return [['role' => 'user', 'content' => $contextText], ...$messages];
+    }
+
+    /**
+     * Enrich agent response with synthesis markdown that includes source traceability.
+     *
+     * Parses the JSON response, generates synthesis markdown with HTML comments
+     * encoding paper_id, chunk_index, and similarity scores, then embeds the
+     * markdown in the response as md_files for persistence.
+     *
+     * @param  string  $rawContent  Raw agent response (JSON or text)
+     * @param  array<object>  $retrievedChunks  Document chunks used in context
+     * @return string  Enhanced response with synthesis markdown embedded
+     */
+    private function enrichResponseWithSynthesis(string $rawContent, array $retrievedChunks): string
+    {
+        // Try to parse structured JSON response
+        $parsed = $this->parseStructuredResponse($rawContent);
+
+        if ($parsed === null || empty($retrievedChunks)) {
+            return $rawContent; // Return unchanged if no structure or no chunks
+        }
+
+        try {
+            // Generate synthesis markdown with full traceability
+            $synthesisService = app(SynthesisMarkdownService::class);
+
+            // Extract agent data from either meta/result or flat structure
+            $agentData = $parsed['result']['data'] ?? $parsed['data'] ?? [];
+
+            $synthesisMarkdown = $synthesisService->generateSynthesis(
+                $this->phaseNr,
+                $agentData,
+                $retrievedChunks
+            );
+
+            // Ensure md_files array exists in response (support both structures)
+            if (isset($parsed['result']['data'])) {
+                if (!isset($parsed['result']['data']['md_files'])) {
+                    $parsed['result']['data']['md_files'] = [];
+                }
+                if (!is_array($parsed['result']['data']['md_files'])) {
+                    $parsed['result']['data']['md_files'] = [];
+                }
+                $parsed['result']['data']['md_files'][] = [
+                    'path' => "synthesis_p{$this->phaseNr}.md",
+                    'content' => $synthesisMarkdown,
+                ];
+            } elseif (isset($parsed['data'])) {
+                if (!isset($parsed['data']['md_files'])) {
+                    $parsed['data']['md_files'] = [];
+                }
+                if (!is_array($parsed['data']['md_files'])) {
+                    $parsed['data']['md_files'] = [];
+                }
+                $parsed['data']['md_files'][] = [
+                    'path' => "synthesis_p{$this->phaseNr}.md",
+                    'content' => $synthesisMarkdown,
+                ];
+            }
+
+            // Return enhanced JSON
+            return json_encode($parsed, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to generate synthesis markdown', [
+                'projekt_id' => $this->projektId,
+                'phase_nr' => $this->phaseNr,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return $rawContent; // Fall back to original response
+        }
+    }
+
+    /**
+     * Try to parse structured JSON response envelope.
+     *
+     * @return array{meta?: array, result?: array, data?: array}|null
+     */
+    private function parseStructuredResponse(string $rawContent): ?array
+    {
+        $trimmed = trim($rawContent);
+
+        if ($trimmed === '' || !str_starts_with($trimmed, '{')) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($trimmed, true, flags: JSON_THROW_ON_ERROR);
+
+            if (!is_array($decoded)) {
+                return null;
+            }
+
+            // Look for either meta/result structure or flat data structure
+            if (isset($decoded['meta'], $decoded['result'])) {
+                return $decoded;
+            }
+
+            // Also accept flat structure with data key
+            if (isset($decoded['data'])) {
+                return ['data' => $decoded['data']];
+            }
+
+            return null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }
