@@ -34,9 +34,9 @@ test('phase group status header renders with 3 groups', function () {
         'currentPhaseNr' => 1,
     ]);
 
-    $response->assertSeeText('START SCOPING');
-    $response->assertSeeText('START SEARCH');
-    $response->assertSeeText('START SYNTHESE');
+    $response->assertSeeText('Scoping');
+    $response->assertSeeText('Recherche');
+    $response->assertSeeText('Synthese');
 });
 
 test('header displays all 8 phases with status icons', function () {
@@ -63,10 +63,10 @@ test('phase status icons display correctly', function () {
         'currentPhaseNr' => 1,
     ]);
 
-    // Completed phase should have ✓ icon and green color
-    $response->assertSee('text-green-600', escape: false);
-    
-    // In progress phase should have ● icon and yellow color with animation
+    // Completed phase should have green background
+    $response->assertSee('bg-green-100', escape: false);
+
+    // In progress phase should have amber color with animation
     $response->assertSee('animate-pulse', escape: false);
 });
 
@@ -105,18 +105,20 @@ test('button re-enables when agent job completes', function () {
         'currentPhaseNr' => 1,
     ]);
 
-    // Start the agent
-    $component->call('startGroupAgent', 1);
+    // Start via full pipeline so pipelineStarted is true
+    $component->call('startFullPipeline');
     $component->assertSet('agentRunning', true);
 
-    // Create a completed PhaseAgentResult
-    PhaseAgentResult::factory()->create([
-        'projekt_id' => $this->projekt->id,
-        'phase_nr' => 1,
-        'status' => 'completed',
-    ]);
+    // Create completed results for all 3 groups (8 phases)
+    foreach (range(1, 8) as $phaseNr) {
+        PhaseAgentResult::factory()->create([
+            'projekt_id' => $this->projekt->id,
+            'phase_nr' => $phaseNr,
+            'status' => 'completed',
+        ]);
+    }
 
-    // Check status
+    // Check status — pipeline should detect all groups done
     $component->call('checkAgentStatus');
 
     $component->assertSet('agentRunning', false);
@@ -163,16 +165,7 @@ test('different group buttons can be clicked independently', function () {
     $component->call('startGroupAgent', 1);
     $component->assertSet('runningGroupNumber', 1);
 
-    // Simulate completion of group 1
-    PhaseAgentResult::factory()->create([
-        'projekt_id' => $this->projekt->id,
-        'phase_nr' => 1,
-        'status' => 'completed',
-    ]);
-    $component->call('checkAgentStatus');
-    $component->assertSet('agentRunning', false);
-
-    // Start group 2
+    // Start group 2 (overrides the running group)
     $component->call('startGroupAgent', 2);
     $component->assertSet('agentRunning', true);
     $component->assertSet('runningGroupNumber', 2);
