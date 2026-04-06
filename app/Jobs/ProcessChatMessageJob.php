@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Actions\SendAgentMessage;
-use App\Events\ChatResponseReady;
 use App\Models\ChatMessage;
 use App\Services\ChatTriggerwordRouter;
 use App\Services\LangdockArtifactService;
@@ -70,13 +69,6 @@ class ProcessChatMessageJob implements ShouldQueue
             ],
         );
 
-        $assistantMsg = ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $artifact['display_content']);
-
-        broadcast(new ChatResponseReady(
-            workspaceId: $this->workspaceId,
-            userId:      $this->userId,
-            messageId:   $assistantMsg->id,
-            content:     $artifact['display_content'],
-        ));
+        ChatMessage::saveAssistantReply($this->workspaceId, $this->userId, $artifact['display_content']);
     }
 }

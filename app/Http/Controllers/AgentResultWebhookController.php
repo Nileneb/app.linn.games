@@ -34,15 +34,13 @@ class AgentResultWebhookController extends Controller
         // Verify Projekt exists
         $projekt = Projekt::findOrFail($projektId);
 
-        // Persist markdown files to storage with path traversal protection
+        // Persist markdown files to storage
         $basePath = "recherche/{$projektId}/{$phase}";
-        try {
-            foreach ($mdFiles as $file) {
-                $safePath = $this->validateFilePath($file['path']);
-                Storage::disk('local')->put("{$basePath}/{$safePath}", $file['content']);
+        foreach ($mdFiles as $file) {
+            if (!$this->validateFilePath($file['path'])) {
+                return response()->json(['error' => 'Invalid file path: ' . $file['path']], 400);
             }
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => 'Invalid file path: ' . $e->getMessage()], 400);
+            Storage::disk('local')->put("{$basePath}/{$file['path']}", $file['content']);
         }
 
         // Map phase name to phase_nr for legacy schema
@@ -70,6 +68,32 @@ class AgentResultWebhookController extends Controller
         );
 
         return response()->json(['status' => 'success', 'phase' => $phase], 200);
+    }
+
+    private function validateFilePath(string $path): bool
+    {
+        // Reject parent directory traversal
+        if (str_contains($path, '..')) {
+            return false;
+        }
+        // Reject absolute paths
+        if (str_starts_with($path, '/') || str_starts_with($path, '\\')) {
+            return false;
+        }
+        // Reject double slashes and backslashes
+        if (str_contains($path, '//') || str_contains($path, '\\')) {
+            return false;
+        }
+        // Require .md extension
+        if (!str_ends_with($path, '.md')) {
+            return false;
+        }
+        // Only allow safe filename characters
+        if (!preg_match('/^[\w\-]+\.md$/', $path)) {
+            return false;
+        }
+
+        return true;
     }
 
     private function verifySignature(Request $request): bool
@@ -113,52 +137,11 @@ class AgentResultWebhookController extends Controller
             return false;
         }
 
-        $payload = $request->getContent();
+        // Include timestamp in signed payload to prevent replay attacks
+        // where an attacker reuses an old signature with a new timestamp
+        $payload = $request->header('X-Langdock-Timestamp') . '.' . $request->getContent();
         $expectedHash = hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($hash, $expectedHash);
-    }
-
-    /**
-     * Validate file path to prevent directory traversal attacks.
-     *
-     * Rejects paths with:
-     * - Parent directory references (..)
-     * - Leading slashes or backslashes
-     * - Double slashes
-     * - Unsafe characters
-     *
-     * @param string $path The file path to validate
-     * @return string The validated, normalized path
-     * @throws \InvalidArgumentException If path is unsafe
-     */
-    private function validateFilePath(string $path): string
-    {
-        // Reject paths with parent directory references
-        if (str_contains($path, '..')) {
-            throw new \InvalidArgumentException('Path traversal detected: ".." not allowed in file path');
-        }
-
-        // Reject leading slashes or backslashes
-        if (str_starts_with($path, '/') || str_starts_with($path, '\\')) {
-            throw new \InvalidArgumentException('Absolute paths not allowed');
-        }
-
-        // Reject double slashes
-        if (str_contains($path, '//') || str_contains($path, '\\\\')) {
-            throw new \InvalidArgumentException('Double slashes not allowed in file path');
-        }
-
-        // Only allow safe characters: alphanumeric, hyphen, underscore, dot, forward slash
-        if (!preg_match('/^[a-zA-Z0-9._\/-]+$/', $path)) {
-            throw new \InvalidArgumentException('File path contains unsafe characters');
-        }
-
-        // Ensure path ends with .md (for markdown files)
-        if (!str_ends_with($path, '.md')) {
-            throw new \InvalidArgumentException('File path must end with .md extension');
-        }
-
-        return $path;
     }
 }

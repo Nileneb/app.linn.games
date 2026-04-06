@@ -1,13 +1,9 @@
 <?php
 
-use App\Events\ChatResponseReady;
 use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Models\User;
-use App\Actions\SendAgentMessage;
-use App\Services\LangdockArtifactService;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 
@@ -47,6 +43,55 @@ test('chat: validiert nachricht als pflichtfeld', function () {
         ->set('message', '')
         ->call('sendMessage')
         ->assertHasErrors(['message']);
+});
+
+test('chat: checkForResponse erkennt antwort und setzt loading false', function () {
+    $user      = User::factory()->withoutTwoFactor()->create();
+    $workspace = $user->ensureDefaultWorkspace();
+
+    $userMsg = ChatMessage::create([
+        'user_id'      => $user->id,
+        'workspace_id' => $workspace->id,
+        'role'         => 'user',
+        'content'      => 'Hallo',
+    ]);
+
+    // Simulate job writing assistant response
+    ChatMessage::create([
+        'user_id'      => $user->id,
+        'workspace_id' => $workspace->id,
+        'role'         => 'assistant',
+        'content'      => 'Hi! Wie kann ich helfen?',
+    ]);
+
+    $this->actingAs($user);
+
+    Volt::test('chat.big-research-chat')
+        ->set('loading', true)
+        ->set('pendingUserMsgId', $userMsg->id)
+        ->call('checkForResponse')
+        ->assertSet('loading', false)
+        ->assertSet('pendingUserMsgId', null);
+});
+
+test('chat: checkForResponse tut nichts wenn noch keine antwort', function () {
+    $user      = User::factory()->withoutTwoFactor()->create();
+    $workspace = $user->ensureDefaultWorkspace();
+
+    $userMsg = ChatMessage::create([
+        'user_id'      => $user->id,
+        'workspace_id' => $workspace->id,
+        'role'         => 'user',
+        'content'      => 'Noch keine Antwort',
+    ]);
+
+    $this->actingAs($user);
+
+    Volt::test('chat.big-research-chat')
+        ->set('loading', true)
+        ->set('pendingUserMsgId', $userMsg->id)
+        ->call('checkForResponse')
+        ->assertSet('loading', true);
 });
 
 test('chat: clearHistory löscht nur eigene nachrichten', function () {
@@ -90,46 +135,4 @@ test('chat: nachricht max 10000 zeichen', function () {
         ->set('message', str_repeat('a', 10001))
         ->call('sendMessage')
         ->assertHasErrors(['message']);
-});
-
-test('chat: job broadcasted ChatResponseReady nach erfolgreicher antwort', function () {
-    Event::fake([ChatResponseReady::class]);
-
-    $this->mock(SendAgentMessage::class, function ($mock) {
-        $mock->shouldReceive('execute')->andReturn([
-            'success' => true,
-            'content' => 'KI-Antwort',
-            'raw'     => [],
-        ]);
-    });
-
-    $this->mock(LangdockArtifactService::class, function ($mock) {
-        $mock->shouldReceive('persistFromAgentResponse')->andReturn([
-            'display_content' => 'KI-Antwort',
-            'path'            => null,
-        ]);
-    });
-
-    $user      = User::factory()->withoutTwoFactor()->create();
-    $workspace = $user->ensureDefaultWorkspace();
-
-    $userMsg = ChatMessage::create([
-        'user_id'      => $user->id,
-        'workspace_id' => $workspace->id,
-        'role'         => 'user',
-        'content'      => 'Hallo',
-    ]);
-
-    (new ProcessChatMessageJob(
-        $userMsg->id,
-        $workspace->id,
-        $user->id,
-        ['source' => 'dashboard_chat', 'user_id' => $user->id, 'workspace_id' => $workspace->id],
-    ))->handle();
-
-    Event::assertDispatched(ChatResponseReady::class, function ($e) use ($user, $workspace) {
-        return $e->userId === $user->id
-            && $e->workspaceId === $workspace->id
-            && $e->content === 'KI-Antwort';
-    });
 });
