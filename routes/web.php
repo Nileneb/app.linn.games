@@ -50,4 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('recherche/{projekt}/mayring', fn (Projekt $projekt) => view('recherche.mayring', ['projekt' => $projekt]))
         ->middleware('can:view,projekt')
         ->name('recherche.mayring');
+
+    Volt::route('recherche/{projekt}/ergebnisse/{phase}', 'recherche.ergebnisse-anzeigen')
+        ->name('recherche.ergebnisse');
 });

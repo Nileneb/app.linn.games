@@ -184,6 +184,16 @@ services:
     depends_on:
       php-fpm:
         condition: service_started
+  langdock-mcp:
+    build:
+      context: ./langdock-mcp   # git clone des Repos hierhin
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Kein LANGDOCK_API_KEY hier — kommt per Request von Laravel
+    expose:
+      - "8000"
+    networks:
+      - linn-network
 
 networks:
   linn-network:
