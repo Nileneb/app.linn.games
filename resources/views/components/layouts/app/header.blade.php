@@ -25,6 +25,13 @@
                 <div class="flex-1"></div>
 
                 <nav class="me-1.5 flex items-center gap-1">
+                    <button @click="$nextTick(() => document.documentElement.classList.toggle('dark'))"
+                            class="hidden rounded-md p-2 text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700/30 dark:hover:text-zinc-200 lg:block"
+                            title="Design-Modus umschalten">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/>
+                        </svg>
+                    </button>
                     <a href="https://github.com/laravel/livewire-starter-kit" target="_blank" class="hidden rounded-md p-2 text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700/30 dark:hover:text-zinc-200 lg:block" title="{{ __('Repository') }}">
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"/></svg>
                     </a>
@@ -35,10 +42,12 @@
 
                 {{-- User Dropdown --}}
                 <div class="relative" x-data="{ userMenu: false }">
-                    <button @click="userMenu = !userMenu" class="flex items-center gap-2 cursor-pointer">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-200 text-sm font-medium text-black dark:bg-neutral-700 dark:text-white">
+                    <button @click="userMenu = !userMenu" class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/30 transition">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 text-sm font-semibold text-zinc-900 dark:bg-zinc-600 dark:text-white">
                             {{ auth()->user()->initials() }}
                         </span>
+                        <span class="hidden sm:inline text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ auth()->user()->first_name ?? substr(auth()->user()->name, 0, strpos(auth()->user()->name, ' ')) }}</span>
+                        <svg :class="userMenu ? 'rotate-180' : ''" class="h-4 w-4 text-zinc-500 dark:text-zinc-400 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 15 3.75-3.75L15.75 15m-7.5-6L12 5.25 15.75 9"/></svg>
                     </button>
 
                     <div x-show="userMenu" @click.outside="userMenu = false" x-transition

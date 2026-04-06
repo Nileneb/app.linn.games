@@ -46,13 +46,13 @@
         {{-- Agenten-Tabelle --}}
         @if (! empty($agents))
             <div class="fi-ta overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 shadow-sm">
-                <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-white/10">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-white/10 gap-2">
                     <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                        {{ count($agents) }} Agenten in Langdock
+                        {{ count($agents) }} {{ count($agents) === 1 ? 'Agent' : 'Agenten' }} in Langdock
                     </span>
                     <span class="text-xs text-gray-500 dark:text-gray-400">Gecacht für 5 Minuten</span>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gray-900">
