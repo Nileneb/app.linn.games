@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChatMessage;
+use App\Services\AgentResultStorageService;
 use Illuminate\Support\Collection;
 
 /**
@@ -44,5 +45,51 @@ class ChatService
         ChatMessage::where('workspace_id', $workspaceId)
             ->where('user_id', $userId)
             ->delete();
+    }
+
+    public function saveAssistantMessage(
+        string $workspaceId,
+        int $userId,
+        string $content,
+        ?string $relatedUserMsgId = null,
+    ): ChatMessage {
+        return ChatMessage::create([
+            'user_id'      => $userId,
+            'workspace_id' => $workspaceId,
+            'role'         => 'assistant',
+            'content'      => $content,
+        ]);
+    }
+
+    public function updateLastAssistantMessage(
+        string $workspaceId,
+        int $userId,
+        string $content,
+        ?string $projectId = null,
+        ?int $phaseNumber = null,
+        ?string $agentName = null,
+    ): void {
+        // Save to file if project context is provided
+        $filePath = null;
+        if ($projectId !== null && $phaseNumber !== null) {
+            $filePath = app(AgentResultStorageService::class)->saveResult(
+                $workspaceId,
+                $userId,
+                $projectId,
+                $phaseNumber,
+                ['content' => $content],
+                $agentName,
+            );
+        }
+
+        ChatMessage::where('workspace_id', $workspaceId)
+            ->where('user_id', $userId)
+            ->where('role', 'assistant')
+            ->orderByDesc('created_at')
+            ->limit(1)
+            ->update([
+                'content' => $content,
+                'agent_result_file_path' => $filePath,
+            ]);
     }
 }

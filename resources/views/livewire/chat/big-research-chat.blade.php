@@ -1,9 +1,9 @@
 <?php
 
-use App\Jobs\ProcessChatMessageJob;
 use App\Models\ChatMessage;
 use App\Services\ChatService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -18,31 +18,99 @@ new class extends Component {
         ]);
 
         $workspaceId = Auth::user()?->activeWorkspaceId();
+        $userId      = Auth::id();
 
-        if ($workspaceId === null) {
+        if ($workspaceId === null || $userId === null) {
             return;
         }
 
         $userMessage   = $this->message;
         $this->message = '';
 
-        $userMsg = app(ChatService::class)->saveUserMessage($workspaceId, Auth::id(), $userMessage);
-
+        $userMsg = app(ChatService::class)->saveUserMessage($workspaceId, $userId, $userMessage);
         $this->pendingUserMsgId = $userMsg->id;
         $this->loading          = true;
 
-        ProcessChatMessageJob::dispatch(
-            $userMsg->id,
+        // Placeholder für Agent-Response (wird per polling aktualisiert)
+        app(ChatService::class)->saveAssistantMessage(
             $workspaceId,
-            Auth::id(),
-            [
-                'source'       => 'dashboard_chat',
-                'user_id'      => Auth::id(),
-                'workspace_id' => $workspaceId,
-            ],
+            $userId,
+            '⏳ Processing...',
+            $userMsg->id,
         );
 
+        // Call MCP agent endpoint asynchronously
+        $this->callMcpAgent($workspaceId, $userId, [$userMessage]);
+
         $this->dispatch('chat-loading-started');
+    }
+
+    private function callMcpAgent(string $workspaceId, int $userId, array $messages): void
+    {
+        try {
+            $agentId = config('services.langdock.dashboard_agent_id')
+                ?? config('services.langdock.agent_id');
+
+            if (! $agentId) {
+                throw new \Exception('Agent ID not configured');
+            }
+
+            $mcpToken = config('services.mcp.auth_token');
+            if (! $mcpToken) {
+                throw new \Exception('MCP auth token not configured');
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $mcpToken,
+                'Content-Type'  => 'application/json',
+            ])
+                ->timeout(120)
+                ->post(
+                    route('mcp.agent-call', absolute: true),
+                    [
+                        'agent_id' => $agentId,
+                        'messages' => array_map(fn ($msg) => [
+                            'role'    => 'user',
+                            'content' => $msg,
+                        ], $messages),
+                        'context' => [
+                            'workspace_id' => $workspaceId,
+                            'user_id'      => $userId,
+                            'source'       => 'dashboard_chat',
+                        ],
+                    ],
+                );
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $agentContent = $data['content'] ?? 'No response';
+
+                // Update placeholder with real response
+                app(ChatService::class)->updateLastAssistantMessage(
+                    $workspaceId,
+                    $userId,
+                    $agentContent,
+                );
+            } else {
+                app(ChatService::class)->updateLastAssistantMessage(
+                    $workspaceId,
+                    $userId,
+                    '❌ Agent Error: ' . $response->status() . ' - ' . ($response->json('error') ?? 'Unknown error'),
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('MCP agent call failed', [
+                'workspace_id' => $workspaceId,
+                'user_id'      => $userId,
+                'error'        => $e->getMessage(),
+            ]);
+
+            app(ChatService::class)->updateLastAssistantMessage(
+                $workspaceId,
+                $userId,
+                '❌ Error: ' . $e->getMessage(),
+            );
+        }
     }
 
     public function checkForResponse(): void
@@ -139,12 +207,14 @@ new class extends Component {
                 type="text"
                 placeholder="{{ __('Nachricht eingeben …') }}"
                 autocomplete="off"
-                class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                @disabled($loading)
+                wire:loading.attr="disabled"
+                wire:target="sendMessage"
+                class="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
             <button
                 type="submit"
-                @disabled($loading)
+                wire:loading.attr="disabled"
+                wire:target="sendMessage"
                 class="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4">
