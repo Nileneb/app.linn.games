@@ -167,8 +167,18 @@ new class extends Component {
 
     public function with(): array
     {
+        $phases = $this->projekt->phasen()->orderBy('phase_nr')->get();
+        $completedCount = $phases->where('status', 'abgeschlossen')->count();
+
+        $groupNames = ['', 'Scoping', 'Recherche', 'Synthese'];
+        $runningGroups = $this->getRunningGroups();
+        $activeGroupNames = array_map(fn($g) => $groupNames[$g], $runningGroups);
+
         return [
-            'phases' => $this->projekt->phasen()->orderBy('phase_nr')->get(),
+            'phases' => $phases,
+            'runningGroups' => $runningGroups,
+            'completedCount' => $completedCount,
+            'activeGroupNames' => $activeGroupNames,
         ];
     }
 }; ?>
@@ -178,10 +188,6 @@ new class extends Component {
     <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Analyse-Fortschritt</h3>
-            @php
-                $completedCount = $phases->where('status', 'abgeschlossen')->count();
-                $progressPercent = (int)round($completedCount / 8 * 100);
-            @endphp
             <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ $completedCount }}/8 {{ __('Phasen') }}</span>
         </div>
 
@@ -189,7 +195,9 @@ new class extends Component {
         <div class="mb-4">
             <div class="flex gap-1">
                 @for ($i = 1; $i <= 8; $i++)
-                    @php($phase = $phases->firstWhere('phase_nr', $i))
+                    @php
+                        $phase = $phases->firstWhere('phase_nr', $i);
+                    @endphp
                     <div class="flex-1 group">
                         <div class="relative h-8 rounded-md overflow-hidden border border-zinc-200 dark:border-zinc-700 transition-all duration-300
                             @if ($phase?->status === 'abgeschlossen') bg-green-100 dark:bg-green-900/30
@@ -224,7 +232,6 @@ new class extends Component {
         </div>
 
         {{-- Start / Status Display --}}
-        <?php $runningGroups = $this->getRunningGroups(); ?>
         @if ($pipelineStarted && !empty($runningGroups))
             <div class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-6 py-3 dark:from-amber-900/20 dark:to-orange-900/20 dark:border-amber-800">
                 <svg class="h-5 w-5 animate-spin text-amber-600 dark:text-amber-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -234,11 +241,7 @@ new class extends Component {
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Pipeline läuft…</p>
                     <p class="text-xs text-amber-700 dark:text-amber-300">
-                        @php
-                            $groupNames = ['', 'Scoping', 'Recherche', 'Synthese'];
-                            $activeNames = array_map(fn($g) => $groupNames[$g], $runningGroups);
-                        @endphp
-                        Aktiv: <strong>{{ implode(', ', $activeNames) }}</strong>
+                        Aktiv: <strong>{{ implode(', ', $activeGroupNames) }}</strong>
                     </p>
                 </div>
             </div>

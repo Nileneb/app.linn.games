@@ -88,8 +88,9 @@ class AgentResultStorageServiceTest extends TestCase
 
         $results = $this->service->listResults($workspaceId, $userId, $projectId);
 
-        expect($results)->toHaveCount(3)
-            ->toContain('P1__')
+        expect($results)->toHaveCount(3);
+        $joined = implode('|', $results);
+        expect($joined)->toContain('P1__')
             ->toContain('P2__')
             ->toContain('P3__');
     }
