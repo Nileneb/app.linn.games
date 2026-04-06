@@ -118,6 +118,13 @@ if [ "$SKIP_MIGRATE" = false ]; then
     }
     exit 1
   fi
+  
+  # ── Seed roles (always, since it's idempotent via firstOrCreate)
+  echo "==> Seeding roles..."
+  if ! "${DC[@]}" run --rm php-cli php artisan db:seed --class=RoleSeeder --force; then
+    echo "ERROR: RoleSeeder failed." >&2
+    exit 1
+  fi
 else
   echo "==> Skipping migrations (--skip-migrate)"
 fi
@@ -127,7 +134,7 @@ if [ "$RUN_SEED" = true ]; then
   echo "==> Seeding database (admin user + roles)..."
   "${DC[@]}" run --rm php-cli php artisan db:seed --force
 else
-  echo "==> Skipping seed (use --seed for first deploy)"
+  echo "==> Skipping full seed (use --seed for initial deploy)"
 fi
 
 # ── Cache optimisation ─────────────────────────
