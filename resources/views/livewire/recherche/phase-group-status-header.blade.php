@@ -14,6 +14,22 @@ new class extends Component {
 
     public function mount(): void
     {
+        // Check if there's an active pending job
+        $pendingResult = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($pendingResult) {
+            $this->agentRunning = true;
+            $this->runningGroupNumber = match(true) {
+                in_array($pendingResult->phase_nr, [1, 2, 3]) => 1,
+                in_array($pendingResult->phase_nr, [4, 5, 6]) => 2,
+                in_array($pendingResult->phase_nr, [7, 8])    => 3,
+                default => null,
+            };
+        }
+
         $this->checkAgentStatus();
     }
 
