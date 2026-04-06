@@ -20,8 +20,19 @@
                 </p>
                 <ul class="space-y-1">
                     @foreach ($orphaned as $key => $uuid)
-                        <li class="text-sm text-warning-700 dark:text-warning-300 font-mono">
-                            <span class="font-semibold">{{ $key }}</span> → {{ $uuid }}
+                        <li class="text-sm text-warning-700 dark:text-warning-300 font-mono flex items-center gap-2">
+                            <span class="font-semibold">{{ $key }}</span>
+                            <span>→</span>
+                            <code class="bg-warning-100 dark:bg-warning-900/20 px-1.5 py-0.5 rounded text-xs">
+                                {{ substr($uuid, 0, 8) }}...{{ substr($uuid, -4) }}
+                            </code>
+                            <button
+                                x-on:click="navigator.clipboard.writeText('{{ $uuid }}'); $el.textContent = '✓'; setTimeout(() => $el.textContent = '📋', 2000)"
+                                class="text-xs text-warning-600 hover:text-warning-800 dark:text-warning-400 dark:hover:text-warning-200 transition-colors cursor-pointer ml-auto"
+                                title="In Zwischenablage kopieren"
+                            >
+                                📋
+                            </button>
                         </li>
                     @endforeach
                 </ul>
@@ -67,9 +78,18 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3">
-                                        <code class="text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                                            {{ $agentId }}
-                                        </code>
+                                        <div class="flex items-center gap-2">
+                                            <code class="text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono">
+                                                {{ substr($agentId, 0, 8) }}...{{ substr($agentId, -4) }}
+                                            </code>
+                                            <button
+                                                x-on:click="navigator.clipboard.writeText('{{ $agentId }}'); $el.textContent = '✓'; setTimeout(() => $el.textContent = '📋', 2000)"
+                                                class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                                                title="In Zwischenablage kopieren"
+                                            >
+                                                📋
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3">
                                         @if ($configKey)
@@ -126,9 +146,18 @@
                                 <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <td class="px-4 py-3 font-mono text-gray-800 dark:text-gray-200 text-xs">{{ $key }}</td>
                                     <td class="px-4 py-3">
-                                        <code class="text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                                            {{ $uuid }}
-                                        </code>
+                                        <div class="flex items-center gap-2">
+                                            <code class="text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono">
+                                                {{ substr($uuid, 0, 8) }}...{{ substr($uuid, -4) }}
+                                            </code>
+                                            <button
+                                                x-on:click="navigator.clipboard.writeText('{{ $uuid }}'); $el.textContent = '✓'; setTimeout(() => $el.textContent = '📋', 2000)"
+                                                class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                                                title="In Zwischenablage kopieren"
+                                            >
+                                                📋
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3">
                                         @if ($error)
