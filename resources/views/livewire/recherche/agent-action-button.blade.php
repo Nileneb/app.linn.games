@@ -15,6 +15,29 @@ new class extends Component {
 
     public bool $dispatched = false;
 
+    public function mount(): void
+    {
+        $this->dispatched = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', $this->phaseNr)
+            ->where('agent_config_key', $this->agentConfigKey)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function checkStatus(): void
+    {
+        $stillPending = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', $this->phaseNr)
+            ->where('agent_config_key', $this->agentConfigKey)
+            ->where('status', 'pending')
+            ->exists();
+
+        if (! $stillPending) {
+            $this->dispatched = false;
+            $this->dispatch('agent-result-ready', phaseNr: $this->phaseNr);
+        }
+    }
+
     public function runAgent(): void
     {
         try {
@@ -124,7 +147,7 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div @if($dispatched) wire:poll.5s="checkStatus" @endif>
     @if ($dispatched)
         <p class="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
             <svg class="h-4 w-4 animate-spin text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
