@@ -17,7 +17,7 @@
 {{-- Dark-mode init: read localStorage BEFORE Vite/Alpine loads to prevent flash --}}
 <script>
     (function () {
-        var appearance = localStorage.getItem('appearance');
+        var appearance = localStorage.getItem('appearance') || localStorage.getItem('theme');
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (appearance === 'dark' || (appearance !== 'light' && prefersDark)) {
             document.documentElement.classList.add('dark');

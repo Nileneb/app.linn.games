@@ -52,6 +52,7 @@ new class extends Component {
                 function setAppearance(mode) {
                     if (['light', 'dark', 'system'].indexOf(mode) === -1) return;
                     localStorage.setItem('appearance', mode);
+                    localStorage.setItem('theme', mode);
                     applyTheme(mode);
                     highlightButtons(mode);
                 }
@@ -64,7 +65,7 @@ new class extends Component {
                 });
 
                 // Initialen Zustand setzen
-                var saved = localStorage.getItem('appearance') || 'system';
+                var saved = localStorage.getItem('appearance') || localStorage.getItem('theme') || 'system';
                 applyTheme(saved);
                 highlightButtons(saved);
             })();
