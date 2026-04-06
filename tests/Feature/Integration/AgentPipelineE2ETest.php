@@ -29,9 +29,11 @@ test('webhook to viewer end to end', function () {
         ],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
     $webhookResponse = $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($webhookPayload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => $timestamp,
     ]);
 
     $webhookResponse->assertStatus(200);
@@ -52,9 +54,11 @@ test('webhook then viewer unauthorized', function () {
         'result' => ['type' => 'final_report', 'summary' => '# Results', 'data' => ['md_files' => [['path' => 'report.md', 'content' => '# Report']]]],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
     $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($webhookPayload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => $timestamp,
     ])->assertStatus(200);
 
     $this->actingAs($other)->get("/recherche/{$this->projekt->id}/ergebnisse/screening")->assertStatus(403);
@@ -66,9 +70,11 @@ test('webhook then viewer invalid phase', function () {
         'result' => ['type' => 'final_report', 'summary' => '# Results', 'data' => ['md_files' => [['path' => 'report.md', 'content' => '# Report']]]],
     ];
 
+    $timestamp = now()->unix();
+    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
     $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($webhookPayload), config('services.langdock.webhook_secret')),
-        'X-Langdock-Timestamp' => now()->unix(),
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => $timestamp,
     ])->assertStatus(200);
 
     $this->actingAs($this->owner)->get("/recherche/{$this->projekt->id}/ergebnisse/ungueltig-phase")->assertStatus(404);

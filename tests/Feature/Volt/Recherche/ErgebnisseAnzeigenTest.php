@@ -34,7 +34,7 @@ test('md viewer enforces projekt policy', function () {
         "# Screening Results"
     );
 
-    $response = $this->actingAs($nonOwner)
+    $response = $this->actingAs($this->nonOwner)
         ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");
 
     $response->assertStatus(403);

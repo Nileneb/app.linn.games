@@ -26,7 +26,7 @@ new class extends Component {
 
         foreach ($groupPhases as $groupNum => $phases) {
             $hasPending = PhaseAgentResult::where('projekt_id', $this->projekt->id)
-                ->whereBetween('phase_nr', $phases[0], $phases[1])
+                ->whereBetween('phase_nr', [$phases[0], $phases[1]])
                 ->where('status', 'pending')
                 ->exists();
 
