@@ -2,8 +2,8 @@
 
 use App\Models\ChatMessage;
 use App\Services\ChatService;
+use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -55,51 +55,27 @@ new class extends Component {
                 throw new \Exception('Agent ID not configured');
             }
 
-            $mcpToken = config('services.mcp.auth_token');
-            if (! $mcpToken) {
-                throw new \Exception('MCP auth token not configured');
-            }
+            $response = app(LangdockAgentService::class)->call(
+                $agentId,
+                array_map(fn ($msg) => [
+                    'role'    => 'user',
+                    'content' => $msg,
+                ], $messages),
+                120,
+                [
+                    'workspace_id' => $workspaceId,
+                    'user_id'      => $userId,
+                    'source'       => 'dashboard_chat',
+                ],
+            );
 
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $mcpToken,
-                'Content-Type'  => 'application/json',
-            ])
-                ->timeout(120)
-                ->post(
-                    route('mcp.agent-call', absolute: true),
-                    [
-                        'agent_id' => $agentId,
-                        'messages' => array_map(fn ($msg) => [
-                            'role'    => 'user',
-                            'content' => $msg,
-                        ], $messages),
-                        'context' => [
-                            'workspace_id' => $workspaceId,
-                            'user_id'      => $userId,
-                            'source'       => 'dashboard_chat',
-                        ],
-                    ],
-                );
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $agentContent = $data['content'] ?? 'No response';
-
-                // Update placeholder with real response
-                app(ChatService::class)->updateLastAssistantMessage(
-                    $workspaceId,
-                    $userId,
-                    $agentContent,
-                );
-            } else {
-                app(ChatService::class)->updateLastAssistantMessage(
-                    $workspaceId,
-                    $userId,
-                    '❌ Agent Error: ' . $response->status() . ' - ' . ($response->json('error') ?? 'Unknown error'),
-                );
-            }
+            app(ChatService::class)->updateLastAssistantMessage(
+                $workspaceId,
+                $userId,
+                $response['content'] ?? 'No response',
+            );
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('MCP agent call failed', [
+            \Illuminate\Support\Facades\Log::error('Langdock agent call failed', [
                 'workspace_id' => $workspaceId,
                 'user_id'      => $userId,
                 'error'        => $e->getMessage(),
