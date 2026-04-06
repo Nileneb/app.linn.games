@@ -7,12 +7,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Development
 npm run dev              # Start Vite dev server
-docker compose up -d     # Start all containers (Dev mit Bind-Mounts)
+docker compose up -d     # Start all containers (dev, mit Bind-Mounts via override)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Port 6480 statt 6481
+
+# Artisan (im Container)
+docker compose exec php-cli php artisan migrate
+docker compose exec php-cli php artisan tinker
 
 # Testing
-composer test                              # Lokal ohne Docker
-docker compose run --rm php-test vendor/bin/pest  # Docker (empfohlen)
-docker compose build php-test              # Nach Änderungen außerhalb tests/
+docker compose run --rm php-test vendor/bin/pest            # Alle Tests (Docker, empfohlen)
+docker compose run --rm php-test vendor/bin/pest --filter="TestName"  # Einzelner Test
+docker compose build php-test                               # Nach Änderungen außerhalb tests/
+composer test                                               # Lokal ohne Docker
 
 # Build & Deploy
 npm run build              # Vite build für Production
@@ -21,8 +27,11 @@ npm run build              # Vite build für Production
 ./deploy.sh --skip-migrate # Ohne Migrationen
 
 # Cache & Assets
-docker compose exec php-fpm php artisan view:clear      # View-Cache leeren
-docker compose exec php-fpm php artisan filament:assets # Filament-Assets neu publizieren
+docker compose exec php-cli php artisan view:clear
+docker compose exec php-cli php artisan filament:assets
+
+# MCP Paper Search (optionales Profil)
+docker compose --profile mcp up -d mcp-paper-search
 ```
 
 ## Architecture
@@ -35,6 +44,15 @@ docker compose exec php-fpm php artisan filament:assets # Filament-Assets neu pu
 - **Admin**: Filament 4.9 (Schema-based forms, German labels)
 - **Auth**: Fortify 1.30 (plain Blade, 2FA support)
 - **AI**: Langdock Agent (webhook-triggered), Ollama embeddings (`nomic-embed-text`)
+
+### Docker Compose Setup
+
+- `docker-compose.yml` — Produktions-Images (named volumes, kein Bind-Mount)
+- `docker-compose.override.yml` — Wird **automatisch** beim `docker compose up` gemergt; aktiviert Bind-Mounts (`./app`, `./resources`, etc.) für Live-Reload
+- `docker-compose.dev.yml` — Manuell einbinden (`-f`); ändert Port von 6481 → 6480 (wenn 6481 belegt)
+- **Production** (kein Override): `docker compose -f docker-compose.yml up -d`
+
+Container für Artisan/CLI-Befehle immer über `php-cli`, nicht `php-fpm`.
 
 ### Key Architectural Patterns
 
