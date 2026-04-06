@@ -113,13 +113,13 @@ new class extends Component {
 
         // Check group 1 completion (always runs first)
         $group1Completed = PhaseAgentResult::where('projekt_id', $this->projekt->id)
-            ->whereBetween('phase_nr', $groupPhases[1][0], $groupPhases[1][1])
+            ->whereBetween('phase_nr', [$groupPhases[1][0], $groupPhases[1][1]])
             ->where('status', '!=', 'pending')
             ->count() === 3;
 
         // Check group 2 progress (start group 3 at 30% of group 2)
         $group2Results = PhaseAgentResult::where('projekt_id', $this->projekt->id)
-            ->whereBetween('phase_nr', $groupPhases[2][0], $groupPhases[2][1])
+            ->whereBetween('phase_nr', [$groupPhases[2][0], $groupPhases[2][1]])
             ->where('status', '!=', 'pending')
             ->count();
 
@@ -134,14 +134,14 @@ new class extends Component {
 
             // Group 2: Start when Group 1 is done
             if ($group1Completed && !PhaseAgentResult::where('projekt_id', $this->projekt->id)
-                ->whereBetween('phase_nr', $groupPhases[2][0], $groupPhases[2][1])
+                ->whereBetween('phase_nr', [$groupPhases[2][0], $groupPhases[2][1]])
                 ->exists()) {
                 $this->startGroupAgent(2);
             }
 
             // Group 3: Start when Group 2 reaches 30% progress
             if ($shouldStartGroup3 && !PhaseAgentResult::where('projekt_id', $this->projekt->id)
-                ->whereBetween('phase_nr', $groupPhases[3][0], $groupPhases[3][1])
+                ->whereBetween('phase_nr', [$groupPhases[3][0], $groupPhases[3][1]])
                 ->exists()) {
                 $this->startGroupAgent(3);
             }
@@ -150,7 +150,7 @@ new class extends Component {
             $allGroupsDone = collect([1, 2, 3])->every(function ($groupNum) use ($groupPhases) {
                 $phases = $groupPhases[$groupNum];
                 $completed = PhaseAgentResult::where('projekt_id', $this->projekt->id)
-                    ->whereBetween('phase_nr', $phases[0], $phases[1])
+                    ->whereBetween('phase_nr', [$phases[0], $phases[1]])
                     ->where('status', '!=', 'pending')
                     ->count();
                 $total = $phases[1] - $phases[0] + 1;
