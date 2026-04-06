@@ -92,19 +92,19 @@ class AgentResultWebhookController extends Controller
 
         // Validate timestamp to prevent replay attacks
         $timestamp = $request->header('X-Langdock-Timestamp');
-        if (!$timestamp) {
+
+        // Ensure header exists and is a digit-only string
+        if (!is_string($timestamp) || !ctype_digit($timestamp)) {
             return false;
         }
 
-        // Verify timestamp is a valid Unix timestamp
-        if (!is_numeric($timestamp) || $timestamp != (int) $timestamp) {
-            return false;
-        }
+        // Cast once to integer for further validation
+        $timestamp = (int) $timestamp;
 
         // Reject requests older than 5 minutes
         $maxAge = 300; // seconds
         $currentTime = time();
-        if (abs($currentTime - (int) $timestamp) > $maxAge) {
+        if (abs($currentTime - $timestamp) > $maxAge) {
             return false;
         }
 

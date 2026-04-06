@@ -196,13 +196,17 @@
       };
 
       try {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        };
+        if (csrfMeta) {
+          headers["X-CSRF-TOKEN"] = csrfMeta.getAttribute("content");
+        }
         const response = await fetch("/contact", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
-            "Accept": "application/json",
-          },
+          headers,
           body: JSON.stringify(formData),
         });
 
