@@ -37,6 +37,9 @@ class AgentResultWebhookController extends Controller
         // Persist markdown files to storage
         $basePath = "recherche/{$projektId}/{$phase}";
         foreach ($mdFiles as $file) {
+            if (!$this->validateFilePath($file['path'])) {
+                return response()->json(['error' => 'Invalid file path: ' . $file['path']], 400);
+            }
             Storage::disk('local')->put("{$basePath}/{$file['path']}", $file['content']);
         }
 
@@ -65,6 +68,32 @@ class AgentResultWebhookController extends Controller
         );
 
         return response()->json(['status' => 'success', 'phase' => $phase], 200);
+    }
+
+    private function validateFilePath(string $path): bool
+    {
+        // Reject parent directory traversal
+        if (str_contains($path, '..')) {
+            return false;
+        }
+        // Reject absolute paths
+        if (str_starts_with($path, '/') || str_starts_with($path, '\\')) {
+            return false;
+        }
+        // Reject double slashes and backslashes
+        if (str_contains($path, '//') || str_contains($path, '\\')) {
+            return false;
+        }
+        // Require .md extension
+        if (!str_ends_with($path, '.md')) {
+            return false;
+        }
+        // Only allow safe filename characters
+        if (!preg_match('/^[\w\-]+\.md$/', $path)) {
+            return false;
+        }
+
+        return true;
     }
 
     private function verifySignature(Request $request): bool
