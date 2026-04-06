@@ -55,7 +55,15 @@ new class extends Component {
                 throw new \Exception('Agent ID not configured');
             }
 
-            $response = Http::withToken(config('services.mcp.auth_token'))
+            $mcpToken = config('services.mcp.auth_token');
+            if (! $mcpToken) {
+                throw new \Exception('MCP auth token not configured');
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $mcpToken,
+                'Content-Type'  => 'application/json',
+            ])
                 ->timeout(120)
                 ->post(
                     route('mcp.agent-call', absolute: true),

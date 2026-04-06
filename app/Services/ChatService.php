@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChatMessage;
+use App\Services\AgentResultStorageService;
 use Illuminate\Support\Collection;
 
 /**
@@ -64,12 +65,31 @@ class ChatService
         string $workspaceId,
         int $userId,
         string $content,
+        ?string $projectId = null,
+        ?int $phaseNumber = null,
+        ?string $agentName = null,
     ): void {
+        // Save to file if project context is provided
+        $filePath = null;
+        if ($projectId !== null && $phaseNumber !== null) {
+            $filePath = app(AgentResultStorageService::class)->saveResult(
+                $workspaceId,
+                $userId,
+                $projectId,
+                $phaseNumber,
+                ['content' => $content],
+                $agentName,
+            );
+        }
+
         ChatMessage::where('workspace_id', $workspaceId)
             ->where('user_id', $userId)
             ->where('role', 'assistant')
             ->orderByDesc('created_at')
             ->limit(1)
-            ->update(['content' => $content]);
+            ->update([
+                'content' => $content,
+                'agent_result_file_path' => $filePath,
+            ]);
     }
 }
