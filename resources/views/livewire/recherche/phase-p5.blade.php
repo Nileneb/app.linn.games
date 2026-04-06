@@ -48,6 +48,9 @@ new class extends Component {
     // --- Filter ---
     public string $trefferFilter = 'alle';
 
+    // --- Heatmap ---
+    public string $heatmapTheme = '';
+
     // ─── PRISMA CRUD ─────────────────────────────────────────
 
     public function newPrisma(): void { $this->cancelPrisma(); $this->showPrismaForm = true; }
@@ -285,15 +288,120 @@ new class extends Component {
                 report: true,
             ),
             'latestAgentResult' => $this->loadLatestAgentResult(5),
+            'heatmapData' => $this->getHeatmapData(),
         ];
+    }
+
+    private function getHeatmapData(): array
+    {
+        $treffers = P5Treffer::where('projekt_id', $this->projekt->id)->get();
+        $themes = ['Medizin', 'Psychologie', 'Epidemiologie', 'Immunologie', 'Public Health'];
+
+        if ($treffers->isEmpty()) {
+            return ['heatmap' => [], 'themes' => $themes, 'keywords' => []];
+        }
+
+        // Keywords aus Titel+Abstract extrahieren (Top 8 häufigste Worte)
+        $allText = $treffers->map(fn($t) => strtolower($t->titel . ' ' . ($t->abstract ?? '')))->implode(' ');
+        $words = str_word_count($allText, 1);
+        $stopwords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'was', 'are', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'with', 'from', 'by', 'as', 'that', 'this', 'which', 'who', 'what', 'when', 'where', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'so', 'than', 'too', 'very', 'just', 'de', 'ein', 'eine', 'der', 'die', 'das', 'und', 'oder', 'in', 'zu', 'mit', 'von', 'bei', 'auf', 'aus', 'nach', 'über', 'unter'];
+        $words = array_filter($words, fn($w) => strlen($w) > 3 && !in_array(strtolower($w), $stopwords));
+        $wordCounts = array_count_values($words);
+        arsort($wordCounts);
+        $keywords = array_slice(array_keys($wordCounts), 0, 8);
+
+        // Heatmap-Matrix: Keywords vs Themes
+        $heatmap = [];
+        foreach ($keywords as $keyword) {
+            $heatmap[$keyword] = [];
+            foreach ($themes as $theme) {
+                $count = $treffers->filter(function($t) use ($keyword, $theme) {
+                    $text = strtolower(($t->titel ?? '') . ' ' . ($t->abstract ?? ''));
+                    return str_contains($text, strtolower($keyword));
+                })->count();
+                $heatmap[$keyword][$theme] = $count;
+            }
+        }
+
+        return ['heatmap' => $heatmap, 'themes' => $themes, 'keywords' => $keywords];
     }
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
 
-    {{-- KI-Agent Button --}}
-    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
+    {{-- ═══ Treffer-Heatmap nach Keywords & Themenbereichen ═══ --}}
+    @if (!empty($heatmapData['keywords']))
+        <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+            <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Treffer-Heatmap: Keywords × Themenbereiche</h3>
 
+            {{-- Heatmap Table --}}
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead>
+                        <tr>
+                            <th class="border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-left font-semibold text-zinc-700 dark:text-zinc-300">Keyword</th>
+                            @foreach ($heatmapData['themes'] as $theme)
+                                <th class="border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-center font-semibold text-zinc-700 dark:text-zinc-300 text-xs">{{ $theme }}</th>
+                            @endforeach
+                            <th class="border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-center font-semibold text-zinc-700 dark:text-zinc-300 text-xs">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $maxValue = 1;
+                            foreach ($heatmapData['heatmap'] as $keyword => $themeCounts) {
+                                $maxValue = max($maxValue, max(array_values($themeCounts)));
+                            }
+                        @endphp
+                        @foreach ($heatmapData['keywords'] as $keyword)
+                            @php
+                                $themeCounts = $heatmapData['heatmap'][$keyword] ?? [];
+                                $total = array_sum($themeCounts);
+                            @endphp
+                            <tr>
+                                <td class="border border-zinc-200 dark:border-zinc-700 px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100">{{ ucfirst($keyword) }}</td>
+                                @foreach ($heatmapData['themes'] as $theme)
+                                    @php
+                                        $count = $themeCounts[$theme] ?? 0;
+                                        $intensity = $maxValue > 0 ? $count / $maxValue : 0;
+                                        $bgColor = match(true) {
+                                            $intensity >= 0.7 => 'bg-red-600 text-white',
+                                            $intensity >= 0.4 => 'bg-red-400 text-white',
+                                            $intensity >= 0.1 => 'bg-red-200 text-zinc-900',
+                                            default => 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500',
+                                        };
+                                    @endphp
+                                    <td class="border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-center {{ $bgColor }} transition-colors">
+                                        <span class="font-semibold">{{ $count }}</span>
+                                    </td>
+                                @endforeach
+                                <td class="border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-center font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-zinc-800">{{ $total }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 flex gap-4 text-xs">
+                <div class="flex items-center gap-2">
+                    <div class="size-4 rounded bg-red-600"></div>
+                    <span class="text-zinc-600 dark:text-zinc-400">Viele Treffer (70%+)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="size-4 rounded bg-red-400"></div>
+                    <span class="text-zinc-600 dark:text-zinc-400">Moderate Treffer (40-69%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="size-4 rounded bg-red-200"></div>
+                    <span class="text-zinc-600 dark:text-zinc-400">Wenige Treffer (10-39%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="size-4 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600"></div>
+                    <span class="text-zinc-600 dark:text-zinc-400">Keine Treffer</span>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- ═══ PRISMA Flowchart Zahlen ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
