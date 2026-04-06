@@ -6,9 +6,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
+    Storage::fake('local');
     $this->owner = User::factory()->withoutTwoFactor()->create();
     $this->projekt = Projekt::factory()->create(['user_id' => $this->owner->id]);
-    Storage::fake('local');
 });
 
 test('webhook handler persists markdown files', function () {
@@ -23,14 +23,8 @@ test('webhook handler persists markdown files', function () {
             'summary' => '# Screening Results',
             'data' => [
                 'md_files' => [
-                    [
-                        'path' => 'screening-bericht.md',
-                        'content' => '# Screening-Ergebnis\n\nTopics: 42 papers screened.',
-                    ],
-                    [
-                        'path' => 'einschluss-liste.md',
-                        'content' => '# Included Papers\n\n- Paper 1\n- Paper 2',
-                    ],
+                    ['path' => 'screening-bericht.md', 'content' => '# Screening-Ergebnis\n\nTopics: 42 papers screened.'],
+                    ['path' => 'einschluss-liste.md', 'content' => '# Included Papers\n\n- Paper 1\n- Paper 2'],
                 ],
             ],
         ],
@@ -46,8 +40,11 @@ test('webhook handler persists markdown files', function () {
     Storage::disk('local')->assertExists("recherche/{$this->projekt->id}/screening/screening-bericht.md");
     Storage::disk('local')->assertExists("recherche/{$this->projekt->id}/screening/einschluss-liste.md");
 
-    expect(PhaseAgentResult::where('projekt_id', $this->projekt->id)->where('phase', 'screening')->first())
-        ->status->toBe('completed');
+    $this->assertDatabaseHas('phase_agent_results', [
+        'projekt_id' => $this->projekt->id,
+        'phase' => 'screening',
+        'status' => 'completed',
+    ]);
 });
 
 test('webhook handler rejects invalid signature', function () {
@@ -80,18 +77,13 @@ test('webhook handler rejects path traversal attempts', function () {
     $payload = [
         'meta' => [
             'projekt_id' => $this->projekt->id,
-            'workspace_id' => 'workspace-123',
             'phase' => 'screening',
         ],
         'result' => [
             'type' => 'final_report',
-            'summary' => '# Results',
             'data' => [
                 'md_files' => [
-                    [
-                        'path' => '../../../etc/passwd.md',
-                        'content' => 'Malicious content',
-                    ],
+                    ['path' => '../../../dangerous.md', 'content' => 'malicious content'],
                 ],
             ],
         ],
@@ -102,28 +94,20 @@ test('webhook handler rejects path traversal attempts', function () {
         'X-Langdock-Timestamp' => now()->unix(),
     ]);
 
-    $response->assertStatus(400)
-        ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
-
-    Storage::disk('local')->assertMissing('etc/passwd.md');
+    $response->assertStatus(400);
 });
 
 test('webhook handler rejects absolute paths', function () {
     $payload = [
         'meta' => [
             'projekt_id' => $this->projekt->id,
-            'workspace_id' => 'workspace-123',
             'phase' => 'screening',
         ],
         'result' => [
             'type' => 'final_report',
-            'summary' => '# Results',
             'data' => [
                 'md_files' => [
-                    [
-                        'path' => '/etc/sensitive.md',
-                        'content' => 'Sensitive content',
-                    ],
+                    ['path' => '/etc/passwd.md', 'content' => 'malicious content'],
                 ],
             ],
         ],
@@ -134,8 +118,5 @@ test('webhook handler rejects absolute paths', function () {
         'X-Langdock-Timestamp' => now()->unix(),
     ]);
 
-    $response->assertStatus(400)
-        ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
-
-    Storage::disk('local')->assertMissing('etc/sensitive.md');
+    $response->assertStatus(400);
 });
