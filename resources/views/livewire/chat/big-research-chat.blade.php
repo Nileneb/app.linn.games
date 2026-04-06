@@ -1,13 +1,15 @@
 <?php
 
 use App\Jobs\ProcessChatMessageJob;
+use App\Models\ChatMessage;
 use App\Services\ChatService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string $message = '';
-    public bool   $loading = false;
+    public string  $message          = '';
+    public bool    $loading          = false;
+    public ?string $pendingUserMsgId = null;
 
     public function sendMessage(): void
     {
@@ -26,7 +28,8 @@ new class extends Component {
 
         $userMsg = app(ChatService::class)->saveUserMessage($workspaceId, Auth::id(), $userMessage);
 
-        $this->loading = true;
+        $this->pendingUserMsgId = $userMsg->id;
+        $this->loading          = true;
 
         ProcessChatMessageJob::dispatch(
             $userMsg->id,
@@ -42,6 +45,27 @@ new class extends Component {
         $this->dispatch('chat-loading-started');
     }
 
+    public function checkForResponse(): void
+    {
+        if (! $this->loading || $this->pendingUserMsgId === null) {
+            return;
+        }
+
+        $userMsg = ChatMessage::find($this->pendingUserMsgId);
+
+        if ($userMsg === null) {
+            $this->loading          = false;
+            $this->pendingUserMsgId = null;
+            return;
+        }
+
+        if (app(ChatService::class)->hasResponseAfter($userMsg, Auth::id())) {
+            $this->loading          = false;
+            $this->pendingUserMsgId = null;
+            $this->dispatch('chat-updated');
+        }
+    }
+
     public function clearHistory(): void
     {
         $workspaceId = Auth::user()?->activeWorkspaceId();
@@ -50,7 +74,8 @@ new class extends Component {
             app(ChatService::class)->clearMessages($workspaceId, Auth::id());
         }
 
-        $this->loading = false;
+        $this->loading          = false;
+        $this->pendingUserMsgId = null;
     }
 
     public function with(): array
@@ -93,9 +118,9 @@ new class extends Component {
             </div>
         @endforelse
 
-        {{-- Loading indicator --}}
+        {{-- Loading indicator with 3s poll --}}
         @if($loading)
-            <div class="flex justify-start">
+            <div wire:poll.3s="checkForResponse" class="flex justify-start">
                 <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
                     <span class="inline-flex items-center gap-1">
                         <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -141,15 +166,6 @@ new class extends Component {
 
     scrollToBottom();
 
-    // Subscribe once to the private WebSocket channel
-    const workspaceId = '{{ Auth::user()?->activeWorkspaceId() }}';
-    const userId = {{ Auth::id() }};
-    window.Echo.private(`chat.${workspaceId}.${userId}`)
-        .listen('.chat.response', () => {
-            clearTimeout(timeoutHandle);
-            $wire.set('loading', false).then(() => setTimeout(scrollToBottom, 50));
-        });
-
     $wire.on('chat-updated', () => {
         clearTimeout(timeoutHandle);
         setTimeout(scrollToBottom, 50);
@@ -160,6 +176,7 @@ new class extends Component {
         // 90s frontend failsafe — stops spinner if queue-worker is down or response never arrives
         timeoutHandle = setTimeout(() => {
             $wire.set('loading', false);
+            $wire.set('pendingUserMsgId', null);
         }, 90000);
     });
 </script>
