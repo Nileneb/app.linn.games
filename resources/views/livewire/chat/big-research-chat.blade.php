@@ -45,7 +45,7 @@ new class extends Component {
         $this->dispatch('chat-loading-started');
     }
 
-    private function callMcpAgent(string $workspaceId, string $userId, array $messages): void
+    private function callMcpAgent(string $workspaceId, int $userId, array $messages): void
     {
         try {
             $agentId = config('services.langdock.dashboard_agent_id')
