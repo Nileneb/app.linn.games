@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgentResultWebhookController;
 use App\Http\Controllers\McpAgentController;
 use App\Http\Controllers\PaperRagController;
+use App\Http\Controllers\StreamingMcpController;
 use App\Http\Middleware\SecureMcpHeaders;
 use App\Http\Middleware\VerifyMcpToken;
 use Illuminate\Support\Facades\Route;
@@ -17,7 +18,9 @@ Route::middleware([VerifyMcpToken::class, SecureMcpHeaders::class, 'throttle:mcp
     Route::post('/papers/ingest', [PaperRagController::class, 'ingest']);
     Route::get('/papers/rag-search', [PaperRagController::class, 'search']);
     Route::post('/mcp/agent-call', [McpAgentController::class, 'call'])->name('mcp.agent-call');
+    Route::post('/mcp/agent-call/stream', [StreamingMcpController::class, 'call'])->name('mcp.agent-stream');
 });
 
 Route::post('/webhooks/langdock/agent-result', [AgentResultWebhookController::class, 'handleAgentResult']);
+
 
