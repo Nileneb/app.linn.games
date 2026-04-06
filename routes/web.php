@@ -11,6 +11,8 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::view('/pending-approval', 'livewire.auth.pending-approval')->name('pending-approval');
+
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 Route::view('Impressum.html', 'legal.impressum')->name('impressum');
