@@ -1,168 +1,141 @@
 <?php
 
-namespace Tests\Feature\Http\Controllers;
-
 use App\Models\Recherche\Projekt;
 use App\Models\PhaseAgentResult;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 
-class AgentResultWebhookControllerTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->owner = User::factory()->withoutTwoFactor()->create();
+    $this->projekt = Projekt::factory()->create(['user_id' => $this->owner->id]);
+    Storage::fake('local');
+});
 
-    private string $testProjectId;
-    private User $owner;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->owner = User::factory()->withoutTwoFactor()->create();
-        $projekt = Projekt::factory()->create(['user_id' => $this->owner->id]);
-        $this->testProjectId = $projekt->id;
-
-        Storage::fake('local');
-    }
-
-    public function test_webhook_handler_persists_markdown_files(): void
-    {
-        $payload = [
-            'meta' => [
-                'projekt_id' => $this->testProjectId,
-                'workspace_id' => 'workspace-123',
-                'phase' => 'screening',
-            ],
-            'result' => [
-                'type' => 'final_report',
-                'summary' => '# Screening Results',
-                'data' => [
-                    'md_files' => [
-                        [
-                            'path' => 'screening-bericht.md',
-                            'content' => '# Screening-Ergebnis\n\nTopics: 42 papers screened.',
-                        ],
-                        [
-                            'path' => 'einschluss-liste.md',
-                            'content' => '# Included Papers\n\n- Paper 1\n- Paper 2',
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-            'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-            'X-Langdock-Timestamp' => now()->unix(),
-        ]);
-
-        $response->assertStatus(200);
-
-        // Verify files written to storage
-        Storage::disk('local')->assertExists("recherche/{$this->testProjectId}/screening/screening-bericht.md");
-        Storage::disk('local')->assertExists("recherche/{$this->testProjectId}/screening/einschluss-liste.md");
-
-        // Verify PhaseAgentResult record created
-        $this->assertDatabaseHas('phase_agent_results', [
-            'projekt_id' => $this->testProjectId,
+test('webhook handler persists markdown files', function () {
+    $payload = [
+        'meta' => [
+            'projekt_id' => $this->projekt->id,
+            'workspace_id' => 'workspace-123',
             'phase' => 'screening',
-            'status' => 'completed',
-        ]);
-    }
-
-    public function test_webhook_handler_rejects_invalid_signature(): void
-    {
-        $payload = [
-            'meta' => ['projekt_id' => $this->testProjectId, 'phase' => 'screening'],
-            'result' => ['type' => 'final_report', 'data' => ['md_files' => []]],
-        ];
-
-        $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-            'X-Langdock-Signature' => 'sha256=invalid',
-            'X-Langdock-Timestamp' => now()->unix(),
-        ]);
-
-        $response->assertStatus(401);
-    }
-
-    public function test_webhook_handler_validates_required_fields(): void
-    {
-        $invalidPayload = ['meta' => [], 'result' => []];
-
-        $response = $this->postJson('/api/webhooks/langdock/agent-result', $invalidPayload, [
-            'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($invalidPayload), config('services.langdock.webhook_secret')),
-            'X-Langdock-Timestamp' => now()->unix(),
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['meta.projekt_id', 'meta.phase', 'result.data.md_files']);
-    }
-
-    public function test_webhook_handler_rejects_path_traversal_attempts(): void
-    {
-        $payload = [
-            'meta' => [
-                'projekt_id' => $this->testProjectId,
-                'workspace_id' => 'workspace-123',
-                'phase' => 'screening',
-            ],
-            'result' => [
-                'type' => 'final_report',
-                'summary' => '# Results',
-                'data' => [
-                    'md_files' => [
-                        [
-                            'path' => '../../../etc/passwd.md',
-                            'content' => 'Malicious content',
-                        ],
+        ],
+        'result' => [
+            'type' => 'final_report',
+            'summary' => '# Screening Results',
+            'data' => [
+                'md_files' => [
+                    [
+                        'path' => 'screening-bericht.md',
+                        'content' => '# Screening-Ergebnis\n\nTopics: 42 papers screened.',
+                    ],
+                    [
+                        'path' => 'einschluss-liste.md',
+                        'content' => '# Included Papers\n\n- Paper 1\n- Paper 2',
                     ],
                 ],
             ],
-        ];
+        ],
+    ];
 
-        $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-            'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-            'X-Langdock-Timestamp' => now()->unix(),
-        ]);
+    $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => now()->unix(),
+    ]);
 
-        $response->assertStatus(400)
-            ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
+    $response->assertStatus(200);
 
-        Storage::disk('local')->assertMissing('etc/passwd.md');
-    }
+    Storage::disk('local')->assertExists("recherche/{$this->projekt->id}/screening/screening-bericht.md");
+    Storage::disk('local')->assertExists("recherche/{$this->projekt->id}/screening/einschluss-liste.md");
 
-    public function test_webhook_handler_rejects_absolute_paths(): void
-    {
-        $payload = [
-            'meta' => [
-                'projekt_id' => $this->testProjectId,
-                'workspace_id' => 'workspace-123',
-                'phase' => 'screening',
-            ],
-            'result' => [
-                'type' => 'final_report',
-                'summary' => '# Results',
-                'data' => [
-                    'md_files' => [
-                        [
-                            'path' => '/etc/sensitive.md',
-                            'content' => 'Sensitive content',
-                        ],
+    expect(PhaseAgentResult::where('projekt_id', $this->projekt->id)->where('phase', 'screening')->first())
+        ->status->toBe('completed');
+});
+
+test('webhook handler rejects invalid signature', function () {
+    $payload = [
+        'meta' => ['projekt_id' => $this->projekt->id, 'phase' => 'screening'],
+        'result' => ['type' => 'final_report', 'data' => ['md_files' => []]],
+    ];
+
+    $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
+        'X-Langdock-Signature' => 'sha256=invalid',
+        'X-Langdock-Timestamp' => now()->unix(),
+    ]);
+
+    $response->assertStatus(401);
+});
+
+test('webhook handler validates required fields', function () {
+    $invalidPayload = ['meta' => [], 'result' => []];
+
+    $response = $this->postJson('/api/webhooks/langdock/agent-result', $invalidPayload, [
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($invalidPayload), config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => now()->unix(),
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['meta.projekt_id', 'meta.phase', 'result.data.md_files']);
+});
+
+test('webhook handler rejects path traversal attempts', function () {
+    $payload = [
+        'meta' => [
+            'projekt_id' => $this->projekt->id,
+            'workspace_id' => 'workspace-123',
+            'phase' => 'screening',
+        ],
+        'result' => [
+            'type' => 'final_report',
+            'summary' => '# Results',
+            'data' => [
+                'md_files' => [
+                    [
+                        'path' => '../../../etc/passwd.md',
+                        'content' => 'Malicious content',
                     ],
                 ],
             ],
-        ];
+        ],
+    ];
 
-        $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
-            'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
-            'X-Langdock-Timestamp' => now()->unix(),
-        ]);
+    $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => now()->unix(),
+    ]);
 
-        $response->assertStatus(400)
-            ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
+    $response->assertStatus(400)
+        ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
 
-        Storage::disk('local')->assertMissing('etc/sensitive.md');
-    }
-}
+    Storage::disk('local')->assertMissing('etc/passwd.md');
+});
+
+test('webhook handler rejects absolute paths', function () {
+    $payload = [
+        'meta' => [
+            'projekt_id' => $this->projekt->id,
+            'workspace_id' => 'workspace-123',
+            'phase' => 'screening',
+        ],
+        'result' => [
+            'type' => 'final_report',
+            'summary' => '# Results',
+            'data' => [
+                'md_files' => [
+                    [
+                        'path' => '/etc/sensitive.md',
+                        'content' => 'Sensitive content',
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    $response = $this->postJson('/api/webhooks/langdock/agent-result', $payload, [
+        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
+        'X-Langdock-Timestamp' => now()->unix(),
+    ]);
+
+    $response->assertStatus(400)
+        ->assertJsonPath('error', fn ($msg) => str_contains($msg, 'Invalid file path'));
+
+    Storage::disk('local')->assertMissing('etc/sensitive.md');
+});
