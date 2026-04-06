@@ -26,12 +26,14 @@ new class extends Component {
                 $this->agentConfigKey,
                 $messages,
                 [
-                    'source' => 'recherche_phase_agent',
-                    'projekt_id' => $this->projekt->id,
-                    'workspace_id' => $this->projekt->workspace_id,
-                    'phase_nr' => $this->phaseNr,
-                    'user_id' => $this->projekt->user_id,
-                    'label' => $this->label,
+                    'source'         => 'recherche_phase_agent',
+                    'projekt_id'     => $this->projekt->id,
+                    'workspace_id'   => $this->projekt->workspace_id,
+                    'workspace_name' => \App\Models\Workspace::find($this->projekt->workspace_id)?->name,
+                    'phase_nr'       => $this->phaseNr,
+                    'user_id'        => auth()->id(),
+                    'user_name'      => auth()->user()?->name,
+                    'label'          => $this->label,
                 ]
             );
 

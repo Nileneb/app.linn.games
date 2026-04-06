@@ -82,9 +82,11 @@ class LangdockContextInjector
      */
     public function inject(array $messages, array $context): array
     {
-        $projektId   = $context['projekt_id'] ?? null;
-        $workspaceId = $context['workspace_id'] ?? null;
-        $userId      = $context['user_id'] ?? null;
+        $projektId     = $context['projekt_id'] ?? null;
+        $workspaceId   = $context['workspace_id'] ?? null;
+        $userId        = $context['user_id'] ?? null;
+        $userName      = $context['user_name'] ?? null;
+        $workspaceName = $context['workspace_name'] ?? null;
         $structuredOutput = (bool) ($context['structured_output'] ?? false);
         $triggerword = $context['triggerword'] ?? null;
 
@@ -154,11 +156,19 @@ class LangdockContextInjector
             $lines[] = '';
         }
 
+        if ($userName !== null) {
+            $label = $workspaceName !== null ? "{$userName} (Workspace: {$workspaceName})" : $userName;
+            $lines[] = "Aktiver Nutzer: {$label}";
+            $lines[] = '';
+        }
+
         $lines[] = 'Kontext: ' . json_encode(
             array_filter([
-                'projekt_id' => $projektId,
-                'workspace_id' => $workspaceId,
-                'user_id' => $userId,
+                'projekt_id'     => $projektId,
+                'workspace_id'   => $workspaceId,
+                'workspace_name' => $workspaceName,
+                'user_id'        => $userId,
+                'user_name'      => $userName,
             'triggerword' => $triggerword,
             'structured_output' => $structuredOutput ?: null,
             ]),
