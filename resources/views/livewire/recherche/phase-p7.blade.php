@@ -767,4 +767,20 @@ new class extends Component {
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine GRADE-Einschätzungen.</p>
         @endif
     </div>
+
+    <!-- Mayring Snippet Extractor -->
+    <div class="mt-8 border-t border-neutral-200 pt-8 dark:border-neutral-700">
+        @if ($projekt->p5Treffer()->count() > 0)
+            @foreach ($projekt->p5Treffer()->first(1)->get() as $paper)
+                @livewire('recherche.mayring-extractor-v2', [
+                    'paperId' => $paper->id,
+                    'projektId' => $projekt->id,
+                ])
+            @endforeach
+        @else
+            <p class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-200">
+                ℹ️ Mayring-Analyse benötigt importierte Papers aus Phase 5. Bitte importieren Sie zunächst Treffer.
+            </p>
+        @endif
+    </div>
 </div>
