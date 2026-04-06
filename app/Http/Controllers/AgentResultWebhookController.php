@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AgentResultWebhookController extends Controller
 {
-    public function handleAgentResult(Request $request): Response
+    public function handleAgentResult(Request $request)
     {
         // Verify HMAC signature
         if (!$this->verifySignature($request)) {
@@ -41,10 +41,20 @@ class AgentResultWebhookController extends Controller
             Storage::disk('local')->put("{$basePath}/{$file['path']}", $file['content']);
         }
 
+        // Map phase name to phase_nr for legacy schema
+        $phaseMap = [
+            'recherche' => 1,
+            'screening' => 2,
+            'auswertung' => 3,
+        ];
+        $phaseNr = $phaseMap[$phase] ?? 1;
+
         // Create/update PhaseAgentResult record
         PhaseAgentResult::updateOrCreate(
-            ['projekt_id' => $projektId, 'phase' => $phase],
+            ['projekt_id' => $projektId, 'phase_nr' => $phaseNr, 'agent_config_key' => 'webhook_result'],
             [
+                'user_id' => $projekt->user_id,
+                'phase' => $phase,
                 'status' => 'completed',
                 'result_data' => [
                     'summary' => $validated['result']['summary'] ?? null,

@@ -44,6 +44,7 @@ return [
         'get_url'  => env('LANGDOCK_GET_URL', 'https://api.langdock.com/agent/v1/get'),
         'update_url' => env('LANGDOCK_UPDATE_URL', 'https://api.langdock.com/agent/v1/update'),
         'api_key' => env('LANGDOCK_API_KEY'),
+        'webhook_secret' => env('LANGDOCK_WEBHOOK_SECRET'),
         'agent_id' => env('LANGDOCK_AGENT_ID'),
         'scoping_mapping_agent' => env('SCOPING_MAPPING_AGENT'),
         'search_agent' => env('SEARCH_AGENT'),
