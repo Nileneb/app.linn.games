@@ -3,6 +3,7 @@
 use App\Jobs\ProcessPhaseAgentJob;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
+use App\Services\AgentPromptBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Volt\Component;
@@ -51,18 +52,16 @@ new class extends Component {
 
     protected function buildContextMessages(): array
     {
-        $lines = [];
+        $promptBuilder = app(AgentPromptBuilder::class);
 
-        // --- Projekt-Identifikation (explizit im User-Message, nicht nur im System-Context) ---
-        $lines[] = "=== PROJEKTKONTEXT ===";
-        $lines[] = "Projekt-ID: {$this->projekt->id}";
-        $lines[] = "Forschungsfrage: {$this->projekt->forschungsfrage}";
+        // System prompt mit Phase-Guidance, Thresholds, Templates
+        $systemPrompt = $promptBuilder->buildSystemPrompt(
+            $this->projekt,
+            $this->phaseNr,
+            $this->agentConfigKey
+        );
 
-        if ($this->projekt->review_typ) {
-            $lines[] = "Review-Typ: {$this->projekt->review_typ}";
-        }
-
-        // --- Ergebnisse abgeschlossener Vorphasen ---
+        // Sammle Vorphasen-Ergebnisse für Kontext
         $previousResults = rescue(
             fn () => PhaseAgentResult::where('projekt_id', $this->projekt->id)
                 ->where('phase_nr', '<', $this->phaseNr)
@@ -71,52 +70,31 @@ new class extends Component {
                 ->orderBy('phase_nr')
                 ->orderByDesc('created_at')
                 ->get()
-                ->unique('phase_nr'),
-            collect(),
+                ->unique('phase_nr')
+                ->mapWithKeys(fn ($r) => [$r->phase_nr => $r->content])
+                ->all(),
+            [],
             report: true,
         );
 
-        if ($previousResults->isNotEmpty()) {
-            $lines[] = '';
-            $lines[] = "=== ERGEBNISSE VORHERIGER PHASEN ===";
-            foreach ($previousResults as $result) {
-                $lines[] = "--- Phase {$result->phase_nr} ---";
-                $lines[] = mb_substr((string) $result->content, 0, 800);
-            }
-        }
-
-        // --- Verfügbare Dokumente ---
-        $paperCount = rescue(
-            fn () => (int) DB::selectOne(
-                'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?::uuid',
-                [$this->projekt->id]
-            )?->cnt,
-            0,
-            report: true,
+        // Enhanced user prompt mit aktuellem Status
+        $userPrompt = $promptBuilder->buildUserPrompt(
+            $this->projekt,
+            $this->phaseNr,
+            $previousResults
         );
 
-        $trefferCount = rescue(
-            fn () => $this->projekt->p5Treffer()->count(),
-            0,
-            report: true,
-        );
-
-        if ($paperCount > 0 || $trefferCount > 0) {
-            $lines[] = '';
-            $lines[] = "=== VORHANDENE DOKUMENTE ===";
-            if ($paperCount > 0) {
-                $lines[] = "Indexierte Dokument-Abschnitte (paper_embeddings): {$paperCount}";
-            }
-            if ($trefferCount > 0) {
-                $lines[] = "Importierte Treffer (p5_treffer): {$trefferCount}";
-            }
-        }
-
-        $lines[] = '';
-        $lines[] = "Aktuelle Phase: P{$this->phaseNr}";
-        $lines[] = "Bitte nutze die oben genannte Projekt-ID für alle DB-Operationen (SET LOCAL app.current_projekt_id).";
+        // Zusätzliche kritische Informationen
+        $lines = [
+            $userPrompt,
+            '',
+            '=== DATENBANKZUGRIFF ===',
+            "Projekt-ID für alle Operationen: {$this->projekt->id}",
+            'SET LOCAL app.current_projekt_id = \'' . $this->projekt->id . '\';',
+        ];
 
         return [
+            ['role' => 'system', 'content' => $systemPrompt],
             ['role' => 'user', 'content' => implode("\n", $lines)],
         ];
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DsgvoController;
+use App\Http\Controllers\ProjektExportController;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -55,4 +56,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Volt::route('recherche/{projekt}/ergebnisse/{phase}', 'recherche.ergebnisse-anzeigen')
         ->name('recherche.ergebnisse');
+
+    // Export Routes
+    Route::get('recherche/{projekt}/export/md', [ProjektExportController::class, 'exportMarkdown'])
+        ->name('recherche.export.markdown');
+    Route::get('recherche/{projekt}/export/tex', [ProjektExportController::class, 'exportLaTeX'])
+        ->name('recherche.export.latex');
+    Route::get('recherche/{projekt}/export/mayring', [ProjektExportController::class, 'exportMayringMarkdown'])
+        ->name('recherche.export.mayring');
+    Route::get('recherche/{projekt}/mayring-stats', [ProjektExportController::class, 'mayringStats'])
+        ->name('recherche.mayring.stats');
 });

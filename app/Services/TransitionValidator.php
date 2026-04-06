@@ -2,58 +2,167 @@
 
 namespace App\Services;
 
+use App\Data\TransitionStatus;
 use App\Models\Recherche\Projekt;
+use Illuminate\Support\Facades\Config;
 
+/**
+ * TransitionValidator
+ * Validiert Phase-Übergänge basierend auf Schwellwerten und optionalen Agent-Checks.
+ * Implementiert hybride Validierung: Database-Driven + Agent-Augmented.
+ */
 class TransitionValidator
 {
+    private PhaseCountService $countService;
+    private LangdockAgentService $agentService;
+
     public function __construct(
-        private readonly PhaseCountService $countService,
-    ) {}
+        PhaseCountService $countService,
+        LangdockAgentService $agentService,
+    ) {
+        $this->countService = $countService;
+        $this->agentService = $agentService;
+    }
 
-    public function validate(Projekt $projekt, int $fromPhaseNr): TransitionStatus
+    /**
+     * Validiert einen Phase-Übergang
+     *
+     * @return array{
+     *     can_transition: bool,
+     *     is_blocking: bool,
+     *     warning: string|null,
+     *     counts: array,
+     *     threshold_details: array
+     * }
+     */
+    public function validateTransition(Projekt $projekt, int $fromPhase, int $toPhase): array
     {
-        $config = config("phase_chain.thresholds.{$fromPhaseNr}");
+        $config = Config::get("phase_chain.thresholds.{$fromPhase}");
 
-        // No threshold configured for this phase → always ready
-        if (! $config) {
-            return new TransitionStatus(
-                isReady: true,
-                isBlocking: false,
-                warningMessage: '',
-                missingItems: [],
-            );
+        if (! is_array($config)) {
+            return [
+                'can_transition' => true,
+                'is_blocking' => false,
+                'warning' => null,
+                'counts' => [],
+                'threshold_details' => [],
+            ];
         }
 
-        $counts = $this->countService->countForPhase($projekt, $fromPhaseNr);
-        $missingItems = [];
+        $counts = $this->countService->getAllCounts($projekt);
+        $currentCounts = $counts[$fromPhase] ?? [];
 
-        // Check all threshold keys
-        foreach ($config as $key => $threshold) {
-            if ($key === 'blocking' || $key === 'warning' || $key === 'agent_check') {
+        // Zähle Schwellwerte ab
+        $thresholdDetails = $this->checkThresholds($fromPhase, $currentCounts, $config);
+
+        // Agent-Check wenn konfiguriert
+        $agentCheckPassed = true;
+        if ($config['agent_check'] ?? false) {
+            $agentCheckPassed = $this->performAgentCheck($projekt, $fromPhase, $toPhase, $currentCounts);
+        }
+
+        $allChecksPass = $thresholdDetails['all_pass'] && $agentCheckPassed;
+        $isBlocking = ($config['blocking'] ?? false) && ! $allChecksPass;
+
+        return [
+            'can_transition' => $allChecksPass || ! ($config['blocking'] ?? false),
+            'is_blocking' => $isBlocking,
+            'warning' => ! $allChecksPass ? ($config['warning'] ?? null) : null,
+            'counts' => $currentCounts,
+            'threshold_details' => $thresholdDetails,
+        ];
+    }
+
+    /**
+     * Prüft alle Schwellwerte für eine Phase
+     */
+    private function checkThresholds(int $phase, array $counts, array $config): array
+    {
+        $details = [];
+        $allPass = true;
+
+        foreach (['min_components', 'min_cluster', 'min_mapping', 'min_databases', 'min_searchstrings', 'min_treffer', 'min_assessments', 'min_extractions'] as $key) {
+            if (! isset($config[$key])) {
                 continue;
             }
 
-            // Map threshold key to count key (e.g., 'min_components' → 'components')
-            $countKey = substr($key, 4); // Remove 'min_' prefix
-            $currentCount = $counts[$countKey] ?? 0;
+            $threshold = $config[$key];
+            $countKey = str_replace('min_', '', $key);
 
-            if ($currentCount < $threshold) {
-                $missingItems[$key] = [
-                    'threshold' => $threshold,
-                    'current'   => $currentCount,
-                ];
+            // Map count keys to actual counts
+            $currentCount = match ($countKey) {
+                'components' => $counts['komponenten'] ?? 0,
+                'cluster' => $counts['cluster'] ?? 0,
+                'mapping' => $counts['mappings'] ?? 0,
+                'databases' => $counts['datenbanken'] ?? 0,
+                'searchstrings' => $counts['suchstrings'] ?? 0,
+                'treffer' => $counts['treffer'] ?? 0,
+                'assessments' => $counts['bewertungen'] ?? 0,
+                'extractions' => $counts['extraktionen'] ?? 0,
+                default => 0,
+            };
+
+            $passed = $currentCount >= $threshold;
+
+            $details[$key] = [
+                'threshold' => $threshold,
+                'current' => $currentCount,
+                'passed' => $passed,
+            ];
+
+            if (! $passed) {
+                $allPass = false;
             }
         }
 
-        $isReady = empty($missingItems);
-        $isBlocking = ! $isReady && ($config['blocking'] ?? false);
-        $warningMessage = $config['warning'] ?? '';
+        $details['all_pass'] = $allPass;
 
-        return new TransitionStatus(
-            isReady: $isReady,
-            isBlocking: $isBlocking,
-            warningMessage: $warningMessage,
-            missingItems: $missingItems,
-        );
+        return $details;
+    }
+
+    /**
+     * Führt einen Agent-Check durch (z.B. Qualitätsprüfung)
+     * Diese Implementierung ist placeholder; real würde das über LangdockAgentService laufen
+     */
+    private function performAgentCheck(Projekt $projekt, int $fromPhase, int $toPhase, array $counts): bool
+    {
+        // Placeholder: Agent würde hier z.B. Suchstring-Qualität prüfen
+        // Für jetzt: True wenn minimale Anzahl vorhanden
+        return ($counts['suchstrings'] ?? 0) >= 1;
+    }
+
+    /**
+     * Gibt User-freundliche Warnung zurück
+     */
+    public function getWarningMessage(array $validationResult): ?string
+    {
+        return $validationResult['warning'];
+    }
+
+    /**
+     * Prüft ob Transition möglich ist (unter Berücksichtigung von Blocking-Regeln)
+     */
+    public function canTransition(Projekt $projekt, int $fromPhase, int $toPhase): bool
+    {
+        $result = $this->validateTransition($projekt, $fromPhase, $toPhase);
+        return $result['can_transition'];
+    }
+
+    /**
+     * Prüft ob Transition blockiert ist (manuelle Freigabe nötig)
+     */
+    public function isBlocking(Projekt $projekt, int $fromPhase, int $toPhase): bool
+    {
+        $result = $this->validateTransition($projekt, $fromPhase, $toPhase);
+        return $result['is_blocking'];
+    }
+
+    /**
+     * Gibt ein TransitionStatus DTO für die UI zurück
+     */
+    public function getTransitionStatus(Projekt $projekt, int $fromPhase, int $toPhase): TransitionStatus
+    {
+        $validation = $this->validateTransition($projekt, $fromPhase, $toPhase);
+        return TransitionStatus::fromValidation($validation);
     }
 }
