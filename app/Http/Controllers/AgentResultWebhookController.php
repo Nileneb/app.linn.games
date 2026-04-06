@@ -35,10 +35,15 @@ class AgentResultWebhookController extends Controller
         // Verify Projekt exists
         $projekt = Projekt::findOrFail($projektId);
 
-        // Persist markdown files to storage
+        // Persist markdown files to storage with path traversal protection
         $basePath = "recherche/{$projektId}/{$phase}";
-        foreach ($mdFiles as $file) {
-            Storage::disk('local')->put("{$basePath}/{$file['path']}", $file['content']);
+        try {
+            foreach ($mdFiles as $file) {
+                $safePath = $this->validateFilePath($file['path']);
+                Storage::disk('local')->put("{$basePath}/{$safePath}", $file['content']);
+            }
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => 'Invalid file path: ' . $e->getMessage()], 400);
         }
 
         // Map phase name to phase_nr for legacy schema
@@ -95,5 +100,48 @@ class AgentResultWebhookController extends Controller
         $expectedHash = hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($hash, $expectedHash);
+    }
+
+    /**
+     * Validate file path to prevent directory traversal attacks.
+     *
+     * Rejects paths with:
+     * - Parent directory references (..)
+     * - Leading slashes or backslashes
+     * - Double slashes
+     * - Unsafe characters
+     *
+     * @param string $path The file path to validate
+     * @return string The validated, normalized path
+     * @throws \InvalidArgumentException If path is unsafe
+     */
+    private function validateFilePath(string $path): string
+    {
+        // Reject paths with parent directory references
+        if (str_contains($path, '..')) {
+            throw new \InvalidArgumentException('Path traversal detected: ".." not allowed in file path');
+        }
+
+        // Reject leading slashes or backslashes
+        if (str_starts_with($path, '/') || str_starts_with($path, '\\')) {
+            throw new \InvalidArgumentException('Absolute paths not allowed');
+        }
+
+        // Reject double slashes
+        if (str_contains($path, '//') || str_contains($path, '\\\\')) {
+            throw new \InvalidArgumentException('Double slashes not allowed in file path');
+        }
+
+        // Only allow safe characters: alphanumeric, hyphen, underscore, dot, forward slash
+        if (!preg_match('/^[a-zA-Z0-9._\/-]+$/', $path)) {
+            throw new \InvalidArgumentException('File path contains unsafe characters');
+        }
+
+        // Ensure path ends with .md (for markdown files)
+        if (!str_ends_with($path, '.md')) {
+            throw new \InvalidArgumentException('File path must end with .md extension');
+        }
+
+        return $path;
     }
 }
