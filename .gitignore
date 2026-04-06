@@ -23,6 +23,6 @@ yarn-error.log
 /.vscode
 /.zed
 docker-compose.override.yml
-/paper-search-mcp
+**/paper-search-mcp
 *.sql
 /database/exports/.worktrees/
