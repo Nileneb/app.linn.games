@@ -18,6 +18,12 @@ new class extends Component {
         // Authorize using ProjektPolicy
         $this->authorize('view', $this->projekt);
 
+        // Strict whitelist to prevent path traversal
+        $allowedPhases = ['recherche', 'screening', 'auswertung'];
+        if (!in_array($this->phase, $allowedPhases, strict: true)) {
+            abort(404);
+        }
+
         $basePath = "recherche/{$this->projekt->id}/{$this->phase}";
 
         // List files in the directory
@@ -36,7 +42,10 @@ new class extends Component {
             $combinedContent .= $content . "\n\n---\n\n";
         }
 
-        $this->renderedContent = Str::markdown($combinedContent);
+        $this->renderedContent = Str::markdown($combinedContent, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
     }
 }; ?>
 

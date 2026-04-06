@@ -1,104 +1,78 @@
 <?php
 
-namespace Tests\Feature\Volt\Recherche;
-
 use App\Models\Recherche\Projekt;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 
-class ErgebnisseAnzeigenTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    Storage::fake('local');
+    $this->owner = User::factory()->withoutTwoFactor()->create();
+    $this->projekt = Projekt::factory()->create(['user_id' => $this->owner->id]);
+});
 
-    public function test_md_viewer_displays_markdown_files(): void
-    {
-        $owner = User::factory()->withoutTwoFactor()->create();
-        $projekt = Projekt::factory()->create(['user_id' => $owner->id]);
+test('md viewer displays markdown files', function () {
+    Storage::disk('local')->put(
+        "recherche/{$this->projekt->id}/screening/results.md",
+        "# Screening Results\n\nThis is the screening report."
+    );
 
-        // Don't use fake storage - use real storage
-        $dir = storage_path("app/recherche/{$projekt->id}/screening");
-        @mkdir($dir, 0755, true);
-        file_put_contents("$dir/results.md", "# Screening Results\n\nThis is the screening report.");
+    $response = $this->actingAs($this->owner)
+        ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");
 
-        try {
-            $response = $this->actingAs($owner)
-                ->get("/recherche/{$projekt->id}/ergebnisse/screening");
+    $response->assertStatus(200);
+    $response->assertSee('<h1>Screening Results</h1>', false);
+    $response->assertSee('This is the screening report.');
+});
 
-            $response->assertStatus(200);
-            $response->assertSee('<h1>Screening Results</h1>');
-            $response->assertSee('This is the screening report.');
-        } finally {
-            // Cleanup
-            @unlink("$dir/results.md");
-            @rmdir($dir);
-        }
-    }
+test('md viewer enforces projekt policy', function () {
+    $nonOwner = User::factory()->withoutTwoFactor()->create();
 
-    public function test_md_viewer_enforces_projekt_policy(): void
-    {
-        $owner = User::factory()->withoutTwoFactor()->create();
-        $nonOwner = User::factory()->withoutTwoFactor()->create();
-        $projekt = Projekt::factory()->create(['user_id' => $owner->id]);
+    Storage::disk('local')->put(
+        "recherche/{$this->projekt->id}/screening/results.md",
+        "# Screening Results"
+    );
 
-        // Don't use fake storage - use real storage
-        $dir = storage_path("app/recherche/{$projekt->id}/screening");
-        @mkdir($dir, 0755, true);
-        file_put_contents("$dir/results.md", "# Screening Results");
+    $response = $this->actingAs($nonOwner)
+        ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");
 
-        try {
-            $response = $this->actingAs($nonOwner)
-                ->get("/recherche/{$projekt->id}/ergebnisse/screening");
+    $response->assertStatus(403);
+});
 
-            $response->assertStatus(403);
-        } finally {
-            // Cleanup
-            @unlink("$dir/results.md");
-            @rmdir($dir);
-        }
-    }
+test('md viewer returns 404 for missing files', function () {
+    $response = $this->actingAs($this->owner)
+        ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");
 
-    public function test_md_viewer_returns_404_for_missing_files(): void
-    {
-        $owner = User::factory()->withoutTwoFactor()->create();
-        $projekt = Projekt::factory()->create(['user_id' => $owner->id]);
+    $response->assertStatus(404);
+});
 
-        $response = $this->actingAs($owner)
-            ->get("/recherche/{$projekt->id}/ergebnisse/screening");
+test('md viewer handles multiple markdown files', function () {
+    Storage::disk('local')->put(
+        "recherche/{$this->projekt->id}/screening/report.md",
+        "# Screening Report\n\nFirst report."
+    );
+    Storage::disk('local')->put(
+        "recherche/{$this->projekt->id}/screening/summary.md",
+        "# Summary\n\nSecond summary."
+    );
+    Storage::disk('local')->put(
+        "recherche/{$this->projekt->id}/screening/data.txt",
+        "Some text file"
+    );
 
-        $response->assertStatus(404);
-    }
+    $response = $this->actingAs($this->owner)
+        ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");
 
-    public function test_md_viewer_handles_multiple_markdown_files(): void
-    {
-        $owner = User::factory()->withoutTwoFactor()->create();
-        $projekt = Projekt::factory()->create(['user_id' => $owner->id]);
+    $response->assertStatus(200);
+    $response->assertSee('<h1>Screening Report</h1>', false);
+    $response->assertSee('First report.');
+    $response->assertSee('<h1>Summary</h1>', false);
+    $response->assertSee('Second summary.');
+    $response->assertDontSee('Some text file');
+});
 
-        // Don't use fake storage - use real storage
-        $dir = storage_path("app/recherche/{$projekt->id}/screening");
-        @mkdir($dir, 0755, true);
-        file_put_contents("$dir/report.md", "# Screening Report\n\nFirst report.");
-        file_put_contents("$dir/summary.md", "# Summary\n\nSecond summary.");
-        file_put_contents("$dir/data.txt", "Some text file");
+test('md viewer rejects invalid phases', function () {
+    $response = $this->actingAs($this->owner)
+        ->get("/recherche/{$this->projekt->id}/ergebnisse/invalid-phase");
 
-        try {
-            $response = $this->actingAs($owner)
-                ->get("/recherche/{$projekt->id}/ergebnisse/screening");
-
-            $response->assertStatus(200);
-            $response->assertSee('<h1>Screening Report</h1>');
-            $response->assertSee('First report.');
-            $response->assertSee('<h1>Summary</h1>');
-            $response->assertSee('Second summary.');
-            $response->assertDontSee('Some text file');
-        } finally {
-            // Cleanup
-            @unlink("$dir/report.md");
-            @unlink("$dir/summary.md");
-            @unlink("$dir/data.txt");
-            @rmdir($dir);
-            @rmdir(dirname($dir));
-        }
-    }
-}
+    $response->assertStatus(404);
+});
