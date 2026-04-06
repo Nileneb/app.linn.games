@@ -43,4 +43,50 @@ return [
         'agent_config_key' => 'review_agent',
         'label'            => '📋 KI: Dokumentation finalisieren',
     ],
+
+    'thresholds' => [
+        1 => [
+            'min_components' => 3,
+            'blocking'       => false,
+            'warning'        => 'Mindestens 3 P1-Komponenten empfohlen für robuste Suchstrategie',
+            'agent_check'    => false,
+        ],
+        2 => [
+            'min_cluster'  => 1,
+            'min_mapping'  => 1,
+            'blocking'     => false,
+            'warning'      => 'Mindestens 1 Cluster und 1 Mapping-Komponente empfohlen',
+            'agent_check'  => false,
+        ],
+        3 => [
+            'min_databases' => 1,
+            'blocking'      => false,
+            'warning'       => 'Mindestens 1 Datenbank in der Matrix empfohlen',
+            'agent_check'   => false,
+        ],
+        4 => [
+            'min_searchstrings' => 1,
+            'blocking'          => false,
+            'warning'           => 'Mindestens 1 Suchstring empfohlen vor Paper-Import',
+            'agent_check'       => true,
+        ],
+        5 => [
+            'min_treffer' => 5,
+            'blocking'    => false,
+            'warning'     => 'Mindestens 5 Treffer für Phase 6 empfohlen',
+            'agent_check' => false,
+        ],
+        6 => [
+            'min_assessments' => 1,
+            'blocking'        => true,
+            'warning'         => 'Mindestens 1 Qualitätsbewertung erforderlich um fortzufahren',
+            'agent_check'     => false,
+        ],
+        7 => [
+            'min_extractions' => 1,
+            'blocking'        => true,
+            'warning'         => 'Mindestens 1 Datenextraktion erforderlich um fortzufahren',
+            'agent_check'     => false,
+        ],
+    ],
 ];

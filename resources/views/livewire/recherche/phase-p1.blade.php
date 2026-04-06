@@ -2,10 +2,17 @@
 
 use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\Recherche\{P1Strukturmodellwahl, P1Komponente, P1Kriterium, P1Warnsignal};
+use App\Services\TransitionValidator;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
+use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult;
+
+    // --- Phase Transition ---
+    public bool $showOverrideForm = false;
+    public string $overrideBegruendung = '';
 
     // --- Strukturmodellwahl ---
     public bool $showSmwForm = false;
@@ -283,11 +290,32 @@ new class extends Component {
         $this->warnLfdNr = 1;
     }
 
+    // ─── Phase Transition Methods ────────────────────────────
+
+    public function requestOverride(): void
+    {
+        $this->showOverrideForm = true;
+    }
+
+    public function confirmOverride(): void
+    {
+        $this->validate(['overrideBegruendung' => 'required|string|min:10']);
+        Log::info('Phase transition override', [
+            'projekt_id'  => $this->projekt->id,
+            'phase_nr'    => 1,
+            'begruendung' => $this->overrideBegruendung,
+            'user_id'     => auth()->id(),
+        ]);
+        $this->dispatch('phase-override-confirmed', phaseNr: 1);
+        $this->showOverrideForm = false;
+    }
+
     // ─── Data ────────────────────────────────────────────────
 
     public function with(): array
     {
         $pid = $this->projekt->id;
+        $validator = app(TransitionValidator::class);
         return [
             'strukturmodelle' => rescue(
                 fn () => P1Strukturmodellwahl::where('projekt_id', $pid)->get(),
@@ -310,6 +338,7 @@ new class extends Component {
                 report: true,
             ),
             'latestAgentResult' => $this->loadLatestAgentResult(1),
+            'transitionStatus' => $validator->validate($this->projekt, 1),
         ];
     }
 }; ?>
@@ -555,4 +584,26 @@ new class extends Component {
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Warnsignale vorhanden.</p>
         @endif
     </x-crud.section>
+
+    {{-- ═══ Phasenübergang ═══ --}}
+    <div class="mt-6 flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
+        <x-phase-transition-status
+            :status="$transitionStatus"
+            :phase-nr="1"
+            override-action="requestOverride"
+        />
+        @if ($showOverrideForm)
+            <div class="mt-3 w-full">
+                <x-crud.field label="Begründung für Ausnahme" required :error="$errors->first('overrideBegruendung')">
+                    <textarea wire:model="overrideBegruendung" rows="2"
+                        class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                        placeholder="Bitte begründe, warum du trotz fehlender Kriterien weitergehen möchtest…"></textarea>
+                </x-crud.field>
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="confirmOverride" class="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700">Bestätigen & fortfahren</button>
+                    <button wire:click="$set('showOverrideForm', false)" class="rounded border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
+                </div>
+            </div>
+        @endif
+    </div>
 </div>
