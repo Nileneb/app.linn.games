@@ -3,105 +3,131 @@
 namespace App\Services;
 
 use App\Models\Recherche\Projekt;
-use Illuminate\Support\Facades\DB;
+use App\Models\Recherche\P1Komponente;
+use App\Models\Recherche\P2Cluster;
+use App\Models\Recherche\P2Trefferliste;
+use App\Models\Recherche\P3Datenbankmatrix;
+use App\Models\Recherche\P4Suchstring;
+use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\P6Qualitaetsbewertung;
+use App\Models\Recherche\P7Datenextraktion;
 
+/**
+ * PhaseCountService
+ * Zählt die Anzahl der Einträge pro Phase für Transition-Validierung.
+ */
 class PhaseCountService
 {
     /**
-     * Returns an associative array of relevant counts for the given phase.
-     * Keys match the threshold config keys (e.g., 'min_components' → 'components').
-     *
-     * @return array<string, int>
+     * Zählt P1-Komponenten
      */
-    public function countForPhase(Projekt $projekt, int $phaseNr): array
+    public function countP1Komponenten(Projekt $projekt): int
     {
-        return match ($phaseNr) {
-            1 => $this->countPhase1($projekt),
-            2 => $this->countPhase2($projekt),
-            3 => $this->countPhase3($projekt),
-            4 => $this->countPhase4($projekt),
-            5 => $this->countPhase5($projekt),
-            6 => $this->countPhase6($projekt),
-            7 => $this->countPhase7($projekt),
-            8 => [],
-            default => [],
+        return P1Komponente::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P2-Cluster
+     */
+    public function countP2Cluster(Projekt $projekt): int
+    {
+        return P2Cluster::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P2-Mappings (Trefferliste)
+     */
+    public function countP2Mappings(Projekt $projekt): int
+    {
+        return P2Trefferliste::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P3-Datenbanken
+     */
+    public function countP3Datenbanken(Projekt $projekt): int
+    {
+        return P3Datenbankmatrix::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P4-Suchstrings
+     */
+    public function countP4Suchstrings(Projekt $projekt): int
+    {
+        return P4Suchstring::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P5-Treffer
+     */
+    public function countP5Treffer(Projekt $projekt): int
+    {
+        return P5Treffer::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P6-Qualitätsbewertungen
+     */
+    public function countP6Bewertungen(Projekt $projekt): int
+    {
+        return P6Qualitaetsbewertung::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Zählt P7-Datenextraktionen
+     */
+    public function countP7Extraktionen(Projekt $projekt): int
+    {
+        return P7Datenextraktion::where('projekt_id', $projekt->id)->count();
+    }
+
+    /**
+     * Universelle Zählfunktion basierend auf Phase
+     */
+    public function countByPhase(Projekt $projekt, int $phase): int
+    {
+        return match ($phase) {
+            1 => $this->countP1Komponenten($projekt),
+            2 => $this->countP2Cluster($projekt) + $this->countP2Mappings($projekt),
+            3 => $this->countP3Datenbanken($projekt),
+            4 => $this->countP4Suchstrings($projekt),
+            5 => $this->countP5Treffer($projekt),
+            6 => $this->countP6Bewertungen($projekt),
+            7 => $this->countP7Extraktionen($projekt),
+            default => 0,
         };
     }
 
-    private function countPhase1(Projekt $projekt): array
+    /**
+     * Gibt detaillierte Counts für alle Phasen zurück
+     */
+    public function getAllCounts(Projekt $projekt): array
     {
         return [
-            'components' => rescue(
-                fn () => $projekt->p1Komponenten()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase2(Projekt $projekt): array
-    {
-        return [
-            'cluster' => rescue(
-                fn () => $projekt->p2Cluster()->count(),
-                0
-            ),
-            'mapping' => rescue(
-                fn () => $projekt->p2MappingSuchstringKomponenten()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase3(Projekt $projekt): array
-    {
-        return [
-            'databases' => rescue(
-                fn () => $projekt->p3Datenbankmatrix()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase4(Projekt $projekt): array
-    {
-        return [
-            'searchstrings' => rescue(
-                fn () => $projekt->p4Suchstrings()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase5(Projekt $projekt): array
-    {
-        return [
-            'treffer' => rescue(
-                fn () => $projekt->p5Treffer()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase6(Projekt $projekt): array
-    {
-        return [
-            'assessments' => rescue(
-                fn () => $projekt->p6Qualitaetsbewertungen()->count(),
-                0
-            ),
-        ];
-    }
-
-    private function countPhase7(Projekt $projekt): array
-    {
-        return [
-            'extractions' => rescue(
-                fn () => DB::table('p7_datenextraktion')
-                    ->join('p5_treffer', 'p7_datenextraktion.treffer_id', '=', 'p5_treffer.id')
-                    ->where('p5_treffer.projekt_id', $projekt->id)
-                    ->count(),
-                0
-            ),
+            1 => [
+                'komponenten' => $this->countP1Komponenten($projekt),
+            ],
+            2 => [
+                'cluster' => $this->countP2Cluster($projekt),
+                'mappings' => $this->countP2Mappings($projekt),
+                'total' => $this->countP2Cluster($projekt) + $this->countP2Mappings($projekt),
+            ],
+            3 => [
+                'datenbanken' => $this->countP3Datenbanken($projekt),
+            ],
+            4 => [
+                'suchstrings' => $this->countP4Suchstrings($projekt),
+            ],
+            5 => [
+                'treffer' => $this->countP5Treffer($projekt),
+            ],
+            6 => [
+                'bewertungen' => $this->countP6Bewertungen($projekt),
+            ],
+            7 => [
+                'extraktionen' => $this->countP7Extraktionen($projekt),
+            ],
         ];
     }
 }

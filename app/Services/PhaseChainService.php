@@ -7,6 +7,7 @@ use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Contracts\Container\Container;
 
 class PhaseChainService
 {
@@ -41,6 +42,31 @@ class PhaseChainService
 
         $nextPhase = (int) $chain['next_phase'];
         $agentKey  = (string) $chain['agent_config_key'];
+
+        // Transition Validation: Check phase thresholds before auto-dispatch
+        $validator = app(TransitionValidator::class);
+        $validation = $validator->validateTransition($projekt, $completedPhaseNr, $nextPhase);
+
+        if ($validation['is_blocking']) {
+            Log::warning('PhaseChain: transition blocked by threshold validation', [
+                'projekt_id'      => $projekt->id,
+                'completed_phase' => $completedPhaseNr,
+                'next_phase'      => $nextPhase,
+                'warning'         => $validation['warning'],
+                'threshold_details' => $validation['threshold_details'],
+            ]);
+            return; // Manuelle Freigabe erforderlich
+        }
+
+        if (! $validation['can_transition']) {
+            Log::info('PhaseChain: transition has warnings but not blocking', [
+                'projekt_id'      => $projekt->id,
+                'completed_phase' => $completedPhaseNr,
+                'next_phase'      => $nextPhase,
+                'warning'         => $validation['warning'],
+            ]);
+            // Wir fahren trotzdem fort (non-blocking warning)
+        }
 
         if (! config("services.langdock.{$agentKey}")) {
             Log::warning('PhaseChain: next agent not configured, skipping auto-dispatch', [
