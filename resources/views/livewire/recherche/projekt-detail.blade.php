@@ -60,6 +60,24 @@ new class extends Component {
                 <p class="mt-1 text-neutral-900 dark:text-neutral-100">{{ $projekt->forschungsfrage }}</p>
             </div>
         @endif
+
+        {{-- Progress Bar --}}
+        @php
+            $completedCount = $projekt->phasen->where('status', 'abgeschlossen')->count();
+            $progressPercent = (int) round($completedCount / 8 * 100);
+        @endphp
+        <div class="mt-4">
+            <div class="flex items-center justify-between mb-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <span>{{ __('Fortschritt') }}</span>
+                <span>{{ $completedCount }}/8 {{ __('Phasen abgeschlossen') }}</span>
+            </div>
+            <div class="w-full rounded-full bg-neutral-200 dark:bg-neutral-700 h-2">
+                <div
+                    class="h-2 rounded-full bg-blue-500 dark:bg-blue-400 transition-all duration-500"
+                    style="width: {{ $progressPercent }}%"
+                ></div>
+            </div>
+        </div>
     </div>
 
     {{-- Tab Bar --}}
@@ -100,6 +118,9 @@ new class extends Component {
             @endfor
         </nav>
     </div>
+
+    {{-- Group Status Header & Agent Controls --}}
+    <livewire:recherche.phase-group-status-header :projekt="$projekt" :key="'gsh-'.$projekt->id" />
 
     {{-- Phase Content --}}
     <div>
