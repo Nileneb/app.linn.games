@@ -147,8 +147,7 @@ new class extends Component {
     window.Echo.private(`chat.${workspaceId}.${userId}`)
         .listen('.chat.response', () => {
             clearTimeout(timeoutHandle);
-            $wire.set('loading', false);
-            setTimeout(scrollToBottom, 300);
+            $wire.set('loading', false).then(() => setTimeout(scrollToBottom, 50));
         });
 
     $wire.on('chat-updated', () => {
