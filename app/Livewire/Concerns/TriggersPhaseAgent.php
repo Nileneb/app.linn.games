@@ -37,8 +37,8 @@ trait TriggersPhaseAgent
 
             // Build context messages
             $promptBuilder = app(AgentPromptBuilder::class);
-            $systemPrompt = $promptBuilder->buildSystemPrompt($phaseNr, $this->projekt);
-            $userPrompt = $promptBuilder->buildUserPrompt($phaseNr, $this->projekt);
+            $systemPrompt = $promptBuilder->buildSystemPrompt($this->projekt, $phaseNr, $configKey);
+            $userPrompt = $promptBuilder->buildUserPrompt($this->projekt, $phaseNr);
 
             $messages = [
                 ['role' => 'system', 'content' => $systemPrompt],
@@ -62,10 +62,11 @@ trait TriggersPhaseAgent
             // Save result
             PhaseAgentResult::create([
                 'projekt_id' => $this->projekt->id,
+                'user_id' => auth()->id(),
                 'phase_nr' => $phaseNr,
-                'config_key' => $configKey,
+                'agent_config_key' => $configKey,
+                'status' => 'completed',
                 'content' => $result['content'],
-                'raw_response' => $result['raw'] ?? null,
             ]);
 
             Log::info('Agent result saved', [
