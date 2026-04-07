@@ -19,6 +19,30 @@
                 </p>
             </div>
 
+            {{-- Onboarding-Banner (einmalig, via localStorage dismissible) --}}
+            <div x-data="{ show: !localStorage.getItem('onboarding_v1') }"
+                 x-show="show"
+                 x-transition.opacity
+                 class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800/60 dark:bg-blue-950/30">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-blue-900 dark:text-blue-200">{{ __('So funktioniert Linn.Games') }}</p>
+                        <ol class="mt-2 space-y-1 text-xs text-blue-800 dark:text-blue-300">
+                            <li><strong>1. Recherche erstellen</strong> – Titel eingeben, Projekt startet automatisch</li>
+                            <li><strong>2. 8 Phasen durchlaufen</strong> – von der Planung bis zur Synthese</li>
+                            <li><strong>3. KI-Assistent nutzen</strong> – Der Chat rechts ist immer verfügbar</li>
+                        </ol>
+                    </div>
+                    <button @click="show=false; localStorage.setItem('onboarding_v1','1')"
+                            class="shrink-0 text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300"
+                            title="{{ __('Schließen') }}">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             {{-- Quick links --}}
             <div class="grid gap-4 sm:grid-cols-2">
                 <a href="{{ route('recherche') }}" wire:navigate class="group rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
@@ -56,7 +80,10 @@
                     <div class="space-y-2">
                         @foreach($recentProjekte as $projekt)
                             <a href="{{ route('recherche.projekt', $projekt) }}" wire:navigate class="block rounded-md border border-zinc-200 px-3 py-2 text-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                                <span class="text-zinc-900 dark:text-zinc-100">{{ str()->limit($projekt->titel, 80) }}</span>
+                                <span class="text-zinc-900 dark:text-zinc-100"
+                                      @if(strlen($projekt->titel) > 80) title="{{ $projekt->titel }}" @endif>
+                                    {{ str()->limit($projekt->titel, 80) }}
+                                </span>
                                 <span class="ml-2 text-xs text-zinc-400">{{ $projekt->erstellt_am->diffForHumans() }}</span>
                             </a>
                         @endforeach

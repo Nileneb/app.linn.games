@@ -5,9 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
+# Initial Setup (lokal ohne Docker)
+composer setup               # Install, Key, Migrate, Seed, NPM Build
+
 # Development
-npm run dev              # Start Vite dev server
-docker compose up -d     # Start all containers (dev, mit Bind-Mounts via override)
+composer dev                 # PHP server + Queue + Vite parallel (lokal)
+npm run dev                  # Nur Vite dev server
+docker compose up -d         # Alle Container (dev, Bind-Mounts via override)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Port 6480 statt 6481
 
 # Artisan (im Container)
@@ -93,38 +97,69 @@ docker compose --profile mcp up -d mcp-paper-search
 **app.linn.games** is a Laravel 12 research management platform for AI-assisted systematic literature reviews.
 
 ### Stack
-- **Backend**: Laravel 12, PHP 8.2+ (CI: 8.4), PostgreSQL 16 (pgvector, native Enums), Redis
+- **Backend**: Laravel 12, PHP 8.4, PostgreSQL 16 (pgvector, native Enums), Redis
 - **Frontend**: Livewire 3 + Volt (inline components), Tailwind CSS 4, Vite
-- **Admin**: Filament 4.9 (Schema-based forms, German labels)
-- **Auth**: Fortify 1.30 (plain Blade, 2FA support)
-- **AI**: Langdock Agent (webhook-triggered), Ollama embeddings (`nomic-embed-text`)
+- **Admin**: Filament 4.9 (Schema-based forms, German labels) — `ContactResource`, `UserResource`, `WorkspaceResource`
+- **Auth**: Fortify 1.30 (plain Blade, 2FA support), Spatie Permission (roles)
+- **AI**: Langdock Agent (sync + async via Queue), Ollama embeddings (`nomic-embed-text`)
+- **WebSockets**: Laravel Reverb (real-time streaming agent responses)
 
 ### Docker Compose Setup
 
 - `docker-compose.yml` — Produktions-Images (named volumes, kein Bind-Mount)
-- `docker-compose.override.yml` — Wird **automatisch** beim `docker compose up` gemergt; aktiviert Bind-Mounts (`./app`, `./resources`, etc.) für Live-Reload
-- `docker-compose.dev.yml` — Manuell einbinden (`-f`); ändert Port von 6481 → 6480 (wenn 6481 belegt)
+- `docker-compose.override.yml` — Wird **automatisch** beim `docker compose up` gemergt; aktiviert Bind-Mounts für Live-Reload
+- `docker-compose.dev.yml` — Manuell einbinden (`-f`); ändert Port von 6481 → 6480
 - **Production** (kein Override): `docker compose -f docker-compose.yml up -d`
 
 Container für Artisan/CLI-Befehle immer über `php-cli`, nicht `php-fpm`.
 
 ### Key Architectural Patterns
 
+**Multi-Tenancy (Workspace)**:
+- `Workspace` → `WorkspaceUser` (pivot) → `User`
+- `Projekt` belongs to both `User` and `Workspace`
+- `WorkspaceResource` in Filament manages workspaces
+
+**Account Approval Flow**:
+- New users land on `/pending-approval` until an admin activates their account
+- `EnsureAccountIsActive` middleware enforces this on `auth`+`verified` routes
+
 **Domain Models (Recherche)** use custom conventions:
 - UUID primary keys via `HasUuids` trait
 - German timestamp columns (`erstellt_am`, `letztes_update`) with `$timestamps = false`
 - 29 phase-specific models organized in `app/Models/Recherche/` (P1–P8 phases)
+- `PhaseAgentResult` stores KI-agent output per phase, keyed by `projekt_id` + `phase`
 
 **Data Flow (KI-Agent)**:
+
+*Synchronous (chat/phase buttons)*:
 ```
-User clicks phase button → Volt component → LangdockAgentService::call(agentId, messages)
-→ Agents Completions API (POST /api/v1/agents/{id}/completions)
+Volt component → LangdockAgentService::call(agentId, messages)
+→ POST https://api.langdock.com/agent/v1/chat/completions
 → Agent reads DB via /mcp/sse (VerifyMcpToken Bearer auth)
-→ Response displayed in modal
+→ Response stored in PhaseAgentResult, displayed in modal
 ```
+
+*Asynchronous (queue)*:
+```
+ProcessPhaseAgentJob → LangdockAgentService::call()
+→ Result stored via AgentResultStorageService
+→ PhaseChainService triggers next phase job
+```
+
+**Credits System**:
+- `CreditService` tracks API usage costs per workspace
+- `CreditTransaction` model logs debits/credits
+- `AgentDailyLimitExceededException` / `InsufficientCreditsException` thrown by `LangdockAgentService`
+
+**Mayring Content Analysis** (P8):
+- `ProcessMayringBatchJob` / `ProcessMayringChunkJob` — async qualitative coding of P5 hits
+- `ChunkCodierung` model stores coded text chunks
+- Route: `GET /recherche/{projekt}/mayring`
 
 **Security Layers**:
 - `VerifyMcpToken`: Bearer token for MCP endpoints
+- `EnsureAccountIsActive`: blocks pending/inactive users
 - `ProjektPolicy`: Owner-only access (never bypass `$this->authorize()`)
 
 **pgvector**: Raw SQL required — Eloquent doesn't support vector types:
