@@ -56,5 +56,10 @@
             <span>{{ __('Already have an account?') }}</span>
             <a href="{{ route('login') }}" wire:navigate class="underline text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">{{ __('Log in') }}</a>
         </div>
+
+        <p class="text-center text-xs text-zinc-400 dark:text-zinc-500">
+            Bug gefunden?
+            <a href="https://github.com/Nileneb/app.linn.games/issues/new" target="_blank" rel="noopener" class="underline hover:text-zinc-600 dark:hover:text-zinc-300">Direkt als GitHub-Issue melden</a>
+        </p>
     </div>
 </x-layouts.auth>

@@ -16,6 +16,29 @@ new class extends Component {
 
     public bool $dispatched = false;
 
+    public function mount(): void
+    {
+        $this->dispatched = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', $this->phaseNr)
+            ->where('agent_config_key', $this->agentConfigKey)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function checkStatus(): void
+    {
+        $stillPending = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+            ->where('phase_nr', $this->phaseNr)
+            ->where('agent_config_key', $this->agentConfigKey)
+            ->where('status', 'pending')
+            ->exists();
+
+        if (! $stillPending) {
+            $this->dispatched = false;
+            $this->dispatch('agent-result-ready', phaseNr: $this->phaseNr);
+        }
+    }
+
     public function runAgent(): void
     {
         try {
@@ -27,12 +50,14 @@ new class extends Component {
                 $this->agentConfigKey,
                 $messages,
                 [
-                    'source' => 'recherche_phase_agent',
-                    'projekt_id' => $this->projekt->id,
-                    'workspace_id' => $this->projekt->workspace_id,
-                    'phase_nr' => $this->phaseNr,
-                    'user_id' => $this->projekt->user_id,
-                    'label' => $this->label,
+                    'source'         => 'recherche_phase_agent',
+                    'projekt_id'     => $this->projekt->id,
+                    'workspace_id'   => $this->projekt->workspace_id,
+                    'workspace_name' => \App\Models\Workspace::find($this->projekt->workspace_id)?->name,
+                    'phase_nr'       => $this->phaseNr,
+                    'user_id'        => auth()->id(),
+                    'user_name'      => auth()->user()?->name,
+                    'label'          => $this->label,
                 ]
             );
 
@@ -100,7 +125,7 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div @if($dispatched) wire:poll.5s="checkStatus" @endif>
     @if ($dispatched)
         <p class="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
             <svg class="h-4 w-4 animate-spin text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

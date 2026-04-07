@@ -376,7 +376,7 @@ new class extends Component {
                                 $themeCounts = $heatmapData['heatmap'][$keyword] ?? [];
                                 $total = array_sum($themeCounts);
                             @endphp
-                            <tr>
+                            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                 <td class="border border-zinc-200 dark:border-zinc-700 px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100">{{ ucfirst($keyword) }}</td>
                                 @foreach ($heatmapData['themes'] as $theme)
                                     @php
@@ -469,7 +469,7 @@ new class extends Component {
                 {{-- PRISMA 2020 Flow Diagram (SVG) --}}
                 @php
                     $pz = $prismaZahlen;
-                    $fmt = fn($v) => $v !== null ? number_format($v) : 'n/a';
+                    $fmt = fn($v) => $v !== null ? number_format($v) : '–';
                 @endphp
                 <svg viewBox="0 0 720 520" class="mx-auto w-full max-w-2xl" xmlns="http://www.w3.org/2000/svg">
                     <defs>
