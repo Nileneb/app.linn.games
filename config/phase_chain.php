@@ -27,7 +27,11 @@ return [
         'agent_config_key' => 'search_agent',
         'label'            => '🔍 KI: Suchstrings generieren',
     ],
-    // P4 → P5: kein Auto-Chain — P5 erfordert manuellen Paper-Import
+    4 => [
+        'next_phase'       => null, // P4 → P5: kein Auto-Chain — P5 erfordert manuellen Paper-Import
+        'agent_config_key' => 'search_agent',
+        'label'            => '🔍 KI: Suchstrings optimieren',
+    ],
     5 => [
         'next_phase'       => 6,
         'agent_config_key' => 'review_agent',
