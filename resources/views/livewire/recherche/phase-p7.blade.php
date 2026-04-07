@@ -109,7 +109,7 @@ new class extends Component {
     public function saveDe(): void
     {
         $this->validate(['deTrefferId' => 'required|string', 'deHauptbefund' => 'required|string']);
-        if (P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $this->deTrefferId)->doesntExist()) {
+        if (! P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $this->deTrefferId)->exists()) {
             return;
         }
         $data = [
@@ -133,7 +133,7 @@ new class extends Component {
     public function editDe(string $id): void
     {
         $r = P7Datenextraktion::find($id);
-        if ($r === null || P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->doesntExist()) {
+        if ($r === null || ! P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->exists()) {
             return;
         }
         $this->editingDeId = $id;
@@ -154,7 +154,7 @@ new class extends Component {
         if ($r === null) {
             return;
         }
-        if (P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->doesntExist()) {
+        if (! P5Treffer::where('projekt_id', $this->projekt->id)->where('id', $r->treffer_id)->exists()) {
             return;
         }
         $r->delete();
@@ -843,8 +843,8 @@ new class extends Component {
 
     <!-- Mayring Snippet Extractor -->
     <div class="mt-8 border-t border-neutral-200 pt-8 dark:border-neutral-700">
-        @if ($projekt->p5Treffer()->count() > 0)
-            @foreach ($projekt->p5Treffer()->first(1)->get() as $paper)
+        @if ($treffer->isNotEmpty())
+            @foreach ($treffer->take(1) as $paper)
                 @livewire('recherche.mayring-extractor-v2', [
                     'paperId' => $paper->id,
                     'projektId' => $projekt->id,
