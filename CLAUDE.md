@@ -24,6 +24,10 @@ docker compose run --rm php-test vendor/bin/pest --filter="TestName"  # Einzelne
 docker compose build php-test                               # Nach Änderungen außerhalb tests/
 composer test                                               # Lokal ohne Docker
 
+# Linting
+vendor/bin/pint                                             # Code-Style (Laravel Pint)
+vendor/bin/pint --test                                      # Nur prüfen, kein Fix
+
 # Build & Deploy
 npm run build              # Vite build für Production
 ./deploy.sh                # Manuelles Deployment (Synology NAS)
@@ -85,6 +89,15 @@ After restart, Claude Code can:
 
 See `LangdockAgentService` and `AgentPayloadService` for implementation details.
 
+**API Routes (Bearer `VerifyMcpToken`)**:
+```
+POST /api/papers/ingest          → PaperRagController::ingest (PDF → pgvector)
+GET  /api/papers/rag-search      → PaperRagController::search (vector similarity)
+POST /api/mcp/agent-call         → McpAgentController (sync)
+POST /api/mcp/agent-call/stream  → StreamingMcpController (SSE streaming)
+POST /api/webhooks/langdock/agent-result → AgentResultWebhookController (no auth, signature-verified)
+```
+
 ### MCP Paper Search (Optional)
 
 Paper search via SSE streaming (Docker profile):
@@ -129,6 +142,16 @@ Container für Artisan/CLI-Befehle immer über `php-cli`, nicht `php-fpm`.
 - German timestamp columns (`erstellt_am`, `letztes_update`) with `$timestamps = false`
 - 29 phase-specific models organized in `app/Models/Recherche/` (P1–P8 phases)
 - `PhaseAgentResult` stores KI-agent output per phase, keyed by `projekt_id` + `phase`
+- `Projekt` uses `Spatie\Activitylog\LogsActivity` — changes are automatically logged
+- `app/Models/Concerns/HasWorkspaces.php` — shared workspace-scoping trait
+
+**Paper RAG Pipeline**:
+```
+DownloadPaperJob → PdfParserService (smalot/pdfparser) → IngestPaperJob
+→ EmbeddingService (Ollama nomic-embed-text) → PaperEmbedding (pgvector)
+→ RetrieverService (vector search) → agent context injection
+```
+`Paper` and `PaperEmbedding` models live in `app/Models/Recherche/`.
 
 **Data Flow (KI-Agent)**:
 
@@ -147,6 +170,12 @@ ProcessPhaseAgentJob → LangdockAgentService::call()
 → PhaseChainService triggers next phase job
 ```
 
+**Phase Auto-Chain** (`config/phase_chain.php`):
+- P1→P2→P3→P4 auto-chains; **P4→P5 is intentionally skipped** (requires manual paper import)
+- P5→P6→P7→P8 auto-chains
+- `PhaseChainService::maybeDispatchNext()` validates result quality + phase thresholds before dispatching
+- Thresholds: P6 and P7 have **blocking** thresholds (min 1 quality assessment / 1 data extraction required); others are warnings only
+
 **Credits System**:
 - `CreditService` tracks API usage costs per workspace
 - `CreditTransaction` model logs debits/credits
@@ -157,9 +186,19 @@ ProcessPhaseAgentJob → LangdockAgentService::call()
 - `ChunkCodierung` model stores coded text chunks
 - Route: `GET /recherche/{projekt}/mayring`
 
+**Export Routes** (auth-protected, `ProjektExportController`):
+```
+GET /recherche/{projekt}/export/md      → Markdown export
+GET /recherche/{projekt}/export/tex     → LaTeX export
+GET /recherche/{projekt}/export/mayring → Mayring Markdown export
+GET /recherche/{projekt}/mayring-stats  → Mayring statistics JSON
+```
+
 **Security Layers**:
-- `VerifyMcpToken`: Bearer token for MCP endpoints
+- `VerifyMcpToken`: Bearer token for MCP/API endpoints
+- `SecureMcpHeaders`: applied alongside `VerifyMcpToken` on all MCP routes
 - `EnsureAccountIsActive`: blocks pending/inactive users
+- `TrackPageView`: passive analytics middleware
 - `ProjektPolicy`: Owner-only access (never bypass `$this->authorize()`)
 
 **pgvector**: Raw SQL required — Eloquent doesn't support vector types:
