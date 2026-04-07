@@ -3,10 +3,16 @@
 use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
+use App\Services\TransitionValidator;
 use Livewire\Volt\Component;
+use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+
+    // --- Phase Transition ---
+    public bool $showOverrideForm = false;
+    public string $overrideBegruendung = '';
 
     // --- ReviewTypEntscheidung ---
     public bool $showRevForm = false;
@@ -229,6 +235,26 @@ new class extends Component {
         $this->reset(['trefDatenbank', 'trefSuchstring', 'trefTrefferGesamt', 'trefEinschaetzung', 'trefAnpassungNotwendig', 'trefSuchdatum']);
     }
 
+    // ─── Phase Transition Methods ────────────────────────────
+
+    public function requestOverride(): void
+    {
+        $this->showOverrideForm = true;
+    }
+
+    public function confirmOverride(): void
+    {
+        $this->validate(['overrideBegruendung' => 'required|string|min:10']);
+        Log::info('Phase transition override', [
+            'projekt_id'  => $this->projekt->id,
+            'phase_nr'    => 2,
+            'begruendung' => $this->overrideBegruendung,
+            'user_id'     => auth()->id(),
+        ]);
+        $this->dispatch('phase-override-confirmed', phaseNr: 2);
+        $this->showOverrideForm = false;
+    }
+
     // ─── Data ────────────────────────────────────────────────
 
     public function hasRunningAgentJob(): bool
@@ -252,6 +278,7 @@ new class extends Component {
     public function with(): array
     {
         $pid = $this->projekt->id;
+        $validator = app(TransitionValidator::class);
         return [
             'reviewTypen' => rescue(
                 fn () => P2ReviewTypEntscheidung::where('projekt_id', $pid)->get(),
@@ -274,6 +301,7 @@ new class extends Component {
                 report: true,
             ),
             'latestAgentResult' => $this->loadLatestAgentResult(2),
+            'transitionStatus' => $validator->getTransitionStatus($this->projekt, 2, 3),
         ];
     }
 }; ?>
@@ -657,6 +685,30 @@ new class extends Component {
             </div>
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Trefferlisten vorhanden.</p>
+        @endif
+    </div>
+
+    {{-- ═══ Phase Transition Status ═══ --}}
+    <div class="mt-4">
+        <x-phase-transition-status
+            :status="$transitionStatus"
+            :phase-nr="2"
+            override-action="requestOverride"
+        />
+        @if ($showOverrideForm)
+            <div class="mt-3 w-full">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung für Ausnahme *</label>
+                    <textarea wire:model="overrideBegruendung" rows="2"
+                        class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                        placeholder="Bitte begründe, warum du trotz fehlender Kriterien weitergehen möchtest…"></textarea>
+                    @error('overrideBegruendung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="confirmOverride" class="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700">Bestätigen & fortfahren</button>
+                    <button wire:click="$set('showOverrideForm', false)" class="rounded border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
+                </div>
+            </div>
         @endif
     </div>
 </div>

@@ -338,7 +338,7 @@ new class extends Component {
                 report: true,
             ),
             'latestAgentResult' => $this->loadLatestAgentResult(1),
-            'transitionStatus' => $validator->validate($this->projekt, 1),
+            'transitionStatus' => $validator->getTransitionStatus($this->projekt, 1, 2),
         ];
     }
 }; ?>

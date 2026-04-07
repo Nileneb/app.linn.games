@@ -3,10 +3,21 @@
 use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
+use App\Services\TransitionValidator;
+use App\Services\PhaseTemplateService;
+use Illuminate\Support\Facades\Log;
 use Livewire\Volt\Component;
 
 new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+
+    // --- Phase Transition ---
+    public bool $showOverrideForm = false;
+    public string $overrideBegruendung = '';
+
+    // --- Template ---
+    public string $templateContent = '';
+    public bool $showTemplate = false;
 
     // --- Synthese-Methode ---
     public bool $showSmForm = false;
@@ -257,11 +268,44 @@ new class extends Component {
         $this->grUrteil = 'moderat';
     }
 
+    // ─── Phase Transition Methods ────────────────────────────
+
+    public function requestOverride(): void
+    {
+        $this->showOverrideForm = true;
+    }
+
+    public function confirmOverride(): void
+    {
+        $this->validate(['overrideBegruendung' => 'required|string|min:10']);
+        Log::info('Phase transition override', [
+            'projekt_id'  => $this->projekt->id,
+            'phase_nr'    => 7,
+            'begruendung' => $this->overrideBegruendung,
+            'user_id'     => auth()->id(),
+        ]);
+        $this->dispatch('phase-override-confirmed', phaseNr: 7);
+        $this->showOverrideForm = false;
+    }
+
+    // ─── Template Methods ────────────────────────────────────
+
+    public function loadTemplate(): void
+    {
+        try {
+            $this->templateContent = app(PhaseTemplateService::class)->getTemplate(7, $this->projekt);
+            $this->showTemplate = true;
+        } catch (\Throwable $e) {
+            Log::error('Template laden fehlgeschlagen', ['phase' => 7, 'error' => $e->getMessage()]);
+        }
+    }
+
     // ─── Data ────────────────────────────────────────────────
 
     public function with(): array
     {
         $pid = $this->projekt->id;
+        $validator = app(TransitionValidator::class);
         $treffer = rescue(
             fn () => P5Treffer::where('projekt_id', $pid)->where('ist_duplikat', false)->get(),
             collect(),
@@ -292,6 +336,7 @@ new class extends Component {
             ),
             'treffer' => $treffer,
             'latestAgentResult' => $this->loadLatestAgentResult(7),
+            'transitionStatus' => $validator->getTransitionStatus($this->projekt, 7, 8),
         ];
     }
 }; ?>
@@ -316,9 +361,19 @@ new class extends Component {
     @endif
 
 
-    {{-- KI-Agent Button --}}
-    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-
+    {{-- ═══ Template ═══ --}}
+    <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
+        <div class="flex items-center justify-between border-b border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950">
+            <h3 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Synthese-Template</h3>
+            <button wire:click="loadTemplate" class="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">Template laden</button>
+        </div>
+        @if ($showTemplate)
+            <div class="p-4">
+                <textarea wire:model="templateContent" rows="12"
+                    class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+        @endif
+    </div>
 
     {{-- ═══ Synthese-Methode ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -799,6 +854,30 @@ new class extends Component {
             <p class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-200">
                 ℹ️ Mayring-Analyse benötigt importierte Papers aus Phase 5. Bitte importieren Sie zunächst Treffer.
             </p>
+        @endif
+    </div>
+
+    {{-- ═══ Phase Transition Status ═══ --}}
+    <div class="mt-4">
+        <x-phase-transition-status
+            :status="$transitionStatus"
+            :phase-nr="7"
+            override-action="requestOverride"
+        />
+        @if ($showOverrideForm)
+            <div class="mt-3 w-full">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung für Ausnahme *</label>
+                    <textarea wire:model="overrideBegruendung" rows="2"
+                        class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                        placeholder="Bitte begründe, warum du trotz fehlender Kriterien weitergehen möchtest…"></textarea>
+                    @error('overrideBegruendung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="confirmOverride" class="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700">Bestätigen & fortfahren</button>
+                    <button wire:click="$set('showOverrideForm', false)" class="rounded border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
+                </div>
+            </div>
         @endif
     </div>
 </div>

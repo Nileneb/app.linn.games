@@ -67,19 +67,19 @@ class PhaseCountService
     }
 
     /**
-     * Zählt P6-Qualitätsbewertungen
+     * Zählt P6-Qualitätsbewertungen (über p5_treffer.projekt_id)
      */
     public function countP6Bewertungen(Projekt $projekt): int
     {
-        return P6Qualitaetsbewertung::where('projekt_id', $projekt->id)->count();
+        return P6Qualitaetsbewertung::whereHas('treffer', fn ($q) => $q->where('projekt_id', $projekt->id))->count();
     }
 
     /**
-     * Zählt P7-Datenextraktionen
+     * Zählt P7-Datenextraktionen (über p5_treffer.projekt_id)
      */
     public function countP7Extraktionen(Projekt $projekt): int
     {
-        return P7Datenextraktion::where('projekt_id', $projekt->id)->count();
+        return P7Datenextraktion::whereHas('treffer', fn ($q) => $q->where('projekt_id', $projekt->id))->count();
     }
 
     /**

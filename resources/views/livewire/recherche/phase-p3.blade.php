@@ -4,9 +4,20 @@ use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPha
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
 use Livewire\Volt\Component;
+use App\Services\TransitionValidator;
+use App\Services\PhaseTemplateService;
+use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+
+    // --- Phase Transition ---
+    public bool $showOverrideForm = false;
+    public string $overrideBegruendung = '';
+
+    // --- Template ---
+    public string $templateContent = '';
+    public bool $showTemplate = false;
 
     // --- Datenbankmatrix ---
     public bool $editingDbId = null;
@@ -226,10 +237,43 @@ new class extends Component {
         $this->reset(['grauQuelle', 'grauTyp', 'grauUrl', 'grauSuchpfad', 'grauRelevanz', 'grauAnmerkung']);
     }
 
+    // ─── Phase Transition Methods ────────────────────────────
+
+    public function requestOverride(): void
+    {
+        $this->showOverrideForm = true;
+    }
+
+    public function confirmOverride(): void
+    {
+        $this->validate(['overrideBegruendung' => 'required|string|min:10']);
+        Log::info('Phase transition override', [
+            'projekt_id'  => $this->projekt->id,
+            'phase_nr'    => 3,
+            'begruendung' => $this->overrideBegruendung,
+            'user_id'     => auth()->id(),
+        ]);
+        $this->dispatch('phase-override-confirmed', phaseNr: 3);
+        $this->showOverrideForm = false;
+    }
+
+    // ─── Template Methods ────────────────────────────────────
+
+    public function loadTemplate(): void
+    {
+        try {
+            $this->templateContent = app(PhaseTemplateService::class)->getTemplate(3, $this->projekt);
+            $this->showTemplate = true;
+        } catch (\Throwable $e) {
+            Log::error('Template laden fehlgeschlagen', ['phase' => 3, 'error' => $e->getMessage()]);
+        }
+    }
+
     // ─── Data ────────────────────────────────────────────────
 
     public function with(): array
     {
+        $validator = app(TransitionValidator::class);
         $pid = $this->projekt->id;
         return [
             'datenbanken' => rescue(
@@ -253,6 +297,7 @@ new class extends Component {
                 report: true,
             ),
             'latestAgentResult' => $this->loadLatestAgentResult(3),
+            'transitionStatus' => $validator->getTransitionStatus($this->projekt, 3, 4),
         ];
     }
 }; ?>
@@ -275,6 +320,20 @@ new class extends Component {
             </div>
         </div>
     @endif
+
+    {{-- ═══ Template ═══ --}}
+    <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
+        <div class="flex items-center justify-between border-b border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950">
+            <h3 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Datenbankmatrix-Template</h3>
+            <button wire:click="loadTemplate" class="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">Template laden</button>
+        </div>
+        @if ($showTemplate)
+            <div class="p-4">
+                <textarea wire:model="templateContent" rows="12"
+                    class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+        @endif
+    </div>
 
     {{-- Datenbankmatrix --}}
     <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -517,6 +576,30 @@ new class extends Component {
             </div>
         @else
             <p class="p-4 text-xs text-neutral-500 dark:text-neutral-400">Noch keine Quellen hinzugefügt.</p>
+        @endif
+    </div>
+
+    {{-- ═══ Phase Transition Status ═══ --}}
+    <div class="mt-4">
+        <x-phase-transition-status
+            :status="$transitionStatus"
+            :phase-nr="3"
+            override-action="requestOverride"
+        />
+        @if ($showOverrideForm)
+            <div class="mt-3 w-full">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung für Ausnahme *</label>
+                    <textarea wire:model="overrideBegruendung" rows="2"
+                        class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                        placeholder="Bitte begründe, warum du trotz fehlender Kriterien weitergehen möchtest…"></textarea>
+                    @error('overrideBegruendung') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="confirmOverride" class="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700">Bestätigen & fortfahren</button>
+                    <button wire:click="$set('showOverrideForm', false)" class="rounded border border-neutral-300 px-3 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
+                </div>
+            </div>
         @endif
     </div>
 </div>
