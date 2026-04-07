@@ -13,6 +13,10 @@ const _tls          = _reverbScheme === 'https';
 // Resolve CSRF token only if meta tag exists
 const csrf = document.head.querySelector('meta[name="csrf-token"]')?.content;
 
+if (!import.meta.env.VITE_REVERB_APP_KEY) {
+    console.warn('[Echo] VITE_REVERB_APP_KEY not set — WebSocket disabled.');
+} else {
+
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -23,3 +27,5 @@ window.Echo = new Echo({
     enabledTransports: ['ws', 'wss'],
     auth: csrf ? { headers: { 'X-CSRF-TOKEN': csrf } } : {},
 });
+
+} // end if VITE_REVERB_APP_KEY
