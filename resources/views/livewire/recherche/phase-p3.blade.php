@@ -1,12 +1,12 @@
 <?php
 
-use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
 use Livewire\Volt\Component;
 
 new class extends Component {
-    use HasProjektContext, LoadsPhaseAgentResult;
+    use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
 
     // --- Datenbankmatrix ---
     public bool $editingDbId = null;
@@ -258,6 +258,24 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
+    {{-- KI-Vorschlag --}}
+    <x-phase-agent-trigger :phase-nr="3" />
+
+    {{-- Agent Result Display --}}
+    @if ($latestAgentResult)
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+            <h4 class="mb-2 flex items-center gap-2 text-sm font-semibold text-green-900 dark:text-green-100">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                KI-Vorschlag ({{ $latestAgentResult->created_at->diffForHumans() }})
+            </h4>
+            <div class="prose prose-sm max-w-none dark:prose-invert">
+                {!! str($latestAgentResult->content)->markdown() !!}
+            </div>
+        </div>
+    @endif
+
     {{-- Datenbankmatrix --}}
     <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
