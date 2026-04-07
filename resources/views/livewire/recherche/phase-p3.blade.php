@@ -20,7 +20,7 @@ new class extends Component {
     public bool $showTemplate = false;
 
     // --- Datenbankmatrix ---
-    public bool $editingDbId = null;
+    public ?string $editingDbId = null;
     public string $dbDatenbank = '';
     public string $dbDisziplin = '';
     public string $dbAbdeckung = '';
