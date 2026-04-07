@@ -9,8 +9,7 @@ new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Datenbankmatrix ---
-    public bool $showDbForm = false;
-    public ?string $editingDbId = null;
+    public bool $editingDbId = null;
     public string $dbDatenbank = '';
     public string $dbDisziplin = '';
     public string $dbAbdeckung = '';
@@ -20,7 +19,6 @@ new class extends Component {
     public string $dbBegruendung = '';
 
     // --- Disziplin ---
-    public bool $showDisForm = false;
     public ?string $editingDisId = null;
     public string $disDisziplin = '';
     public string $disArt = '';
@@ -28,7 +26,6 @@ new class extends Component {
     public string $disAnmerkung = '';
 
     // --- GeografischerFilter ---
-    public bool $showGeoForm = false;
     public ?string $editingGeoId = null;
     public string $geoRegion = '';
     public bool $geoFilterVorhanden = false;
@@ -37,7 +34,6 @@ new class extends Component {
     public string $geoHilfsstrategie = '';
 
     // --- GraueLiteratur ---
-    public bool $showGrauForm = false;
     public ?string $editingGrauId = null;
     public string $grauQuelle = '';
     public string $grauTyp = '';
@@ -48,7 +44,7 @@ new class extends Component {
 
     // ─── Datenbankmatrix CRUD ────────────────────────────────
 
-    public function newDb(): void { $this->cancelDb(); $this->showDbForm = true; }
+    public function newDb(): void { $this->cancelDb(); $this->editingDbId = 'new'; }
 
     public function saveDb(): void
     {
@@ -63,7 +59,7 @@ new class extends Component {
             'empfohlen' => $this->dbEmpfohlen,
             'begruendung' => $this->dbBegruendung ?: null,
         ];
-        if ($this->editingDbId) {
+        if ($this->editingDbId && $this->editingDbId !== 'new') {
             P3Datenbankmatrix::where('projekt_id', $this->projekt->id)->findOrFail($this->editingDbId)->update($data);
         } else {
             P3Datenbankmatrix::create($data);
@@ -82,7 +78,6 @@ new class extends Component {
         $this->dbZugang = $r->zugang ?? '';
         $this->dbEmpfohlen = (bool) $r->empfohlen;
         $this->dbBegruendung = $r->begruendung ?? '';
-        $this->showDbForm = true;
     }
 
     public function deleteDb(string $id): void
@@ -92,14 +87,13 @@ new class extends Component {
 
     public function cancelDb(): void
     {
-        $this->showDbForm = false;
         $this->editingDbId = null;
         $this->reset(['dbDatenbank', 'dbDisziplin', 'dbAbdeckung', 'dbBesonderheit', 'dbZugang', 'dbEmpfohlen', 'dbBegruendung']);
     }
 
     // ─── Disziplin CRUD ──────────────────────────────────────
 
-    public function newDis(): void { $this->cancelDis(); $this->showDisForm = true; }
+    public function newDis(): void { $this->cancelDis(); $this->editingDisId = 'new'; }
 
     public function saveDis(): void
     {
@@ -111,7 +105,7 @@ new class extends Component {
             'relevanz' => $this->disRelevanz ?: null,
             'anmerkung' => $this->disAnmerkung ?: null,
         ];
-        if ($this->editingDisId) {
+        if ($this->editingDisId && $this->editingDisId !== 'new') {
             P3Disziplin::where('projekt_id', $this->projekt->id)->findOrFail($this->editingDisId)->update($data);
         } else {
             P3Disziplin::create($data);
@@ -127,7 +121,6 @@ new class extends Component {
         $this->disArt = $r->art ?? '';
         $this->disRelevanz = $r->relevanz ?? '';
         $this->disAnmerkung = $r->anmerkung ?? '';
-        $this->showDisForm = true;
     }
 
     public function deleteDis(string $id): void
@@ -137,14 +130,13 @@ new class extends Component {
 
     public function cancelDis(): void
     {
-        $this->showDisForm = false;
         $this->editingDisId = null;
         $this->reset(['disDisziplin', 'disArt', 'disRelevanz', 'disAnmerkung']);
     }
 
     // ─── GeografischerFilter CRUD ────────────────────────────
 
-    public function newGeo(): void { $this->cancelGeo(); $this->showGeoForm = true; }
+    public function newGeo(): void { $this->cancelGeo(); $this->editingGeoId = 'new'; }
 
     public function saveGeo(): void
     {
@@ -157,7 +149,7 @@ new class extends Component {
             'sensitivitaet_prozent' => $this->geoSensitivitaet !== null && $this->geoSensitivitaet !== '' ? (float) $this->geoSensitivitaet : null,
             'hilfsstrategie' => $this->geoHilfsstrategie ?: null,
         ];
-        if ($this->editingGeoId) {
+        if ($this->editingGeoId && $this->editingGeoId !== 'new') {
             P3GeografischerFilter::where('projekt_id', $this->projekt->id)->findOrFail($this->editingGeoId)->update($data);
         } else {
             P3GeografischerFilter::create($data);
@@ -174,7 +166,6 @@ new class extends Component {
         $this->geoFiltername = $r->filtername_quelle ?? '';
         $this->geoSensitivitaet = $r->sensitivitaet_prozent !== null ? (string) $r->sensitivitaet_prozent : null;
         $this->geoHilfsstrategie = $r->hilfsstrategie ?? '';
-        $this->showGeoForm = true;
     }
 
     public function deleteGeo(string $id): void
@@ -184,14 +175,13 @@ new class extends Component {
 
     public function cancelGeo(): void
     {
-        $this->showGeoForm = false;
         $this->editingGeoId = null;
         $this->reset(['geoRegion', 'geoFilterVorhanden', 'geoFiltername', 'geoSensitivitaet', 'geoHilfsstrategie']);
     }
 
     // ─── GraueLiteratur CRUD ─────────────────────────────────
 
-    public function newGrau(): void { $this->cancelGrau(); $this->showGrauForm = true; }
+    public function newGrau(): void { $this->cancelGrau(); $this->editingGrauId = 'new'; }
 
     public function saveGrau(): void
     {
@@ -205,7 +195,7 @@ new class extends Component {
             'relevanz' => $this->grauRelevanz ?: null,
             'anmerkung' => $this->grauAnmerkung ?: null,
         ];
-        if ($this->editingGrauId) {
+        if ($this->editingGrauId && $this->editingGrauId !== 'new') {
             P3GraueLiteratur::where('projekt_id', $this->projekt->id)->findOrFail($this->editingGrauId)->update($data);
         } else {
             P3GraueLiteratur::create($data);
@@ -223,7 +213,6 @@ new class extends Component {
         $this->grauSuchpfad = $r->suchpfad ?? '';
         $this->grauRelevanz = $r->relevanz ?? '';
         $this->grauAnmerkung = $r->anmerkung ?? '';
-        $this->showGrauForm = true;
     }
 
     public function deleteGrau(string $id): void
@@ -233,7 +222,6 @@ new class extends Component {
 
     public function cancelGrau(): void
     {
-        $this->showGrauForm = false;
         $this->editingGrauId = null;
         $this->reset(['grauQuelle', 'grauTyp', 'grauUrl', 'grauSuchpfad', 'grauRelevanz', 'grauAnmerkung']);
     }
@@ -270,11 +258,8 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-
-
-    {{-- ═══ Datenbankmatrix ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+    {{-- Datenbankmatrix --}}
+    <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
             <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Datenbankmatrix
@@ -283,67 +268,38 @@ new class extends Component {
             <button wire:click="newDb" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showDbForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelDb"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Datenbank {{ $editingDbId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelDb" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+        {{-- Neue Datenbank Form --}}
+        @if ($editingDbId === 'new' || $editingDbId)
+            <div class="border-b border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                <h4 class="mb-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">{{ $editingDbId === 'new' ? 'Neue Datenbank' : 'Datenbank bearbeiten' }}</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <input wire:model="dbDatenbank" type="text" placeholder="Datenbank *" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="dbDisziplin" type="text" placeholder="Disziplin" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="dbAbdeckung" type="text" placeholder="Abdeckung" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="dbBesonderheit" type="text" placeholder="Besonderheit" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="dbZugang" type="text" placeholder="Zugang" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="dbBegruendung" type="text" placeholder="Begründung" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Datenbank *</label>
-                            <input wire:model="dbDatenbank" type="text" placeholder="z.B. PubMed" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Disziplin</label>
-                            <input wire:model="dbDisziplin" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Zugang</label>
-                            <input wire:model="dbZugang" type="text" placeholder="z.B. Uni-Zugang" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Abdeckung</label>
-                            <input wire:model="dbAbdeckung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Besonderheit</label>
-                            <input wire:model="dbBesonderheit" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                            <input wire:model="dbBegruendung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="dbEmpfohlen" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Empfohlen
-                        </label>
-                    </div>
-                    @error('dbDatenbank') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelDb" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveDb" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                <label class="mt-2 flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
+                    <input wire:model="dbEmpfohlen" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Empfohlen
+                </label>
+                @error('dbDatenbank') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="saveDb" class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">Speichern</button>
+                    <button wire:click="cancelDb" class="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
                 </div>
             </div>
         @endif
 
+        {{-- Tabelle --}}
         @if ($datenbanken->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
+                    <thead class="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Datenbank</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Disziplin</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Zugang</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Empfohlen</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Aktionen</th>
                         </tr>
                     </thead>
@@ -353,14 +309,9 @@ new class extends Component {
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ $db->datenbank }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $db->disziplin ?? '—' }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $db->zugang ?? '—' }}</td>
-                                <td class="px-4 py-2">
-                                    @if ($db->empfohlen)
-                                        <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-400">Ja</span>
-                                    @else <span class="text-neutral-400">—</span> @endif
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editDb('{{ $db->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg></button>
-                                    <button wire:click="deleteDb('{{ $db->id }}')" wire:confirm="Datenbank wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+                                <td class="flex justify-end gap-2 px-4 py-2 text-right">
+                                    <button wire:click="editDb('{{ $db->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">✎</button>
+                                    <button wire:click="deleteDb('{{ $db->id }}')" wire:confirm="Wirklich löschen?" class="text-red-500 hover:text-red-700 dark:text-red-400">×</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -368,12 +319,12 @@ new class extends Component {
                 </table>
             </div>
         @else
-            <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Datenbanken konfiguriert.</p>
+            <p class="p-4 text-xs text-neutral-500 dark:text-neutral-400">Noch keine Datenbanken konfiguriert.</p>
         @endif
     </div>
 
-    {{-- ═══ Disziplinen ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+    {{-- Disziplinen --}}
+    <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
             <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Disziplinen
@@ -382,41 +333,19 @@ new class extends Component {
             <button wire:click="newDis" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showDisForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelDis"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Disziplin {{ $editingDisId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelDis" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+        @if ($editingDisId === 'new' || $editingDisId)
+            <div class="border-b border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                <h4 class="mb-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">{{ $editingDisId === 'new' ? 'Neue Disziplin' : 'Disziplin bearbeiten' }}</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <input wire:model="disDisziplin" type="text" placeholder="Disziplin *" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="disArt" type="text" placeholder="Art" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="disRelevanz" type="text" placeholder="Relevanz" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="disAnmerkung" type="text" placeholder="Anmerkung" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Disziplin *</label>
-                            <input wire:model="disDisziplin" type="text" placeholder="z.B. Medizin" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Art</label>
-                            <input wire:model="disArt" type="text" placeholder="z.B. Haupt/Neben" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Relevanz</label>
-                            <input wire:model="disRelevanz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                            <input wire:model="disAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    @error('disDisziplin') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelDis" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveDis" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                @error('disDisziplin') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="saveDis" class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">Speichern</button>
+                    <button wire:click="cancelDis" class="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
                 </div>
             </div>
         @endif
@@ -424,12 +353,11 @@ new class extends Component {
         @if ($disziplinen->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
+                    <thead class="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Disziplin</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Art</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Relevanz</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Anmerkung</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Aktionen</th>
                         </tr>
                     </thead>
@@ -439,10 +367,9 @@ new class extends Component {
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ $d->disziplin }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $d->art ?? '—' }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $d->relevanz ?? '—' }}</td>
-                                <td class="px-4 py-2 text-neutral-500">{{ str()->limit($d->anmerkung, 40) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editDis('{{ $d->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg></button>
-                                    <button wire:click="deleteDis('{{ $d->id }}')" wire:confirm="Disziplin wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+                                <td class="flex justify-end gap-2 px-4 py-2 text-right">
+                                    <button wire:click="editDis('{{ $d->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">✎</button>
+                                    <button wire:click="deleteDis('{{ $d->id }}')" wire:confirm="Wirklich löschen?" class="text-red-500 hover:text-red-700 dark:text-red-400">×</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -450,12 +377,12 @@ new class extends Component {
                 </table>
             </div>
         @else
-            <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Disziplinen definiert.</p>
+            <p class="p-4 text-xs text-neutral-500 dark:text-neutral-400">Noch keine Disziplinen definiert.</p>
         @endif
     </div>
 
-    {{-- ═══ Geografische Filter ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+    {{-- Geografische Filter --}}
+    <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
             <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Geografische Filter
@@ -464,46 +391,22 @@ new class extends Component {
             <button wire:click="newGeo" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showGeoForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelGeo"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Geografischer Filter {{ $editingGeoId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelGeo" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+        @if ($editingGeoId === 'new' || $editingGeoId)
+            <div class="border-b border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                <h4 class="mb-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">{{ $editingGeoId === 'new' ? 'Neuer Filter' : 'Filter bearbeiten' }}</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <input wire:model="geoRegion" type="text" placeholder="Region/Land *" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="geoSensitivitaet" type="number" step="0.01" placeholder="Sensitivität %" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="geoFiltername" type="text" placeholder="Filtername" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="geoHilfsstrategie" type="text" placeholder="Hilfsstrategie" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Region/Land *</label>
-                            <input wire:model="geoRegion" type="text" placeholder="z.B. Europa" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Sensitivität (%)</label>
-                            <input wire:model="geoSensitivitaet" type="number" step="0.01" min="0" max="100" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Filtername/Quelle</label>
-                            <input wire:model="geoFiltername" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Hilfsstrategie</label>
-                            <input wire:model="geoHilfsstrategie" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="geoFilterVorhanden" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Filter vorhanden
-                        </label>
-                    </div>
-                    @error('geoRegion') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelGeo" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveGeo" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                <label class="mt-2 flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
+                    <input wire:model="geoFilterVorhanden" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Filter vorhanden
+                </label>
+                @error('geoRegion') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="saveGeo" class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">Speichern</button>
+                    <button wire:click="cancelGeo" class="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
                 </div>
             </div>
         @endif
@@ -511,12 +414,11 @@ new class extends Component {
         @if ($geoFilter->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
+                    <thead class="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Region/Land</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Filter</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Region</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Sensitivität</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Hilfsstrategie</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Filter</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Aktionen</th>
                         </tr>
                     </thead>
@@ -524,16 +426,11 @@ new class extends Component {
                         @foreach ($geoFilter as $gf)
                             <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/30">
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ $gf->region_land }}</td>
-                                <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">
-                                    @if ($gf->validierter_filter_vorhanden)
-                                        <span class="text-green-600 dark:text-green-400">✓</span> {{ $gf->filtername_quelle ?? '' }}
-                                    @else <span class="text-neutral-400">—</span> @endif
-                                </td>
-                                <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $gf->sensitivitaet_prozent !== null ? number_format($gf->sensitivitaet_prozent, 1) . '%' : '—' }}</td>
-                                <td class="px-4 py-2 text-neutral-500">{{ str()->limit($gf->hilfsstrategie, 40) }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editGeo('{{ $gf->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg></button>
-                                    <button wire:click="deleteGeo('{{ $gf->id }}')" wire:confirm="Filter wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+                                <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $gf->sensitivitaet_prozent ? number_format($gf->sensitivitaet_prozent, 1) . '%' : '—' }}</td>
+                                <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $gf->validierter_filter_vorhanden ? '✓ ' . ($gf->filtername_quelle ?? '') : '—' }}</td>
+                                <td class="flex justify-end gap-2 px-4 py-2 text-right">
+                                    <button wire:click="editGeo('{{ $gf->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">✎</button>
+                                    <button wire:click="deleteGeo('{{ $gf->id }}')" wire:confirm="Wirklich löschen?" class="text-red-500 hover:text-red-700 dark:text-red-400">×</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -541,12 +438,12 @@ new class extends Component {
                 </table>
             </div>
         @else
-            <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine geografischen Filter konfiguriert.</p>
+            <p class="p-4 text-xs text-neutral-500 dark:text-neutral-400">Noch keine geografischen Filter konfiguriert.</p>
         @endif
     </div>
 
-    {{-- ═══ Graue Literatur ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+    {{-- Graue Literatur --}}
+    <div class="rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
             <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 Graue Literatur
@@ -555,49 +452,21 @@ new class extends Component {
             <button wire:click="newGrau" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
         </div>
 
-        @if ($showGrauForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelGrau"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Graue Literatur {{ $editingGrauId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelGrau" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+        @if ($editingGrauId === 'new' || $editingGrauId)
+            <div class="border-b border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                <h4 class="mb-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300">{{ $editingGrauId === 'new' ? 'Neue Quelle' : 'Quelle bearbeiten' }}</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <input wire:model="grauQuelle" type="text" placeholder="Quelle *" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="grauTyp" type="text" placeholder="Typ" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="grauRelevanz" type="text" placeholder="Relevanz" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="grauUrl" type="url" placeholder="URL" class="rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="grauSuchpfad" type="text" placeholder="Suchpfad" class="col-span-2 rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <input wire:model="grauAnmerkung" type="text" placeholder="Anmerkung" class="col-span-2 rounded border border-neutral-300 px-2 py-1.5 text-xs dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Quelle *</label>
-                            <input wire:model="grauQuelle" type="text" placeholder="z.B. OpenGrey" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Typ</label>
-                            <input wire:model="grauTyp" type="text" placeholder="z.B. Datenbank, Register" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Relevanz</label>
-                            <input wire:model="grauRelevanz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">URL</label>
-                            <input wire:model="grauUrl" type="url" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Suchpfad</label>
-                            <input wire:model="grauSuchpfad" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                            <input wire:model="grauAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    @error('grauQuelle') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelGrau" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveGrau" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                @error('grauQuelle') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                <div class="mt-2 flex gap-2">
+                    <button wire:click="saveGrau" class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">Speichern</button>
+                    <button wire:click="cancelGrau" class="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-300">Abbrechen</button>
                 </div>
             </div>
         @endif
@@ -605,11 +474,10 @@ new class extends Component {
         @if ($graueLiteratur->isNotEmpty())
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-700">
-                    <thead class="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-800/95 backdrop-blur-sm">
+                    <thead class="bg-neutral-50 dark:bg-neutral-800">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Quelle</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Typ</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">URL</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-neutral-500">Relevanz</th>
                             <th class="px-4 py-2 text-right text-xs font-medium text-neutral-500">Aktionen</th>
                         </tr>
@@ -619,15 +487,10 @@ new class extends Component {
                             <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/30">
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ $gl->quelle }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $gl->typ ?? '—' }}</td>
-                                <td class="px-4 py-2 text-neutral-500">
-                                    @if ($gl->url)
-                                        <span class="text-xs text-blue-600 dark:text-blue-400">{{ str()->limit($gl->url, 30) }}</span>
-                                    @else — @endif
-                                </td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">{{ $gl->relevanz ?? '—' }}</td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right">
-                                    <button wire:click="editGrau('{{ $gl->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg></button>
-                                    <button wire:click="deleteGrau('{{ $gl->id }}')" wire:confirm="Eintrag wirklich löschen?" class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400"><svg class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+                                <td class="flex justify-end gap-2 px-4 py-2 text-right">
+                                    <button wire:click="editGrau('{{ $gl->id }}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">✎</button>
+                                    <button wire:click="deleteGrau('{{ $gl->id }}')" wire:confirm="Wirklich löschen?" class="text-red-500 hover:text-red-700 dark:text-red-400">×</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -635,7 +498,7 @@ new class extends Component {
                 </table>
             </div>
         @else
-            <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Quellen für graue Literatur.</p>
+            <p class="p-4 text-xs text-neutral-500 dark:text-neutral-400">Noch keine Quellen hinzugefügt.</p>
         @endif
     </div>
 </div>
