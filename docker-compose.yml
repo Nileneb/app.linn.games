@@ -106,6 +106,23 @@ services:
       redis:
         condition: service_healthy
 
+  reverb:
+    build:
+      context: .
+      dockerfile: ./docker/common/php-fpm/dockerfile
+      target: production
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - linn-storage-production:/var/www/storage
+    networks:
+      - linn-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
   postgres:
     build:
       context: .
