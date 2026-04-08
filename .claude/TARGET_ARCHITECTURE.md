@@ -1,289 +1,439 @@
-# Target Architecture: MCP-basierte Agent-Kommunikation + Markdown-RAG
+# TARGET_ARCHITECTURE v2.0
 
-> **Status:** Entwurf — ersetzt die bisherige API-basierte Architektur  
-> **Datum:** 2026-04-08  
-> **Bezug:** Issues #58, #84, #91, #121, #124, #136, #137
+> Stand: 2026-04-08 | Status: Entwurf nach Phase A–D Abschluss + Turbulenz-Analyse
 
 ---
 
-## 1. Ausgangslage (IST)
+## 1. Kontext und Ziel
 
-### Kommunikation Laravel ↔ Langdock
+Das System ist eine Laravel-basierte Forschungsplattform mit 8-Phasen-Workflow für systematische Reviews. Agenten (via Langdock API) bearbeiten Phasen automatisch, Ergebnisse werden als Markdown gespeichert und per Embedding-Pipeline in pgvector indiziert. Ein RAG-Retriever liefert Kontext für Folgephasen.
 
-```
-User → Livewire → LangdockAgentService::call()
-                    → HTTP POST api.langdock.com/agent/v1/chat/completions
-                    → synchrone Antwort (bis 120s Timeout)
-                    → StreamingAgentService zerlegt Antwort char-by-char (Fake-Streaming)
-```
-
-**Probleme:**
-- Kein echtes Streaming — User sieht 30-120s lang nichts
-- `LangdockContextInjector` injiziert DB-Schemata + RLS-Bootstrap als User-Message
-- Langdock-Agents haben direkten Zugriff auf PostgreSQL via MCP-Endpoint (`/mcp/sse`)
-- Keine saubere Trennung zwischen Chat-Agent und Worker-Agents
-- Chat-History nur in `chat_messages`-Tabelle, nicht für RAG nutzbar
-
-### Betroffene Dateien (aktuell)
-
-| Datei | Verantwortung |
-|---|---|
-| `app/Services/LangdockAgentService.php` | Synchroner HTTP POST mit Retry |
-| `app/Services/StreamingAgentService.php` | Fake-Streaming (char-by-char nach vollem Response) |
-| `app/Services/LangdockContextInjector.php` | Context-Injection: RLS-Bootstrap, Phasen-Schemata, User-Daten |
-| `app/Services/ChatService.php` | Chat-Nachrichten CRUD |
-| `app/Services/PhaseChainService.php` | Auto-Chain P1→P2→P3→P4 via Queue |
-| `app/Services/AgentResultStorageService.php` | MD-File-Speicherung (bereits vorhanden) |
-| `app/Services/AgentPayloadService.php` | Payload-Aufbau fuer Agent-Calls |
-| `app/Services/AgentPromptBuilder.php` | System/User-Prompts fuer Phasen |
-| `app/Jobs/ProcessPhaseAgentJob.php` | Asynchroner Worker-Agent-Aufruf |
-| `app/Jobs/ProcessChatMessageJob.php` | Chat-Nachrichtenverarbeitung |
-| `app/Actions/SendAgentMessage.php` | HTTP-basierte Nachrichtenübermittlung |
-| `app/Http/Controllers/McpAgentController.php` | MCP-Routing |
-| `app/Http/Controllers/StreamingMcpController.php` | SSE-Endpoint `/mcp/sse` |
-| `app/Http/Middleware/VerifyMcpToken.php` | Token-Auth fuer MCP |
+**Ziel dieser Iteration:**
+- Streaming-Antworten für User-facing Chat (echtes SSE statt Fake-Streaming)
+- Typ-Konsistenz bei `user_id` über alle Schichten
+- Robuste Embedding-Pipeline mit Dimensions-Validierung
+- Saubere Trennung von Direct API (Streaming) vs. MCP (Agent-Orchestrierung)
+- Performance-Optimierung der Vektor-Suche (HNSW statt IVFFlat)
 
 ---
 
-## 2. Zielarchitektur (SOLL)
+## 2. IST vs. SOLL
 
-### 2.1 Kernprinzipien
-
-1. **Laravel ist Single Source of Truth** fuer alle Userdaten
-2. **Langdock bekommt keinen direkten DB-Zugriff** mehr (Issue #137)
-3. **Chat-Kommunikation laueft ueber den offiziellen Langdock MCP-Server** (echtes Streaming)
-4. **Worker-Agents bleiben reine Worker** — kein Chatfenster, kein User-Kontakt
-5. **Agent-Outputs werden als Markdown-Files gespeichert** und per RAG (Ollama) durchsuchbar
-6. **User-Isolation** durch Ordnerstruktur + Embedding-Filter
-
-### 2.2 Kommunikationsflow
-
-```
-                          ┌──────────────────────────────────────────┐
-                          │  Browser (Livewire Chat-Komponente)      │
-                          └──────────────┬───────────────────────────┘
-                                         │ User-Nachricht
-                                         ▼
-                          ┌──────────────────────────────────────────┐
-                          │  Laravel                                  │
-                          │                                           │
-                          │  1. ContextProvider laedt aus DB:          │
-                          │     - Projekt-Metadaten                   │
-                          │     - aktuelle Phase                      │
-                          │     - User-Info                           │
-                          │                                           │
-                          │  2. RAG-Retrieval (RetrieverService):     │
-                          │     - Agent-Result-Embeddings             │
-                          │     - Paper-Embeddings                    │
-                          │     → Top-K Chunks als Kontext            │
-                          │                                           │
-                          │  3. MCP-Client sendet an Langdock:        │
-                          │     - System-Message (Kontext + Chunks)   │
-                          │     - User-Message                        │
-                          │     → echtes Streaming zurueck             │
-                          │                                           │
-                          │  4. Response verarbeiten:                  │
-                          │     - MD-File speichern                   │
-                          │     - Embeddings generieren (async Job)   │
-                          │     - chat_messages aktualisieren         │
-                          │     - SSE an Browser streamen             │
-                          └──────────────────────────────────────────┘
-                                         │
-                                         ▼
-                          ┌──────────────────────────────────────────┐
-                          │  Langdock Cloud (MCP-Protokoll)           │
-                          │                                           │
-                          │  Chat-Agent ("Frontdesk")                 │
-                          │  - Beantwortet User-Fragen                │
-                          │  - Erklaert Phasen-Ergebnisse              │
-                          │  - Signalisiert wenn Worker noetig         │
-                          │                                           │
-                          │  KEIN direkter DB-Zugriff                 │
-                          │  KEIN Aufruf von Worker-Agents            │
-                          └──────────────────────────────────────────┘
-```
-
-### 2.3 Worker-Agent-Flow (unveraendert, Queue-basiert)
-
-```
-Laravel (PhaseChainService / User-Trigger)
-  → ProcessPhaseAgentJob dispatched auf Redis Queue
-    → LangdockAgentService::call() [API bleibt fuer Worker ok]
-      → Agent arbeitet Phase ab
-    → AgentResultStorageService speichert MD-File
-    → IngestAgentResultJob generiert Embeddings
-    → Ergebnisse in DB + als MD verfuegbar fuer RAG
-```
-
-Worker-Agents:
-- Bekommen Kontext von Laravel (nicht vom Chat-Agent)
-- Schreiben Ergebnisse ueber Laravel in die DB
-- Werden **nicht** vom Chat-Agent aufgerufen, sondern von Laravel orchestriert
-
----
-
-## 3. Markdown-RAG-Architektur
-
-### 3.1 Speicherstruktur
-
-```
-storage/app/agent-results/
-  └── {workspace_id}/
-      └── {user_id}/
-          └── {projekt_id}/
-              ├── P1__scoping_agent__20260408120000.md    ← Phasen-Output
-              ├── P2__search_agent__20260408130000.md
-              ├── chat__20260408140000.md                  ← Chat-Protokoll
-              └── chat__20260408150000.md
-```
-
-### 3.2 Zwei Dokumenttypen
-
-| Typ | Dateiname-Muster | Inhalt |
+| Aspekt | IST | SOLL |
 |---|---|---|
-| **Phasen-Output** | `P{n}__{agent}__{timestamp}.md` | Strukturiertes Ergebnis einer Phase (wie bisher) |
-| **Chat-Protokoll** | `chat__{timestamp}.md` | Konversation User+Assistant, chronologisch, pro Session |
-
-### 3.3 Embedding-Pipeline
-
-```
-MD-File gespeichert
-  → IngestAgentResultJob (async, Redis Queue)
-    → Text in Chunks aufteilen (500 Woerter, 100 Ueberlappung)
-    → Fuer jeden Chunk: EmbeddingService::generate() (Ollama nomic-embed-text)
-    → INSERT in agent_result_embeddings (pgvector)
-      Spalten: id, workspace_id, user_id, projekt_id, chunk_text, embedding, source_file, created_at
-```
-
-### 3.4 Retrieval bei Chat-Turn
-
-```
-User-Nachricht eingehend
-  → Session-Cache pruefen (Redis, TTL 30min)
-    → Cache-Hit: gespeicherte Chunks verwenden
-    → Cache-Miss:
-      → EmbeddingService::generate(user_nachricht)
-      → pgvector Similarity Search auf agent_result_embeddings
-        WHERE workspace_id = ? AND user_id = ? AND projekt_id = ?
-      → Top-K Chunks (k=5-10) in Session-Cache schreiben
-  → Chunks als System-Kontext an Chat-Agent mitgeben
-```
-
-### 3.5 User-Isolation
-
-| Schicht | Mechanismus |
-|---|---|
-| **Dateisystem** | Ordner `{workspace_id}/{user_id}/` — physische Trennung |
-| **Embeddings (DB)** | WHERE-Filter auf `workspace_id` + `user_id` bei jedem Retrieval |
-| **RLS (optional)** | Kann spaeter ergaenzt werden fuer defense-in-depth |
+| Streaming | Fake-SSE: komplette Antwort holen, dann zeichenweise ausgeben | Echtes Streaming via `stream: true` auf Langdock Direct API |
+| `user_id` Typ | UUID in Migration, `int` in Services, `string` in Job | Einheitlich `string` (UUID) überall, oder `int` überall — eine Entscheidung |
+| Embedding-Dimension | Keine Validierung, `validate()` kann Vektor verkürzen | Explizite 768-Dimensions-Prüfung in `EmbeddingService` |
+| Vektor-Index | IVFFlat mit `lists=100` auf leerer Tabelle | HNSW-Index (funktioniert auch bei leerer Tabelle) |
+| Idempotenz-DELETE | Nur nach `source_file`, ohne User-Isolation | DELETE mit `workspace_id + user_id + source_file` |
+| Cache-Key | Ohne `workspace_id` | Mit `workspace_id` |
+| `retrieve()` vs. `retrieveWithAgentResults()` | Beide aktiv, keine Deprecation | `retrieve()` deprecated, alle Caller auf `retrieveWithAgentResults()` |
+| Transaktion in IngestJob | HTTP-Calls (Ollama) innerhalb DB-Transaktion | Embeddings außerhalb sammeln, dann Batch-Insert in Transaktion |
+| MCP-Nutzung | Unklar / nicht integriert | MCP als Agent-zu-Agent-Tool + externe IDE-Anbindung |
 
 ---
 
-## 4. Neue und geaenderte Komponenten
+## 3. Komponentenbeschreibung
 
-### 4.1 Neu zu erstellen
+### 3.1 Geändert
 
-| Komponente | Datei | Beschreibung |
-|---|---|---|
-| **LangdockMcpClient** | `app/Services/LangdockMcpClient.php` | MCP-Protokoll-Client fuer den offiziellen Langdock MCP-Server. Echtes Streaming |
-| **ContextProvider** | `app/Services/ContextProvider.php` | Ersetzt `LangdockContextInjector`. Laedt Kontext aus DB + RAG-Chunks. Baut System-Message |
-| **IngestAgentResultJob** | `app/Jobs/IngestAgentResultJob.php` | Chunking + Embedding fuer Agent-Output-MD-Files |
-| **Migration** | `database/migrations/..._create_agent_result_embeddings.php` | pgvector-Tabelle fuer Agent-Result-Embeddings |
+#### `LangdockAgentService.php`
+- **Änderung:** Neue Methode `callStreaming()` mit `'stream' => true` im Request-Body und Guzzle `withOptions(['stream' => true])`
+- **Warum:** F6 — Fake-Streaming beseitigen, echtes SSE ermöglichen
+- **Schnittstelle:** Gibt `\Generator` zurück statt `array`
 
-### 4.2 Zu aendern
+#### `StreamingAgentService.php`
+- **Änderung:** `stream()` nutzt `callStreaming()` statt `call()`, reicht Chunks direkt durch
+- **Warum:** F6 — Time-to-First-Token für User-UX
+- **Schnittstelle:** SSE-Response bleibt gleich, aber Chunks kommen inkrementell
 
-| Komponente | Aenderung |
-|---|---|
-| `StreamingAgentService` | Ersetzen: Fake-Streaming → echter MCP-Stream vom LangdockMcpClient |
-| `AgentResultStorageService` | Erweitern: auch Chat-Protokolle speichern, nach Save automatisch `IngestAgentResultJob` dispatchen |
-| `RetrieverService` | Erweitern: auch `agent_result_embeddings` durchsuchen |
-| `ChatService` | Chat-Turns zusaetzlich als MD-File persistieren |
-| `ProcessChatMessageJob` | Auf MCP-Client umstellen |
-| `SendAgentMessage` | Auf MCP-Client umstellen |
-| Livewire Chat-Komponente | Echtes SSE-Streaming vom MCP konsumieren |
+#### `EmbeddingService.php`
+- **Änderung:** `validate()` prüft nach Filterung `count($validated) === self::EXPECTED_DIMENSIONS` (768)
+- **Warum:** F2 — pgvector wirft Fehler bei falscher Dimension
+- **Schnittstelle:** Neue Konstante `EXPECTED_DIMENSIONS = 768`
 
-### 4.3 Zu entfernen / abloesen
+#### `IngestAgentResultJob.php`
+- **Änderung 1:** Embeddings außerhalb der Transaktion generieren, dann Batch-Insert
+- **Änderung 2:** DELETE mit `workspace_id + user_id` Filter
+- **Änderung 3:** `user_id` Typ angleichen (siehe offene Entscheidung)
+- **Warum:** F5 (Transaktion), F8 (Isolation), F1 (Typ-Mismatch)
 
-| Komponente | Grund |
-|---|---|
-| `LangdockContextInjector` | Wird durch `ContextProvider` ersetzt. DB-Schema-Injection an Agents entfaellt, weil Agents keinen direkten DB-Zugriff mehr haben |
-| Direkter Postgres-MCP-Zugriff fuer Langdock-Agents | Sicherheitsrisiko (Issue #137). Agents arbeiten nur noch ueber Laravel |
-| `langdock_agent` DB-User | Wird nicht mehr benoetigt |
+#### `RetrieverService.php`
+- **Änderung 1:** `retrieve()` als `@deprecated` markieren
+- **Änderung 2:** Cache-Key um `workspace_id` erweitern
+- **Warum:** F7 (Konsistenz), F4 (Cache-Isolation)
+
+#### `2026_04_08_…_create_agent_result_embeddings_table.php`
+- **Änderung 1:** `user_id` Typ angleichen (UUID oder unsignedBigInteger)
+- **Änderung 2:** IVFFlat-Index → HNSW-Index
+- **Warum:** F1 (Typ-Mismatch), F3 (leere Tabelle)
+
+#### `AgentResultStorageService.php`
+- **Änderung:** `int $userId` → `string $userId` (oder umgekehrt, je nach Entscheidung)
+- **Warum:** F1 — Typ-Konsistenz
+
+#### `ChatService.php`
+- **Änderung:** `int $userId` → `string $userId` (oder umgekehrt)
+- **Warum:** F1 — Typ-Konsistenz
+
+### 3.2 Neu
+
+Keine neuen Dateien nötig. Alle Änderungen betreffen bestehende Komponenten.
+
+### 3.3 Entfernt
+
+Keine Löschungen. `retrieve()` wird deprecated, aber nicht entfernt (Abwärtskompatibilität).
+
+---
+
+## 4. Datenfluss-Diagramm (SOLL)
+
+```mermaid
+graph TD
+    subgraph "User-Facing (Streaming)"
+        A[Browser / Livewire] -->|SSE Request| B[StreamingAgentService]
+        B -->|callStreaming stream:true| C[LangdockAgentService]
+        C -->|POST /agent/v1/chat/completions stream:true| D[Langdock API]
+        D -->|Vercel AI SDK Stream| C
+        C -->|Generator yield chunks| B
+        B -->|SSE data: chunks| A
+    end
+
+    subgraph "Queue-Processing (Synchron)"
+        E[PhaseChainService] -->|dispatch| F[ProcessPhaseAgentJob]
+        F -->|call sync| C
+        C -->|POST stream:false| D
+        F -->|saveResult| G[AgentResultStorageService]
+        G -->|put MD file| H[Storage local]
+        F -->|dispatch| I[IngestAgentResultJob]
+    end
+
+    subgraph "Embedding-Pipeline"
+        I -->|1. read file| H
+        I -->|2. chunkText| I
+        I -->|3. generate per chunk| J[EmbeddingService]
+        J -->|POST /api/embeddings| K[Ollama nomic-embed-text]
+        K -->|768-dim vector| J
+        J -->|validate 768 dims| J
+        I -->|4. batch INSERT| L[(PostgreSQL + pgvector)]
+    end
+
+    subgraph "RAG Retrieval"
+        M[LangdockContextInjector] -->|retrieveWithAgentResults| N[RetrieverService]
+        N -->|generate query embedding| J
+        N -->|SELECT cosine similarity| L
+        N -->|Cache 30min| O[Redis]
+        N -->|combined + sorted chunks| M
+        M -->|inject into messages| C
+    end
+
+    subgraph "MCP (Agent-zu-Agent)"
+        P[Langdock Agent mit MCP-Integration] -->|ask_agent| Q[Langdock MCP Server /mcp]
+        Q -->|ruft anderen Agent auf| D
+        R[Externe IDE Cursor/Claude] -->|ask_agent| Q
+    end
+```
 
 ---
 
 ## 5. Sicherheitsverbesserungen
 
-### 5.1 Postgres-MCP-Endpoint absichern (Issue #137)
-
-**IST:** Langdock-Cloud-Agents greifen direkt auf `/mcp/sse` zu und fuehren SQL via `execute_sql` aus.
-
-**SOLL:** 
-- `/mcp/sse` wird **nur** fuer lokale/interne Nutzung freigegeben (z.B. Claude Code)
-- Langdock-Cloud-Agents bekommen **keinen** direkten DB-Zugriff mehr
-- Worker-Agents schreiben ueber Laravel (PhaseChainService → DB)
-- Der `langdock_agent` DB-User wird deaktiviert
-
-### 5.2 Datentrennung
-
-- Userdaten bleiben in Laravel/PostgreSQL
-- Langdock bekommt nur den noetigsten Kontext pro Request (Projekt-ID, Forschungsfrage, RAG-Chunks)
-- Keine DB-Schemata mehr an Agents leaken (Issue #84, #124)
+| # | Maßnahme | Betrifft |
+|---|---|---|
+| S1 | DELETE in IngestJob filtert nach `workspace_id + user_id + source_file` | IngestAgentResultJob |
+| S2 | Cache-Key enthält `workspace_id` gegen Cross-Workspace-Leaks | RetrieverService |
+| S3 | `user_id` Typ einheitlich — verhindert Cast-Fehler und potentielle Query-Manipulation | Migration, alle Services |
 
 ---
 
 ## 6. Migrationsplan
 
-### Phase A: Grundlagen (Woche 1)
+### Wave 1 — Kritische Fixes (parallel ausführbar)
 
-- [ ] `agent_result_embeddings` Migration erstellen
-- [ ] `IngestAgentResultJob` implementieren
-- [ ] `AgentResultStorageService` um Chat-Protokoll-Speicherung erweitern
-- [ ] `RetrieverService` um `agent_result_embeddings` erweitern
-- [ ] Session-Cache fuer RAG-Chunks (Redis)
+| Job | Inhalt | Dateien |
+|---|---|---|
+| Job 1.1 | `user_id` Typ-Entscheidung + Migration + Services angleichen | Migration, AgentResultStorageService, ChatService, IngestAgentResultJob |
+| Job 1.2 | Dimensions-Validierung in EmbeddingService | EmbeddingService |
 
-### Phase B: MCP-Client (Woche 2)
+### Wave 2 — Streaming-Umbau (sequenziell)
 
-- [ ] `LangdockMcpClient` implementieren (offizieller Langdock MCP)
-- [ ] `ContextProvider` implementieren (ersetzt `LangdockContextInjector`)
-- [ ] `StreamingAgentService` auf echtes MCP-Streaming umbauen
-- [ ] Livewire Chat-Komponente auf SSE-Streaming umstellen
+| Job | Inhalt | Dateien |
+|---|---|---|
+| Job 2.1 | `callStreaming()` in LangdockAgentService | LangdockAgentService |
+| Job 2.2 | StreamingAgentService auf echtes Streaming umbauen | StreamingAgentService |
 
-### Phase C: Absicherung (Woche 3)
+### Wave 3 — Pipeline-Hardening (parallel)
 
-- [ ] Postgres-MCP-Endpoint nur noch intern erreichbar machen
-- [ ] `langdock_agent` DB-User deaktivieren
-- [ ] Worker-Agent-Flow validieren (API bleibt, kein direkter DB-Zugriff)
-- [ ] End-to-End-Test: Chat + Worker + RAG
+| Job | Inhalt | Dateien |
+|---|---|---|
+| Job 3.1 | IngestJob: Embeddings außerhalb Transaktion + DELETE mit User-Isolation | IngestAgentResultJob |
+| Job 3.2 | Migration: IVFFlat → HNSW | Neue Migration |
+| Job 3.3 | RetrieverService: Cache-Key fix + `retrieve()` deprecation | RetrieverService |
 
-### Phase D: Aufraumen (Woche 4)
+### Wave 4 — MCP-Integration (optional, parallel)
 
-- [ ] `LangdockContextInjector` entfernen (nach Umstellung aller Caller)
-- [ ] Alte API-basierte Chat-Logik entfernen
-- [ ] ARCHITECTURE.md aktualisieren (diese Datei wird zur neuen ARCHITECTURE.md)
-- [ ] Monitoring: RAG-Latenz, MCP-Streaming-Performance
+| Job | Inhalt | Dateien |
+|---|---|---|
+| Job 4.1 | Dokumentation: MCP als Agent-zu-Agent-Integration einrichten | README / Docs |
+| Job 4.2 | Cursor/IDE-Setup-Anleitung für Forscher | Docs |
 
 ---
 
 ## 7. Offene Entscheidungen
 
-| Frage | Optionen | Empfehlung |
-|---|---|---|
-| MCP-Auth-Methode | API-Key / OAuth / MCP-native | Abhaengig von offiziellem Langdock MCP SDK |
-| Chat-History-Retention | Unbegrenzt / 30 Tage / pro Projekt | Pro Projekt, loeschbar mit Projekt |
-| Worker via API oder MCP | API beibehalten / auch MCP | API beibehalten — kein Streaming noetig fuer Worker |
-| Chat-Protokoll-Granularitaet | Pro Session / pro Tag / pro Turn | Pro Session (neue Datei bei >30min Inaktivitaet) |
+| # | Entscheidung | Optionen | Empfehlung |
+|---|---|---|---|
+| OE1 | `user_id` Typ | A) UUID überall, B) Integer überall | **B) Integer** — Laravel User-Model nutzt Auto-Increment, Migration auf `unsignedBigInteger` ändern |
+| OE2 | `retrieve()` entfernen oder behalten | A) Deprecated + Wrapper, B) Sofort entfernen | **A) Deprecated** — Wrapper der intern `retrieveWithAgentResults()` aufruft |
+| OE3 | Credit-Tracking bei Streaming | A) Am Stream-Ende parsen, B) Nachträglicher API-Call | **A) Stream-Ende** — letzter Chunk enthält Usage-Info im Vercel-Format |
+| OE4 | REINDEX-Strategie für HNSW | A) Kein Rebuild nötig (HNSW ist selbst-balancierend), B) Scheduled VACUUM | **A) Kein Rebuild** — HNSW braucht im Gegensatz zu IVFFlat kein Reindexing |
 
 ---
 
-## 8. Verwandte Issues
+## Anhang: Job-Abhängigkeitsdiagramm
 
-| Issue | Thema | Bezug |
-|---|---|---|
-| #137 | Offener Postgres-MCP-Endpoint | Wird durch diese Architektur geloest (kein direkter DB-Zugriff mehr) |
-| #136 | Master-Agent-Architektur | Chat-Agent als Frontdesk entspricht dem Master-Agent-Konzept |
-| #124 | Agent interpretiert `app.` als Schema | Entfaellt — Agents bekommen keine DB-Schemata mehr |
-| #91 | ContextInjector uebergibt Kontext nicht vollstaendig | Wird durch ContextProvider + RAG ersetzt |
-| #84 | Agents kennen echte Tabellennamen nicht | Entfaellt — Agents schreiben nicht mehr direkt in DB |
-| #58 | Kein echtes Streaming | Wird durch MCP-Streaming geloest |
-| #121 | MCP-Controller-Routing | Muss an neue Architektur angepasst werden |
+```mermaid
+graph LR
+    subgraph "Wave 1 — Kritisch"
+        J1_1[Job 1.1: user_id Typ-Fix]
+        J1_2[Job 1.2: Dimensions-Validierung]
+    end
+
+    subgraph "Wave 2 — Streaming"
+        J2_1[Job 2.1: callStreaming]
+        J2_2[Job 2.2: StreamingAgentService]
+    end
+
+    subgraph "Wave 3 — Hardening"
+        J3_1[Job 3.1: IngestJob Refactor]
+        J3_2[Job 3.2: HNSW Migration]
+        J3_3[Job 3.3: RetrieverService Fixes]
+    end
+
+    subgraph "Wave 4 — MCP"
+        J4_1[Job 4.1: MCP Docs]
+        J4_2[Job 4.2: IDE Setup]
+    end
+
+    J1_1 --> J3_1
+    J1_2 --> J3_1
+    J2_1 --> J2_2
+    J1_1 --> J3_3
+
+    J1_1 -.->|parallel| J1_2
+    J3_1 -.->|parallel| J3_2
+    J3_2 -.->|parallel| J3_3
+    J4_1 -.->|parallel| J4_2
+```
+
+**Legende:** `→` = blockiert durch, `-.->` = kann parallel laufen
+
+---
+
+## Anhang: Detaillierte Sub-Job-Spezifikationen
+
+### Job 1.1 — `user_id` Typ-Konsistenz
+
+**Was:** Entscheidung für Integer-Typ, Migration ändern, alle Services angleichen
+**Input-Files:**
+- `2026_04_08_100000_create_agent_result_embeddings_table.php`
+- `AgentResultStorageService.php`
+- `ChatService.php`
+- `IngestAgentResultJob.php`
+- `LangdockContextInjector.php` (Referenz für `isValidIdentifier()`)
+
+**Output-Files:**
+- Neue Migration `2026_04_08_100001_fix_user_id_type.php`
+- Geändert: `AgentResultStorageService.php` (`int $userId` bleibt, Migration wird angepasst)
+- Geändert: `IngestAgentResultJob.php` (`string $userId` → `int $userId`)
+
+**Acceptance Criteria:**
+- [ ] Migration ändert `user_id` von `uuid` auf `unsignedBigInteger` (oder alle Services auf `string`)
+- [ ] `IngestAgentResultJob` hat gleichen Typ wie `AgentResultStorageService`
+- [ ] `php artisan migrate` läuft fehlerfrei
+- [ ] INSERT in `agent_result_embeddings` mit echtem User-ID funktioniert
+
+**Kontextgröße:** ~250 Zeilen
+**Difficulty:** 2
+
+---
+
+### Job 1.2 — Dimensions-Validierung
+
+**Was:** `EmbeddingService::validate()` prüft exakte Dimension nach Filterung
+**Input-Files:**
+- `EmbeddingService.php`
+
+**Output-Files:**
+- Geändert: `EmbeddingService.php`
+
+**Acceptance Criteria:**
+- [ ] Konstante `EXPECTED_DIMENSIONS = 768` existiert
+- [ ] `validate()` wirft `RuntimeException` wenn `count !== 768`
+- [ ] Unit-Test: Vektor mit 768 Werten → OK
+- [ ] Unit-Test: Vektor mit 767 Werten (nach NaN-Filter) → Exception
+
+**Kontextgröße:** ~100 Zeilen
+**Difficulty:** 1
+
+---
+
+### Job 2.1 — `callStreaming()` Methode
+
+**Was:** Neue Methode in `LangdockAgentService` die `stream: true` setzt und einen Generator zurückgibt
+**Input-Files:**
+- `LangdockAgentService.php`
+- `LangdockContextInjector.php` (Referenz)
+
+**Output-Files:**
+- Geändert: `LangdockAgentService.php`
+
+**Acceptance Criteria:**
+- [ ] `callStreaming(agentId, messages, timeout, context): \Generator` existiert
+- [ ] Request-Body enthält `'stream' => true`
+- [ ] Guzzle-Option `withOptions(['stream' => true])` gesetzt
+- [ ] Generator yieldet String-Chunks aus dem Response-Body
+- [ ] Bestehende `call()` Methode unverändert
+
+**Kontextgröße:** ~400 Zeilen
+**Difficulty:** 3
+
+---
+
+### Job 2.2 — StreamingAgentService echtes Streaming
+
+**Was:** `stream()` nutzt `callStreaming()` und reicht Chunks durch
+**Input-Files:**
+- `StreamingAgentService.php`
+- `LangdockAgentService.php` (Referenz für `callStreaming()`)
+
+**Output-Files:**
+- Geändert: `StreamingAgentService.php`
+
+**Acceptance Criteria:**
+- [ ] Kein synchroner `call()` mehr in `stream()`
+- [ ] Chunks werden direkt aus Generator an SSE weitergegeben
+- [ ] Response-Header: `Content-Type: text/event-stream`, `X-Accel-Buffering: no`
+- [ ] Credit-Tracking am Stream-Ende (oder TODO markiert)
+- [ ] Manueller Test: Erster Chunk erscheint < 2s nach Request
+
+**Kontextgröße:** ~200 Zeilen
+**Difficulty:** 2
+
+---
+
+### Job 3.1 — IngestJob Refactoring
+
+**Was:** Embeddings außerhalb Transaktion sammeln, DELETE mit User-Isolation
+**Input-Files:**
+- `IngestAgentResultJob.php`
+- `EmbeddingService.php` (Referenz)
+
+**Output-Files:**
+- Geändert: `IngestAgentResultJob.php`
+
+**Acceptance Criteria:**
+- [ ] Alle Embeddings werden in Array gesammelt BEVOR `DB::transaction()` startet
+- [ ] `DB::transaction()` enthält nur DELETE + INSERT-Schleife (keine HTTP-Calls)
+- [ ] DELETE filtert nach `source_file AND workspace_id AND user_id`
+- [ ] Job-Timeout passt (ggf. erhöhen wegen sequenzieller Embedding-Generierung)
+- [ ] Fehlerfall: Wenn Chunk 5/10 bei Embedding fehlschlägt, sind Chunks 1-4 NICHT in DB
+
+**Kontextgröße:** ~200 Zeilen
+**Difficulty:** 2
+
+---
+
+### Job 3.2 — HNSW-Index Migration
+
+**Was:** Neue Migration die IVFFlat-Index droppt und HNSW-Index erstellt
+**Input-Files:**
+- `2026_04_08_100000_create_agent_result_embeddings_table.php` (Referenz)
+
+**Output-Files:**
+- Neue Datei: `2026_04_08_200000_switch_to_hnsw_index.php`
+
+**Acceptance Criteria:**
+- [ ] `DROP INDEX IF EXISTS agent_result_embeddings_embedding_idx`
+- [ ] `CREATE INDEX ... USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)`
+- [ ] `down()` erstellt den alten IVFFlat-Index zurück
+- [ ] Migration läuft auf leerer UND gefüllter Tabelle
+
+**Kontextgröße:** ~50 Zeilen
+**Difficulty:** 1
+
+---
+
+### Job 3.3 — RetrieverService Fixes
+
+**Was:** Cache-Key mit `workspace_id`, `retrieve()` deprecated
+**Input-Files:**
+- `RetrieverService.php`
+
+**Output-Files:**
+- Geändert: `RetrieverService.php`
+
+**Acceptance Criteria:**
+- [ ] Cache-Key Format: `rag_cache:{workspaceId}:{projektId}:{userId}:{md5(query)}`
+- [ ] `retrieve()` hat `@deprecated` PHPDoc-Tag
+- [ ] `retrieve()` loggt `Log::notice('Deprecated method called')`
+- [ ] Optionaler Wrapper: `retrieve()` ruft intern `retrieveWithAgentResults()` auf (wenn Parameter vorhanden)
+
+**Kontextgröße:** ~200 Zeilen
+**Difficulty:** 1
+
+---
+
+### Job 4.1 — MCP Agent-zu-Agent Dokumentation
+
+**Was:** Anleitung wie man den Langdock MCP Server als Integration einrichtet
+**Input-Files:** Keine Code-Files, nur Langdock Docs als Referenz
+
+**Output-Files:**
+- Neue Datei: `docs/MCP_AGENT_ORCHESTRATION.md`
+
+**Acceptance Criteria:**
+- [ ] Schritt-für-Schritt: MCP-Integration in Langdock UI anlegen
+- [ ] Beispiel: Phase-3-Agent ruft Scoping-Agent via `ask_agent`
+- [ ] Hinweis: MCP ist NICHT für Streaming, nur für Agent-zu-Agent
+
+**Kontextgröße:** ~50 Zeilen
+**Difficulty:** 1
+
+---
+
+### Job 4.2 — IDE-Setup für Forscher
+
+**Was:** Anleitung für Cursor / Claude Desktop MCP-Anbindung
+**Input-Files:** Keine
+
+**Output-Files:**
+- Neue Datei: `docs/IDE_MCP_SETUP.md`
+
+**Acceptance Criteria:**
+- [ ] JSON-Config für `claude_desktop_config.json` / `.cursor/mcp.json`
+- [ ] API-Key-Beschaffung erklärt
+- [ ] Beispiel-Prompts die `ask_agent` nutzen
+
+**Kontextgröße:** ~30 Zeilen
+**Difficulty:** 1
+
+---
+
+## Anhang: Job-Tabelle (Übersicht)
+
+| Job | Tasks | Input-Files | Kontext | Diff. | Parallel? |
+|---|---|---|---|---|---|
+| 1.1 | user_id Typ-Fix | Migration, StorageService, ChatService, IngestJob | ~250 Z. | 2 | ✅ mit 1.2 |
+| 1.2 | Dimensions-Validierung | EmbeddingService | ~100 Z. | 1 | ✅ mit 1.1 |
+| 2.1 | callStreaming() | LangdockAgentService, ContextInjector | ~400 Z. | 3 | ❌ vor 2.2 |
+| 2.2 | StreamingAgent Umbau | StreamingAgentService, LangdockAgentService | ~200 Z. | 2 | ❌ nach 2.1 |
+| 3.1 | IngestJob Refactor | IngestAgentResultJob, EmbeddingService | ~200 Z. | 2 | ✅ nach 1.1+1.2 |
+| 3.2 | HNSW Migration | alte Migration (Ref) | ~50 Z. | 1 | ✅ mit 3.1, 3.3 |
+| 3.3 | RetrieverService Fixes | RetrieverService | ~200 Z. | 1 | ✅ mit 3.1, 3.2 |
+| 4.1 | MCP Docs | — | ~50 Z. | 1 | ✅ mit allem |
+| 4.2 | IDE Setup Docs | — | ~30 Z. | 1 | ✅ mit allem |
+
+**Gesamt-Kontext (alle Jobs separat):** ~1.480 Zeilen
+**Monolith-Alternative:** ~2.800 Zeilen (alle Dateien gleichzeitig)
+**Ersparnis:** ~47% weniger Kontext pro Agent-Call

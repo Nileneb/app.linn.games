@@ -77,7 +77,7 @@ POST /api/papers/ingest           → PaperRagController::ingest
 GET  /api/papers/rag-search       → PaperRagController::search
 POST /api/mcp/agent-call          → McpAgentController (sync)
 POST /api/mcp/agent-call/stream   → StreamingMcpController (SSE)
-POST /api/webhooks/langdock/agent-result → AgentResultWebhookController (signature-verified)
+
 ```
 
 ## Langdock Agents
@@ -90,7 +90,9 @@ POST /api/webhooks/langdock/agent-result → AgentResultWebhookController (signa
 
 ## Model-Konventionen
 
-- UUID Primary Keys (`HasUuids` trait)
+- UUID Primary Keys (`HasUuids` trait) für alle Domain-Models (Projekt, Phase, P1–P8, Workspace, Contact, ChatMessage, etc.)
+- **Ausnahme User:** `unsignedBigInteger` auto-increment (Fortify-Kompatibilität — nicht ändern)
+- `user_id` Foreign Keys: immer `unsignedBigInteger`, nie UUID
 - Deutsche Timestamps: `erstellt_am`, `letztes_update` (`$timestamps = false`)
 - `Projekt` nutzt `Spatie\Activitylog\LogsActivity`
 - pgvector: Raw SQL nötig (kein Eloquent-Support für vector)
