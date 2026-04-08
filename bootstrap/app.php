@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AllowInternalMcpOnly;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\TrackPageView;
 use Illuminate\Foundation\Application;
@@ -19,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO);
         $middleware->appendToGroup('web', TrackPageView::class);
         $middleware->appendToGroup('web', EnsureAccountIsActive::class);
+
+        // Named alias: Erlaubt MCP-SSE-Streaming nur für interne/lokale IPs
+        $middleware->alias([
+            'mcp.internal' => AllowInternalMcpOnly::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -18,7 +18,12 @@ Route::middleware([VerifyMcpToken::class, SecureMcpHeaders::class, 'throttle:mcp
     Route::post('/papers/ingest', [PaperRagController::class, 'ingest']);
     Route::get('/papers/rag-search', [PaperRagController::class, 'search']);
     Route::post('/mcp/agent-call', [McpAgentController::class, 'call'])->name('mcp.agent-call');
-    Route::post('/mcp/agent-call/stream', [StreamingMcpController::class, 'call'])->name('mcp.agent-stream');
+
+    // SSE-Streaming: nur interne/lokale IPs (127.0.0.1, Docker-Netz, RFC-1918)
+    // Externe Langdock-Cloud-Agents werden via AllowInternalMcpOnly mit 403 abgewiesen.
+    Route::post('/mcp/agent-call/stream', [StreamingMcpController::class, 'call'])
+        ->middleware('mcp.internal')
+        ->name('mcp.agent-stream');
 });
 
 // Webhook route — no middleware (signature-verified inside controller)
