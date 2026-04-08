@@ -31,12 +31,12 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-arrow-left-end-on-rectangle')
                     ->sort(-1),
                 NavigationItem::make('Repository')
-                    ->url('https://github.com/flissel/app.linn.games')
+                    ->url('https://github.com/nileneb/app.linn.games')
                     ->icon('heroicon-o-code-bracket')
                     ->openUrlInNewTab()
                     ->sort(998),
                 NavigationItem::make('Dokumentation')
-                    ->url('https://github.com/flissel/app.linn.games/wiki')
+                    ->url('https://github.com/nileneb/app.linn.games/wiki')
                     ->icon('heroicon-o-book-open')
                     ->openUrlInNewTab()
                     ->sort(999),
