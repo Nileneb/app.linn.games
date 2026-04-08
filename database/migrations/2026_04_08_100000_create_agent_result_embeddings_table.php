@@ -18,7 +18,7 @@ return new class extends Migration
         Schema::create('agent_result_embeddings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('workspace_id');
-            $table->uuid('user_id');
+            $table->unsignedBigInteger('user_id');
             $table->uuid('projekt_id');
             $table->text('chunk_text');
             $table->string('source_file', 500);
