@@ -27,6 +27,9 @@ Route::view('dashboard', 'dashboard')
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
+    // SSE-Streaming für Dashboard-Chat (aufgerufen via fetch() in big-research-chat)
+    Route::post('/chat/stream', \App\Http\Controllers\ChatStreamController::class)->name('chat.stream');
+
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');

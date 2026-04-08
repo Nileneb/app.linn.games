@@ -301,7 +301,7 @@ class LangdockAgentService
      */
     public function configuredAgents(): array
     {
-        $skip = ['base_url', 'get_url', 'api_key', 'price_per_1k_tokens_cents', 'low_balance_threshold_percent', 'agent_daily_limits'];
+        $skip = ['base_url', 'get_url', 'mcp_endpoint', 'update_url', 'api_key', 'webhook_secret', 'price_per_1k_tokens_cents', 'low_balance_threshold_percent', 'default_agent_daily_limit_cents', 'retry_attempts', 'retry_sleep_ms', 'agent_daily_limits'];
 
         return collect(config('services.langdock', []))
             ->except($skip)
