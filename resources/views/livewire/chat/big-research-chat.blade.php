@@ -1,16 +1,13 @@
 <?php
 
-use App\Models\ChatMessage;
 use App\Services\ChatService;
-use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Auth;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string  $message          = '';
-    public bool    $loading          = false;
-    public ?string $pendingUserMsgId = null;
+    public string $message = '';
+    public bool   $loading = false;
 
     public function sendMessage(): void
     {
@@ -28,88 +25,50 @@ new class extends Component {
         $userMessage   = $this->message;
         $this->message = '';
 
-        $userMsg = app(ChatService::class)->saveUserMessage($workspaceId, $userId, $userMessage);
-        $this->pendingUserMsgId = $userMsg->id;
-        $this->loading          = true;
+        // User-Nachricht in DB speichern; Antwort kommt per SSE
+        app(ChatService::class)->saveUserMessage($workspaceId, $userId, $userMessage);
 
-        // Placeholder für Agent-Response (wird per polling aktualisiert)
-        app(ChatService::class)->saveAssistantMessage(
-            $workspaceId,
-            $userId,
-            '⏳ Processing...',
-            $userMsg->id,
-        );
+        $this->loading = true;
 
-        // Call MCP agent endpoint asynchronously
-        $this->callMcpAgent($workspaceId, $userId, [$userMessage]);
-
-        $this->dispatch('chat-loading-started');
+        // JS-Seite öffnet fetch()-Stream gegen /chat/stream
+        $this->dispatch('start-sse-chat', message: $userMessage);
     }
 
-    private function callMcpAgent(string $workspaceId, int $userId, array $messages): void
+    /**
+     * Wird vom JS aufgerufen, sobald der SSE-Stream vollständig ist.
+     * Speichert die akkumulierte Antwort des Agenten in der DB.
+     */
+    public function finalizeResponse(string $content): void
     {
-        try {
-            $agentId = config('services.langdock.dashboard_agent_id')
-                ?? config('services.langdock.agent_id');
+        $workspaceId = Auth::user()?->activeWorkspaceId();
+        $userId      = Auth::id();
 
-            if (! $agentId) {
-                throw new \Exception('Agent ID not configured');
-            }
-
-            $response = app(LangdockAgentService::class)->call(
-                $agentId,
-                array_map(fn ($msg) => [
-                    'role'    => 'user',
-                    'content' => $msg,
-                ], $messages),
-                120,
-                [
-                    'workspace_id'   => $workspaceId,
-                    'user_id'        => $userId,
-                    'user_name'      => Auth::user()?->name,
-                    'source'         => 'dashboard_chat',
-                ],
-            );
-
-            app(ChatService::class)->updateLastAssistantMessage(
-                $workspaceId,
-                $userId,
-                $response['content'] ?? 'No response',
-            );
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Langdock agent call failed', [
-                'workspace_id' => $workspaceId,
-                'user_id'      => $userId,
-                'error'        => $e->getMessage(),
-            ]);
-
-            app(ChatService::class)->updateLastAssistantMessage(
-                $workspaceId,
-                $userId,
-                '❌ Error: ' . $e->getMessage(),
-            );
+        if ($workspaceId !== null && $userId !== null) {
+            app(ChatService::class)->saveAssistantMessage($workspaceId, $userId, $content);
         }
+
+        $this->loading = false;
+        $this->dispatch('chat-updated');
     }
 
-    public function checkForResponse(): void
+    /**
+     * Wird vom JS aufgerufen, wenn der SSE-Stream mit einem Fehler abbricht.
+     */
+    public function markStreamError(string $error): void
     {
-        if (! $this->loading || $this->pendingUserMsgId === null) {
-            return;
+        $workspaceId = Auth::user()?->activeWorkspaceId();
+        $userId      = Auth::id();
+
+        if ($workspaceId !== null && $userId !== null) {
+            app(ChatService::class)->saveAssistantMessage(
+                $workspaceId,
+                $userId,
+                '❌ Fehler: ' . $error,
+            );
         }
 
-        $userMsg = ChatMessage::find($this->pendingUserMsgId);
-
-        if ($userMsg === null) {
-            $this->loading          = false;
-            $this->pendingUserMsgId = null;
-            return;
-        }
-
-        if (app(ChatService::class)->hasResponseAfter($userMsg, Auth::id())) {
-            $this->loading          = false;
-            $this->pendingUserMsgId = null;
-            $this->dispatch('chat-updated');
-        }
+        $this->loading = false;
+        $this->dispatch('chat-updated');
     }
 
     public function clearHistory(): void
@@ -120,8 +79,7 @@ new class extends Component {
             app(ChatService::class)->clearMessages($workspaceId, Auth::id());
         }
 
-        $this->loading          = false;
-        $this->pendingUserMsgId = null;
+        $this->loading = false;
     }
 
     public function renderMarkdown(string $content): string
@@ -189,17 +147,15 @@ new class extends Component {
             </div>
         @endforelse
 
-        {{-- Loading indicator with 3s poll --}}
+        {{-- SSE-Streaming-Bubble: zeigt Chunks in Echtzeit an --}}
         @if($loading)
-            <div wire:poll.3s="checkForResponse" class="flex justify-start gap-2">
+            <div class="flex justify-start gap-2">
                 <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
                     <x-app-logo-icon class="h-3.5 w-3.5 fill-current" />
                 </div>
-                <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
-                    <span class="inline-flex items-center gap-1">
-                        <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        {{ __('Denkt nach …') }}
-                    </span>
+                <div class="max-w-[85%] rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100 min-h-[2rem]">
+                    {{-- JS schreibt Chunks direkt in #streaming-text --}}
+                    <span id="streaming-text" class="whitespace-pre-wrap break-words"></span><span id="streaming-cursor" class="animate-pulse ml-0.5 text-zinc-400 dark:text-zinc-500">▍</span>
                 </div>
             </div>
         @endif
@@ -234,7 +190,7 @@ new class extends Component {
 @script
 <script>
     const container = document.getElementById('chat-scroll-container');
-    let timeoutHandle = null;
+    let activeAbortController = null;
 
     function scrollToBottom() {
         if (container) container.scrollTop = container.scrollHeight;
@@ -243,17 +199,89 @@ new class extends Component {
     scrollToBottom();
 
     $wire.on('chat-updated', () => {
-        clearTimeout(timeoutHandle);
         setTimeout(scrollToBottom, 50);
     });
 
-    $wire.on('chat-loading-started', () => {
+    /**
+     * SSE-Streaming via fetch() ReadableStream.
+     *
+     * Ausgelöst wenn sendMessage() $this->dispatch('start-sse-chat', message: ...) aufruft.
+     * Chunks kommen als SSE: data: {"chunk":"c","index":0,"type":"content"}\n\n
+     * Abschluss:           data: {"status":"done","type":"complete"}\n\n
+     * Fehler:              data: {"status":"error","error":"...","type":"error"}\n\n
+     */
+    $wire.on('start-sse-chat', async ({ message }) => {
+        // Laufende Verbindung abbrechen falls vorhanden
+        if (activeAbortController) {
+            activeAbortController.abort();
+        }
+        activeAbortController = new AbortController();
+
         scrollToBottom();
-        // 90s frontend failsafe — stops spinner if queue-worker is down or response never arrives
-        timeoutHandle = setTimeout(() => {
-            $wire.set('loading', false);
-            $wire.set('pendingUserMsgId', null);
-        }, 90000);
+
+        const streamingText   = document.getElementById('streaming-text');
+        const streamingCursor = document.getElementById('streaming-cursor');
+        let accumulated = '';
+
+        try {
+            const response = await fetch('{{ route('chat.stream') }}', {
+                method: 'POST',
+                signal: activeAbortController.signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                    'Accept': 'text/event-stream',
+                },
+                body: JSON.stringify({ message }),
+            });
+
+            if (! response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+
+            const reader  = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer    = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // Zeilen trennen; letztes unvollständiges Segment im Buffer behalten
+                const lines = buffer.split('\n');
+                buffer = lines.pop() ?? '';
+
+                for (const line of lines) {
+                    if (! line.startsWith('data: ')) continue;
+
+                    try {
+                        const data = JSON.parse(line.slice(6));
+
+                        if (data.type === 'content' && data.chunk !== undefined) {
+                            accumulated += data.chunk;
+                            if (streamingText) streamingText.textContent = accumulated;
+                            scrollToBottom();
+                        } else if (data.type === 'complete') {
+                            if (streamingCursor) streamingCursor.style.display = 'none';
+                            // Einmaliger Livewire-Aufruf am Ende — speichert in DB & rendert neu
+                            await $wire.finalizeResponse(accumulated);
+                        } else if (data.type === 'error') {
+                            await $wire.markStreamError(data.error ?? 'Unbekannter Fehler');
+                        }
+                    } catch (_parseError) {
+                        // Fehlerhafte SSE-Zeile überspringen
+                    }
+                }
+            }
+        } catch (fetchError) {
+            if (fetchError.name !== 'AbortError') {
+                await $wire.markStreamError(fetchError.message ?? 'Verbindungsfehler');
+            }
+        } finally {
+            activeAbortController = null;
+        }
     });
 </script>
 @endscript

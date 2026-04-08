@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\IngestAgentResultJob;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -40,6 +41,32 @@ class AgentResultStorageService
         $content = $this->formatAsMarkdown($response, $agentName);
 
         Storage::disk($this->disk)->put($path, $content);
+
+        IngestAgentResultJob::dispatch($path, $workspaceId, (string) $userId, $projectId);
+
+        return $path;
+    }
+
+    /**
+     * Save a chat protocol as a Markdown file and dispatch embedding ingest.
+     *
+     * @param  string  $content     Raw chat content (Markdown-formatted conversation)
+     * @param  string  $workspaceId UUID of workspace
+     * @param  string  $userId      User ID (string)
+     * @param  string  $projektId   UUID or slug of project
+     * @return string  Relative file path within storage/app/
+     */
+    public function storeChat(
+        string $content,
+        string $workspaceId,
+        string $userId,
+        string $projektId,
+    ): string {
+        $path = $this->buildChatPath($workspaceId, $userId, $projektId);
+
+        Storage::disk($this->disk)->put($path, $content);
+
+        IngestAgentResultJob::dispatch($path, $workspaceId, $userId, $projektId);
 
         return $path;
     }
@@ -140,6 +167,21 @@ class AgentResultStorageService
         );
 
         return "agent-results/$workspaceId/$userId/{$projectId}/{$filename}";
+    }
+
+    /**
+     * Build file path for a chat protocol.
+     * Pattern: agent-results/{workspace_id}/{user_id}/{projekt_id}/chat__{timestamp}.md
+     */
+    protected function buildChatPath(
+        string $workspaceId,
+        string $userId,
+        string $projektId,
+    ): string {
+        $timestamp = now()->format('YmdHis');
+        $filename = "chat__{$timestamp}.md";
+
+        return "agent-results/{$workspaceId}/{$userId}/{$projektId}/{$filename}";
     }
 
     /**
