@@ -1,670 +1,228 @@
-# Research Workflow Agent Architecture
+# Architecture — app.linn.games (IST-Zustand)
 
-## Executive Summary
+> Stand: April 2026. Diese Datei beschreibt den **tatsächlich implementierten** Zustand.
+> Für den geplanten Zielzustand siehe `.claude/ROADMAP.md`.
 
-**Goal:** Orchestrate 8 systematic review phases (P1-P8) with three specialized Langdock agents, using a **hybrid approach**: central PHP orchestration layer + specialized JSON-speaking agents (no MD-file communication, no single meta-agent).
+---
 
-**Architecture:**
+## Überblick
+
+app.linn.games ist eine Research-Management-Plattform für KI-gestützte systematische Literaturrecherche (Systematic Reviews). Nutzer durchlaufen 8 Phasen (P1–P8), wobei Langdock-KI-Agents die Arbeit je Phase unterstützen.
+
 ```
-Orchestration Layer (PHP)
-  ↓
-Three Specialized Langdock Agents
-  ↓
-Structured JSON I/O
-  ↓
-Atomic DB Transactions
+┌─────────────────────────────────────────────────────────────┐
+│                    BENUTZER (Browser)                        │
+│  Livewire/Volt UI → Blade-Komponenten pro Phase (P1–P8)    │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────────────────────┐
+│              AGENT-DISPATCH (2 Wege)                         │
+│                                                              │
+│  Weg A: TriggersPhaseAgent Trait (Livewire-Komponente)      │
+│         → AgentPromptBuilder → SendAgentMessage             │
+│         → LangdockAgentService::callByConfigKey()           │
+│         → Ergebnis direkt in PhaseAgentResult gespeichert   │
+│                                                              │
+│  Weg B: agent-action-button.blade.php (Blade-Button)        │
+│         → ProcessPhaseAgentJob::dispatch() (Queue)          │
+│         → SendAgentMessage → LangdockAgentService           │
+│         → AgentPayloadService::persistPayload()             │
+│         → LangdockArtifactService::persistFromAgentResponse │
+│         → PhaseChainService::maybeDispatchNext()            │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────────────────────┐
+│              LANGDOCK API (extern, DSGVO-konform)            │
+│  POST https://api.langdock.com/agent/v1/chat/completions   │
+│                                                              │
+│  3 Agent-Rollen (jeweils eigene Langdock-Agent-ID):         │
+│    • scoping_mapping_agent  → P1–P3                         │
+│    • search_agent           → P4                            │
+│    • review_agent           → P5–P8                         │
+│  + Spezial-Agents: retrieval, evaluation, pico, synthesis,  │
+│    mayring, master_research_agent                           │
+│                                                              │
+│  Agents greifen auf die DB zu via:                          │
+│    /mcp/sse (PostgreSQL MCP, langdock_agent DB-User, RLS)   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## The Problem With Alternatives
+## Kern-Services und ihre Aufgaben
 
-### ❌ Option 1: One Meta-Agent with Subagents
+### 1. LangdockAgentService (`app/Services/`)
+- **Einziger HTTP-Client** für Langdock API
+- `call(agentId, messages, timeout, context)` — synchroner Call
+- `callByConfigKey(configKey, messages)` — löst Agent-ID aus `config/services.php` auf
+- Exponentieller Backoff-Retry bei 5xx/Connection-Errors
+- Token-Schätzung und Credit-Deduction via `CreditService`
 
-```
-MetaAgent
-├── ScopingSubagent (P1-P3)
-├── SearchSubagent (P4)
-└── ReviewSubagent (P5-P8)
-```
+### 2. LangdockContextInjector (`app/Services/`)
+- Injiziert RLS-Bootstrap (`SET LOCAL app.current_projekt_id`) in die Messages
+- Fügt Phasen-Schema-Snippets hinzu (tabellenorientiert pro Phase)
+- Hängt Kontext-Metadaten an (projekt_id, workspace_id, user_id, triggerword)
+- Wird automatisch von `LangdockAgentService::call()` aufgerufen
 
-**Issues:**
-- MetaAgent becomes massive & unmaintainable
-- Must track all 8 phases + dependencies simultaneously
-- Langdock provides **three separate specialized agents** with own configs — combining them wastes their specialization
-- Single point of failure (if one subagent breaks, whole workflow breaks)
-- No parallelization if future phases can run concurrently
+### 3. AgentPromptBuilder (`app/Services/`)
+- Baut System- und User-Prompts für den `TriggersPhaseAgent`-Weg
+- Nutzt `config/phase_chain.php` für Phase-Metadaten
 
-### ❌ Option 2: Decentralized Agents + MD-File Communication
+### 4. ProcessPhaseAgentJob (`app/Jobs/`)
+- **Queue-basierter** Agent-Aufruf (Weg B)
+- Prepends Retriever-Kontext (RAG-Chunks) vor Agent-Call
+- Parst Agent-Response: `parseStructuredResponse()` erkennt JSON-Envelope (`meta/result/db`) oder Freitext
+- Persistiert via `AgentPayloadService` und `LangdockArtifactService`
+- Generiert Synthesis-Markdown mit Quellentraceability (`SynthesisMarkdownService`)
+- Ruft am Ende `PhaseChainService::maybeDispatchNext()` auf
 
-```
-Phase1Agent → phase_1_result.md
-              ├─ triggers P2Agent
-              └─ P2Agent reads MD, writes phase_2_result.md
-```
+### 5. PhaseChainService (`app/Services/`)
+- **Auto-Chain-Logik**: Dispatcht die nächste Phase nach erfolgreichem Abschluss
+- Config-gesteuert via `config/phase_chain.php` (next_phase, agent_config_key, label)
+- **Quality Gate** (`isValidPhaseResult`): Blockt Chain bei < 100 Zeichen oder Confirmation-Only-Responses
+- **Transition Validation**: Nutzt `TransitionValidator` + `PhaseCountService` für Threshold-Checks
+- `buildMessages()`: Baut Kontext für die nächste Phase (Projektdaten + vorherige Ergebnisse + Dokumentzähler)
 
-**Issues:**
-- Too loose for mission-critical research workflows
-- File I/O overhead (every phase reads/writes disk)
-- Trigger words via regex are fragile & error-prone
-- No built-in error handling or retry logic
-- Git-based communication (like Claude-Code agents) is overkill for systematic reviews
-- Difficult to validate schema compliance
+### 6. AgentPayloadService (`app/Services/`)
+- Persistiert `db_payload` aus Agent-Responses in die Phasen-Tabellen
+- Unterstützt das JSON-Envelope-Format (`meta/result/db`)
+
+### 7. CreditService (`app/Services/`)
+- Trackt Token-Verbrauch pro Workspace
+- `assertHasBalance()` — wirft `InsufficientCreditsException`
+- `deduct()` — zieht Credits ab und loggt in `credit_transactions`
+- Daily Limits pro Agent-Typ (konfigurierbar via ENV)
+
+### 8. SynthesisMarkdownService (`app/Services/`)
+- Generiert Markdown mit HTML-Comments für Quellentraceability
+- Format: `<!-- paper_id: UUID; chunk_index: N; similarity: 0.XX -->`
+- Wird in `ProcessPhaseAgentJob::enrichResponseWithSynthesis()` aufgerufen
+
+### 9. RetrieverService (`app/Services/`)
+- Vektor-Suche in `paper_embeddings` via pgvector
+- `retrieve(query, projektId)` → relevante Chunks
+- `formatAsContext(chunks)` → Text-Kontext für Agent-Messages
 
 ---
 
-## ✅ Hybrid Solution: Orchestration Layer + Specialized Agents
-
-### Architecture Diagram
+## Datenfluss: Agent-Aufruf (Weg B — Queue, Standard)
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                   ORCHESTRATION LAYER (PHP Service)                  │
-│                                                                       │
-│  ResearchWorkflow (State Machine)                                    │
-│  ├─ phaseRegistry[]          (P1-P8 metadata, preconditions)        │
-│  ├─ canRunPhase()            (dependency validation)                │
-│  ├─ buildPhaseContext()      (unified context pipeline)            │
-│  ├─ dispatchPhase()          (send to agent)                       │
-│  └─ handleAgentCompletion()  (auto-chain + quality gates)          │
-│                                                                       │
-│  Location: app/Services/ResearchWorkflow.php                        │
-└──────────────────────────────────────────────────────────────────────┘
-                               ↓
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-   ┌────────────┐        ┌────────────┐      ┌──────────────┐
-   │ P1-P3:     │        │ P4:        │      │ P5-P8:       │
-   │ scoping_   │        │ search_    │      │ review_      │
-   │ mapping_   │        │ agent      │      │ agent        │
-   │ agent      │        │            │      │              │
-   └────────────┘        └────────────┘      └──────────────┘
-        ↓                     ↓                     ↓
-   Langdock API (EU GDPR-compliant proxy)
-```
+1. UI-Button-Klick
+   → ProcessPhaseAgentJob::dispatch(projektId, phaseNr, agentConfigKey, messages, context)
 
-### Phase Registry
+2. Job::handle()
+   → prependRetrieverContext()         // RAG-Chunks voranstellen
+   → SendAgentMessage::execute()       // delegiert an LangdockAgentService
+     → LangdockContextInjector::inject()  // RLS-Bootstrap + Schema
+     → HTTP POST → Langdock API
+     → Response
 
-```php
-// app/Services/ResearchWorkflow.php
+3. Response verarbeiten
+   → parseStructuredResponse()         // JSON-Envelope oder null
+   → AgentPayloadService::persistPayload()  // DB-Writes aus db_payload
+   → enrichResponseWithSynthesis()     // Synthesis-MD mit Traceability
+   → LangdockArtifactService::persistFromAgentResponse()  // MD-Dateien speichern
+   → PhaseAgentResult::markCompleted()
 
-private array $phaseRegistry = [
-  1 => [
-    'name'            => 'Strukturierung',
-    'agent'           => 'scoping_mapping_agent',
-    'preconditions'   => [],  // P1 can always run
-    'output_tables'   => ['p1_strukturmodell_wahl', 'p1_komponenten', ...],
-    'context_char_limit' => 1000,
-  ],
-  
-  2 => [
-    'name'            => 'Review-Typ',
-    'agent'           => 'scoping_mapping_agent',
-    'preconditions'   => [1],  // P2 requires P1 complete
-    'output_tables'   => ['p2_review_typ_entscheidung', 'p2_cluster', ...],
-    'context_char_limit' => 1000,
-  ],
-  
-  3 => [
-    'name'            => 'Quellen',
-    'agent'           => 'scoping_mapping_agent',
-    'preconditions'   => [1, 2],
-    'output_tables'   => ['p3_datenbankmatrix', 'p3_disziplinen', ...],
-    'context_char_limit' => 1000,
-  ],
-  
-  4 => [
-    'name'            => 'Suchstrings',
-    'agent'           => 'search_agent',
-    'preconditions'   => [1, 2, 3],
-    'output_tables'   => ['p4_suchstrings', 'p4_thesaurus_mapping', ...],
-    'context_char_limit' => 1500,
-  ],
-  
-  5 => [
-    'name'            => 'Screening',
-    'agent'           => 'review_agent',
-    'preconditions'   => [4, 'papers_imported'],  // P5 needs papers!
-    'output_tables'   => ['p5_screening_entscheidung', 'p5_prisma_zahlen', ...],
-    'context_char_limit' => 2000,
-  ],
-  
-  6 => [
-    'name'            => 'Qualität',
-    'agent'           => 'review_agent',
-    'preconditions'   => [5],
-    'output_tables'   => ['p6_qualitaetsbewertung', 'p6_luckenanalyse', ...],
-    'context_char_limit' => 2000,
-  ],
-  
-  7 => [
-    'name'            => 'Synthese',
-    'agent'           => 'review_agent',
-    'preconditions'   => [6],
-    'output_tables'   => ['p7_datenextraktion', 'p7_synthese_methode', ...],
-    'context_char_limit' => 2500,
-  ],
-  
-  8 => [
-    'name'            => 'Dokumentation',
-    'agent'           => 'review_agent',
-    'preconditions'   => [7],
-    'output_tables'   => ['p8_suchprotokoll', 'p8_limitation', ...],
-    'context_char_limit' => 3000,
-    'always_write_artifact' => true,  // Forces markdown export
-  ],
-];
+4. Auto-Chain
+   → PhaseChainService::maybeDispatchNext()
+     → isValidPhaseResult()            // Quality Gate
+     → TransitionValidator::validateTransition()  // Thresholds
+     → ProcessPhaseAgentJob::dispatch()  // nächste Phase
 ```
 
 ---
 
-## Core Methods
+## Phase-Chain Konfiguration
 
-### 1. Dependency Resolution: `canRunPhase()`
+Die Phase-Verkettung ist in `config/phase_chain.php` definiert:
 
 ```php
-public function canRunPhase(int $phaseNr, Projekt $projekt): bool {
-  $preconditions = $this->phaseRegistry[$phaseNr]['preconditions'];
-  
-  foreach ($preconditions as $precond) {
-    
-    // Numeric precondition: previous phase must be complete
-    if (is_int($precond)) {
-      if (!$this->isPhaseComplete($precond, $projekt)) {
-        return false;
-      }
-    }
-    
-    // String precondition: custom check (e.g., 'papers_imported')
-    if (is_string($precond)) {
-      if ($precond === 'papers_imported') {
-        $paperCount = DB::selectOne(
-          'SELECT COUNT(*) as cnt FROM paper_embeddings WHERE projekt_id = ?',
-          [$projekt->id]
-        )?->cnt ?? 0;
-        
-        if ($paperCount === 0) {
-          return false;  // ⚠️ P4→P5 gate: blocks auto-dispatch if no papers
-        }
-      }
-    }
-  }
-  
-  return true;
-}
+// Beispiel:
+1 => ['next_phase' => 2, 'agent_config_key' => 'scoping_mapping_agent', 'label' => 'P2 Review-Typ'],
+2 => ['next_phase' => 3, 'agent_config_key' => 'scoping_mapping_agent', 'label' => 'P3 Quellen'],
+3 => ['next_phase' => 4, 'agent_config_key' => 'search_agent',          'label' => 'P4 Suchstrings'],
+// P4 → P5: KEIN Auto-Chain (manueller Paper-Import nötig)
+5 => ['next_phase' => 6, 'agent_config_key' => 'review_agent',          'label' => 'P6 Qualität'],
+// ...
 ```
 
-**Usage:**
-```php
-// Check before dispatching P5
-if ($this->canRunPhase(5, $projekt)) {
-  $this->dispatchPhase(5, $projekt);
-} else {
-  // Send notification: "Import papers before proceeding to P5"
-  Notification::send($projekt->user, new PaperImportRequired(5));
-}
+**Besonderheit P4→P5**: Kein Eintrag für Phase 4 → kein Auto-Chain. Der Nutzer muss erst Papers importieren, bevor P5 starten kann. Die `TransitionValidator`-Thresholds prüfen zusätzlich Mindestanzahlen.
+
+---
+
+## RAG-Pipeline (Paper-Ingestion)
+
+```
+DownloadPaperJob
+  → PdfParserService (smalot/pdfparser)
+  → IngestPaperJob
+    → Text in Chunks aufteilen (500 Wörter, 100 Überlappung)
+    → EmbeddingService → Ollama (nomic-embed-text)
+    → PaperEmbedding (pgvector, IVFFlat-Index)
+  → RetrieverService (Vektor-Suche) → Agent-Context
 ```
 
 ---
 
-### 2. Unified Context Building: `buildPhaseContext()`
+## Multi-Tenancy & Credits
 
-```php
-public function buildPhaseContext(int $phaseNr, Projekt $projekt): array {
-  
-  // 1. Project metadata
-  $projectContext = [
-    'projekt_id'       => $projekt->id,
-    'forschungsfrage'  => $projekt->forschungsfrage,
-    'review_typ'       => $projekt->review_typ,
-    'verantwortlich'   => $projekt->verantwortlich,
-  ];
-  
-  // 2. Previous phase results (truncated)
-  $contextLimit = $this->phaseRegistry[$phaseNr]['context_char_limit'];
-  $previousResults = [];
-  
-  foreach (range(1, $phaseNr - 1) as $priorPhase) {
-    $result = PhaseAgentResult::where('projekt_id', $projekt->id)
-      ->where('phase_nr', $priorPhase)
-      ->where('status', 'completed')
-      ->latest('created_at')
-      ->first();
-    
-    if ($result) {
-      $previousResults[$priorPhase] = mb_substr(
-        $result->content,
-        0,
-        $contextLimit
-      );
-    }
-  }
-  
-  // 3. Retriever context (semantic search from papers)
-  $retrieverContext = [];
-  if ($phaseNr >= 5) {  // Only P5+ has papers indexed
-    $retrieverContext = $this->retrieverService->retrieve(
-      query: $projekt->forschungsfrage,
-      top_n: 5
-    );
-  }
-  
-  // 4. Document counts
-  $counts = [
-    'paper_embeddings' => DB::selectOne(
-      'SELECT COUNT(*) as cnt FROM paper_embeddings WHERE projekt_id = ?',
-      [$projekt->id]
-    )?->cnt ?? 0,
-    'p5_treffer' => DB::selectOne(
-      'SELECT COUNT(*) as cnt FROM p5_treffer WHERE projekt_id = ?',
-      [$projekt->id]
-    )?->cnt ?? 0,
-  ];
-  
-  return [
-    'project_metadata'  => $projectContext,
-    'previous_results'  => $previousResults,
-    'retriever_context' => $retrieverContext,
-    'document_counts'   => $counts,
-    'phase_label'       => $this->phaseRegistry[$phaseNr]['name'],
-  ];
-}
-```
-
-**Why unified?**
-- Eliminates duplicate logic between `agent-action-button.blade.php` and `PhaseChainService.php`
-- Single source of truth for context building
-- Easy to add new context fields (retriever chunks, metadata, etc.)
+- **Workspace** → WorkspaceUser (pivot) → User
+- **Projekt** belongs to User + Workspace
+- **RLS**: `SET LOCAL app.current_projekt_id` / `app.current_workspace_id` auf DB-Ebene
+- **Credits**: Pro Workspace, Token-basiert, mit Daily Limits pro Agent-Typ
+- **DB-User**: `langdock_agent` — eingeschränkter Zugriff, kein BYPASSRLS
 
 ---
 
-### 3. Agent Dispatch: `dispatchPhase()`
+## Agent-Response-Formate
 
-```php
-public function dispatchPhase(int $phaseNr, Projekt $projekt): void {
-  
-  // Pre-flight checks
-  if (!$this->canRunPhase($phaseNr, $projekt)) {
-    throw new PhaseNotReadyException(
-      "Phase {$phaseNr} preconditions not met"
-    );
-  }
-  
-  // Build context
-  $context = $this->buildPhaseContext($phaseNr, $projekt);
-  
-  // Get agent config key
-  $agentKey = $this->phaseRegistry[$phaseNr]['agent'];
-  
-  // Dispatch job (will queue, not block)
-  ProcessPhaseAgentJob::dispatch(
-    projektId: $projekt->id,
-    phaseNr: $phaseNr,
-    agentConfigKey: $agentKey,
-    context: $context,
-  );
-  
-  // Update UI: mark as 'in_bearbeitung'
-  Phase::updateOrCreate(
-    ['projekt_id' => $projekt->id, 'phase_nr' => $phaseNr],
-    ['status' => 'in_bearbeitung']
-  );
-}
-```
+Agents können in zwei Formaten antworten:
 
----
+### A) Freitext (Standard)
+Agent antwortet mit normalem Text/Markdown. Wird direkt als `PhaseAgentResult.content` gespeichert.
 
-### 4. Auto-Chain Handler: `handleAgentCompletion()`
-
-```php
-public function handleAgentCompletion(PhaseAgentResult $result): void {
-  
-  // 1. Quality Gate (Issue #122)
-  if (!$this->isValidResult($result)) {
-    Log::warning("Phase {$result->phase_nr} result failed quality gate", [
-      'projekt_id' => $result->projekt_id,
-      'reason'     => $this->getQualityGateFailReason($result),
-    ]);
-    return;
-  }
-  
-  // 2. Find next phase
-  $nextPhase = $this->getNextPhase($result->phase_nr);
-  if (!$nextPhase) {
-    Log::info("Phase {$result->phase_nr} is final", [
-      'projekt_id' => $result->projekt_id,
-    ]);
-    return;
-  }
-  
-  // 3. Check if next phase can run
-  $projekt = $result->projekt;
-  if (!$this->canRunPhase($nextPhase, $projekt)) {
-    Log::info("Phase {$nextPhase} cannot run yet", [
-      'projekt_id' => $projekt->id,
-      'reason'     => $this->getBlockingReason($nextPhase, $projekt),
-    ]);
-    
-    // P4→P5 case: notify user to import papers
-    if ($nextPhase === 5 && !$this->hasPapers($projekt)) {
-      Notification::send(
-        $projekt->user,
-        new PaperImportRequired($projekt)
-      );
-    }
-    
-    return;
-  }
-  
-  // 4. Dispatch next phase (auto-chain)
-  Log::info("Auto-dispatching phase {$nextPhase}", [
-    'projekt_id' => $projekt->id,
-  ]);
-  
-  $this->dispatchPhase($nextPhase, $projekt);
-}
-```
-
-**Quality Gate Logic:**
-```php
-private function isValidResult(PhaseAgentResult $result): bool {
-  $content = $result->content ?? '';
-  
-  // Check 1: Minimum length
-  if (strlen($content) < 100) {
-    return false;
-  }
-  
-  // Check 2: Not just a confirmation
-  if (preg_match('/^(okay|ok|understood|i will|will proceed|acknowledged)/i', $content)) {
-    return false;
-  }
-  
-  return true;
-}
-```
-
----
-
-## ProcessPhaseAgentJob Refactored
-
-**Before (Scattered Logic):**
-- Job dispatch logic spread across Blade + Service
-- Message building duplicated
-- DB writes ad-hoc
-
-**After (Clean):**
-
-```php
-class ProcessPhaseAgentJob implements ShouldQueue {
-  
-  use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-  
-  public function __construct(
-    public string $projektId,
-    public int $phaseNr,
-    public string $agentConfigKey,
-    public array $context,
-  ) {}
-  
-  public function handle(): void {
-    try {
-      // 1. Call agent with structured output request
-      $response = $this->langdockService->call(
-        configKey: $this->agentConfigKey,
-        messages: $this->buildMessages(),
-        structuredOutput: true,  // Expects JSON
-      );
-      
-      // 2. Parse & validate response
-      $parsed = $this->parseAndValidate($response);
-      
-      // 3. Atomic DB transaction
-      DB::transaction(function () use ($parsed) {
-        $this->writePhaseResult($parsed);
-        $this->writeTableData($parsed);
-        $this->updatePhaseStatus('abgeschlossen');
-      });
-      
-      // 4. Trigger auto-chain
-      ResearchWorkflow::handleAgentCompletion($result);
-      
-    } catch (Throwable $e) {
-      $this->markFailed($e->getMessage());
-      Log::error("ProcessPhaseAgentJob failed", [
-        'projekt_id' => $this->projektId,
-        'phase_nr'   => $this->phaseNr,
-        'error'      => $e->getMessage(),
-      ]);
-    }
-  }
-  
-  private function buildMessages(): array {
-    // Now delegates to ResearchWorkflow
-    $context = $this->context;  // Already built by orchestrator
-    
-    return [
-      [
-        'role'    => 'user',
-        'content' => $this->formatContext($context),
-      ]
-    ];
-  }
-  
-  private function parseAndValidate(string $response): array {
-    $data = json_decode($response, true);
-    
-    // Validate schema
-    if (empty($data['phase']) || empty($data['status'])) {
-      throw new InvalidResponseException("Missing required fields");
-    }
-    
-    if ($data['phase'] !== $this->phaseNr) {
-      throw new InvalidResponseException("Phase mismatch");
-    }
-    
-    if ($data['status'] !== 'completed') {
-      throw new InvalidResponseException("Agent did not complete successfully");
-    }
-    
-    return $data;
-  }
-  
-  private function writePhaseResult(array $parsed): void {
-    PhaseAgentResult::create([
-      'projekt_id'   => $this->projektId,
-      'phase_nr'     => $this->phaseNr,
-      'agent_config_key' => $this->agentConfigKey,
-      'status'       => 'completed',
-      'content'      => json_encode($parsed['data']),
-      'metadata'     => [
-        'duration_ms'    => $parsed['metadata']['duration_ms'] ?? null,
-        'tokens_used'    => $parsed['metadata']['tokens_used'] ?? null,
-        'db_written'     => $parsed['db_payload'] ?? [],
-      ],
-    ]);
-  }
-  
-  private function writeTableData(array $parsed): void {
-    foreach ($parsed['db_payload']['tables'] ?? [] as $table => $rows) {
-      DB::table($table)->insert($rows);
-    }
-  }
-  
-  private function updatePhaseStatus(string $status): void {
-    Phase::updateOrCreate(
-      ['projekt_id' => $this->projektId, 'phase_nr' => $this->phaseNr],
-      ['status' => $status, 'abgeschlossen_am' => now()]
-    );
-  }
-  
-  private function markFailed(string $error): void {
-    PhaseAgentResult::create([
-      'projekt_id'   => $this->projektId,
-      'phase_nr'     => $this->phaseNr,
-      'status'       => 'failed',
-      'error_message' => $error,
-    ]);
-    
-    Phase::updateOrCreate(
-      ['projekt_id' => $this->projektId, 'phase_nr' => $this->phaseNr],
-      ['status' => 'offen']  // Reset to open, user can retry
-    );
-  }
-}
-```
-
----
-
-## Agent Response Format
-
-**What Each Agent Returns (JSON):**
-
+### B) JSON-Envelope (bei structured_output=true)
 ```json
 {
-  "phase": 5,
-  "status": "completed",
-  "data": {
-    "screening_criteria": [
-      {
-        "level": "l1",
-        "kriterium_typ": "inclusion",
-        "beschreibung": "Published in English or German",
-        "beispiel": "Peer-reviewed journal articles"
-      }
-    ],
-    "prisma_zahlen": {
-      "identifiziert_gesamt": 1000,
-      "nach_deduplizierung": 950,
-      "eingeschlossen_l1": 850,
-      "eingeschlossen_l2": 120,
-      "ausgeschlossen_l1": 100,
-      "ausgeschlossen_l2": 730
-    }
-  },
-  "db_payload": {
-    "tables": {
-      "p5_screening_kriterien": [
-        {
-          "projekt_id": "...",
-          "level": "l1",
-          "kriterium_typ": "inclusion",
-          "beschreibung": "Published in English or German",
-          "beispiel": "Peer-reviewed journal articles"
-        }
-      ],
-      "p5_prisma_zahlen": [
-        {
-          "projekt_id": "...",
-          "identifiziert_gesamt": 1000,
-          "nach_deduplizierung": 950,
-          "eingeschlossen_l1": 850,
-          "eingeschlossen_l2": 120,
-          "ausgeschlossen_l1": 100,
-          "ausgeschlossen_l2": 730
-        }
-      ]
-    }
-  },
-  "metadata": {
-    "duration_ms": 45000,
-    "tokens_used": 12500,
-    "model": "gpt-4-turbo",
-    "next_phase_ready": true,
-    "warnings": []
-  }
+  "meta": {"projekt_id": "...", "workspace_id": "...", "triggerword": "...", "version": 1},
+  "result": {"type": "phase_result", "summary": "...", "data": {"md_files": [...]}},
+  "db": {"bootstrapped": true, "loaded": ["p1_komponenten"]},
+  "warnings": []
 }
 ```
 
-**Validation in ProcessPhaseAgentJob:**
-```php
-// Expected table names for P5:
-$expectedTables = $this->phaseRegistry[5]['output_tables'];
-// ['p5_screening_kriterien', 'p5_prisma_zahlen', ...]
-
-foreach (array_keys($parsed['db_payload']['tables']) as $table) {
-  if (!in_array($table, $expectedTables)) {
-    throw new InvalidTableException("Unexpected table: {$table}");
-  }
-}
-```
+Parsing in `ProcessPhaseAgentJob::parseStructuredResponse()`:
+- Erkennt `meta/result`-Struktur ODER flaches `data`-Objekt
+- Gibt `null` zurück bei Freitext → kein db_payload-Processing
 
 ---
 
-## Implementation Roadmap
+## Schlüssel-Dateien
 
-### Phase 1: Core Orchestration (Week 1)
-
-- [ ] Create `app/Services/ResearchWorkflow.php` with phase registry
-- [ ] Implement `canRunPhase()`, `buildPhaseContext()`, `dispatchPhase()`
-- [ ] Extract message building into `app/Services/AgentContextBuilder.php`
-- [ ] Update `ProcessPhaseAgentJob` to call `ResearchWorkflow`
-
-**Deliverable:** Unified orchestration layer, backward compatible with existing phases
-
-### Phase 2: Structured Output (Week 2)
-
-- [ ] Update Langdock agent configs to request structured JSON output
-- [ ] Implement `parseAndValidate()` in `ProcessPhaseAgentJob`
-- [ ] Add schema validation for each phase
-- [ ] Update agents to return db_payload
-
-**Deliverable:** Agents speak JSON; DB writes are atomic and validated
-
-### Phase 3: Advanced Features (Week 3)
-
-- [ ] Add `handleAgentCompletion()` auto-chain logic
-- [ ] Implement P4→P5 pre-flight checks
-- [ ] Add WebSocket live updates (result notification)
-- [ ] Create phase-specific rollback on DB write failures
-
-**Deliverable:** Production-ready auto-chain with error recovery
-
-### Phase 4: Future Scaling (Week 4+)
-
-- [ ] Parallel batch execution for P5 (screen 1000 papers in parallel)
-- [ ] Phase skip/restart capability
-- [ ] Human-in-the-loop gates (PI approval before P5→P6)
-- [ ] Agent performance metrics dashboard
-
-**Deliverable:** Enterprise-ready workflow orchestration
+| Datei | Rolle |
+|-------|-------|
+| `app/Services/LangdockAgentService.php` | HTTP-Client für Langdock API |
+| `app/Services/LangdockContextInjector.php` | RLS-Bootstrap + Schema-Injection |
+| `app/Services/AgentPromptBuilder.php` | System/User-Prompts (Weg A) |
+| `app/Services/PhaseChainService.php` | Auto-Chain + Quality Gate |
+| `app/Services/AgentPayloadService.php` | JSON→DB Persistenz |
+| `app/Services/CreditService.php` | Token-Tracking pro Workspace |
+| `app/Services/SynthesisMarkdownService.php` | Synthesis-MD mit Traceability |
+| `app/Services/RetrieverService.php` | pgvector-Suche |
+| `app/Services/TransitionValidator.php` | Phase-Threshold-Checks |
+| `app/Services/PhaseCountService.php` | Zählt Phase-Daten für Thresholds |
+| `app/Jobs/ProcessPhaseAgentJob.php` | Queue-Job für Agent-Calls |
+| `app/Actions/SendAgentMessage.php` | Wrapper für Agent-Aufruf |
+| `app/Livewire/Concerns/TriggersPhaseAgent.php` | Trait für Livewire-Dispatch (Weg A) |
+| `config/phase_chain.php` | Phase-Verkettung + Thresholds |
+| `config/services.php` | Agent-IDs + API-Keys |
 
 ---
 
-## Benefits Summary
+## Bekannte Duplikate / Architektur-Schulden
 
-| Aspect | Old Approach | New Hybrid Approach |
-|--------|---|---|
-| **Phase Dependencies** | Hardcoded in config, scattered checks | Centralized registry, `canRunPhase()` validates |
-| **Message Building** | Duplicated in blade + service | Single `AgentContextBuilder` |
-| **Agent Outputs** | Free-form text, hard to parse | Structured JSON, schema-validated |
-| **DB Writes** | Ad-hoc, no transactions | Atomic, all-or-nothing |
-| **P4→P5 Transition** | "User must remember" | `canRunPhase(5)` checks, notifies if papers missing |
-| **Error Recovery** | Manual retry | Auto-mark failed, user can re-dispatch |
-| **Testing** | Hard to mock full workflow | Easy: test `canRunPhase()`, mock agent JSON |
-| **Scalability** | Single linear chain | Foundation for parallelization, batching |
-
----
-
-## Metrics to Track
-
-After implementation, monitor:
-
-```
-✓ Phase completion rate (% reaching P8)
-✓ Auto-chain success rate (% where next phase triggered successfully)
-✓ Agent token usage per phase (optimize budget allocation)
-✓ P4→P5 completion (% of P4 completions that reach P5)
-✓ DB write atomicity (failed writes caught before commit)
-✓ Quality gate effectiveness (% of results that pass validation)
-```
-
----
-
-## References
-
-- **Current Code:** `app/Jobs/ProcessPhaseAgentJob.php`, `app/Services/PhaseChainService.php`
-- **Config:** `config/phase_chain.php`
-- **Models:** `app/Models/Recherche/Phase.php`, `PhaseAgentResult.php`
-- **UI Components:** `resources/views/livewire/recherche/agent-action-button.blade.php`
-
+1. **Kontext-Aufbau existiert 3x**: `AgentPromptBuilder`, `PhaseChainService::buildMessages()`, `agent-action-button.blade.php`. Sollte in einen zentralen Builder konsolidiert werden.
+2. **Dispatch-Wege A + B**: `TriggersPhaseAgent` (synchron) und `ProcessPhaseAgentJob` (async) haben unterschiedliche Post-Processing-Logik. Weg A fehlt: Retriever-Context, Synthesis-Enrichment, AgentPayloadService.
+3. **Quality Gate nur in Auto-Chain**: `isValidPhaseResult()` wird nur bei Chain-Dispatch geprüft, nicht bei manuellem Trigger (Weg A).
