@@ -73,4 +73,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('recherche.export.mayring');
     Route::get('recherche/{projekt}/mayring-stats', [ProjektExportController::class, 'mayringStats'])
         ->name('recherche.mayring.stats');
+
+    // Cluster Explorer
+    Route::get('recherche/{projekt}/galaxy', [\App\Http\Controllers\GalaxyController::class, 'show'])
+        ->middleware('can:view,projekt')
+        ->name('recherche.galaxy');
+
+    Route::get('recherche/{projekt}/galaxy-data', [\App\Http\Controllers\GalaxyDataController::class, 'show'])
+        ->middleware('can:view,projekt')
+        ->name('recherche.galaxy-data');
 });
