@@ -36,23 +36,32 @@ class GenerateGalaxyData extends Command
         }
 
         $outDir = public_path('galaxy-data');
-        $outFile = "{$outDir}/{$projektId}.json";
-        @mkdir($outDir, 0755, true);
+        $outFile = "{$outDir}/{$projekt->id}.json";
 
-        $python = config('galaxy.python_bin', 'python3');
-        $envFile = base_path('.env');
+        if (! is_dir($outDir) && ! mkdir($outDir, 0755, true) && ! is_dir($outDir)) {
+            $this->error("Output-Verzeichnis konnte nicht erstellt werden: {$outDir}");
+
+            return self::FAILURE;
+        }
+
+        $python = config('galaxy.python_bin');
+
+        // Set DB env vars for the Python subprocess (inherited via exec)
+        putenv('DB_HOST='.config('database.connections.pgsql.host', '127.0.0.1'));
+        putenv('DB_PORT='.config('database.connections.pgsql.port', 5432));
+        putenv('DB_DATABASE='.config('database.connections.pgsql.database', ''));
+        putenv('DB_USERNAME='.config('database.connections.pgsql.username', ''));
+        putenv('DB_PASSWORD='.config('database.connections.pgsql.password', ''));
 
         $cmd = sprintf(
-            '%s %s --projekt-id %s --out %s --env %s 2>&1',
+            '%s %s --projekt-id %s --out %s 2>&1',
             escapeshellarg($python),
             escapeshellarg($script),
-            escapeshellarg($projektId),
+            escapeshellarg($projekt->id),
             escapeshellarg($outFile),
-            escapeshellarg($envFile),
         );
 
         $this->info("Starte Galaxy-Generierung für Projekt {$projektId} ...");
-        $this->info("Command: {$cmd}");
 
         exec($cmd, $output, $exitCode);
 
