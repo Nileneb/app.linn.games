@@ -24,9 +24,12 @@ class GitHubAuthController extends Controller
             ->where('provider_id', $githubUser->getId())
             ->first();
 
-        // 2. Find by email → link account
-        if (! $user && $githubUser->getEmail()) {
-            $user = User::where('email', $githubUser->getEmail())->first();
+        // 2. Find by email → link account (only if GitHub email is verified)
+        $githubEmail = $githubUser->getEmail();
+        $emailVerified = (bool) ($githubUser->getRaw()['email_verified'] ?? false);
+
+        if (! $user && $githubEmail && $emailVerified) {
+            $user = User::where('email', $githubEmail)->first();
             if ($user) {
                 $user->update([
                     'provider' => 'github',
@@ -38,14 +41,13 @@ class GitHubAuthController extends Controller
         // 3. Create new waitlisted user
         if (! $user) {
             $user = User::create([
-                'name' => $githubUser->getName() ?? $githubUser->getNickname(),
-                'email' => $githubUser->getEmail(),
+                'name' => $githubUser->getName() ?? $githubUser->getNickname() ?? 'GitHub User',
+                'email' => $githubEmail,
                 'provider' => 'github',
                 'provider_id' => $githubUser->getId(),
                 'status' => 'waitlisted',
                 'password' => Str::random(40),
             ]);
-            $user->ensureDefaultWorkspace();
         }
 
         // 4. Not active → pending approval
