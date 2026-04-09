@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
 use App\Services\TransitionValidator;
@@ -8,7 +8,7 @@ use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Log;
 
 new class extends Component {
-    use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Phase Transition ---
     public bool $showOverrideForm = false;
@@ -306,9 +306,6 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    {{-- KI-Agent Trigger --}}
-    <x-phase-agent-trigger :phase-nr="2" :dispatched="$agentDispatched" />
-
     {{-- ═══ Review-Typ-Entscheidung ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
