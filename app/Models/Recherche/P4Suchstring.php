@@ -23,7 +23,7 @@ class P4Suchstring extends Model
         'gesetzte_filter',
         'treffer_anzahl',
         'einschaetzung',
-        'anpassung',
+        'aenderungs_grund',
         'version',
         'suchdatum',
     ];

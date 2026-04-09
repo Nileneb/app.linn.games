@@ -206,17 +206,7 @@ new class extends Component {
 
     {{-- Agent Result Display --}}
     @if ($latestAgentResult)
-        <div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
-            <h4 class="mb-2 flex items-center gap-2 text-sm font-semibold text-green-900 dark:text-green-100">
-                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                KI-Vorschlag ({{ $latestAgentResult->created_at->diffForHumans() }})
-            </h4>
-            <div class="prose prose-sm max-w-none dark:prose-invert">
-                {!! str($latestAgentResult->content)->markdown() !!}
-            </div>
-        </div>
+        <x-agent-suggestion :result="$latestAgentResult" />
     @endif
 
     {{-- KI-Agent Button --}}
@@ -280,7 +270,7 @@ new class extends Component {
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anpassung</label>
-                            <input wire:model="ss.anpassung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                            <input wire:model="ss.aenderungs_grund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                         </div>
                     </div>
                     @error('ss.datenbank') <p class="text-xs text-red-500">{{ $message }}</p> @enderror

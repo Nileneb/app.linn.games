@@ -44,6 +44,15 @@ new class extends Component {
         try {
             $messages = $this->buildContextMessages();
 
+            // Create pending record BEFORE dispatching so page reloads show the spinner
+            PhaseAgentResult::create([
+                'projekt_id'       => $this->projekt->id,
+                'user_id'          => auth()->id(),
+                'phase_nr'         => $this->phaseNr,
+                'agent_config_key' => $this->agentConfigKey,
+                'status'           => 'pending',
+            ]);
+
             ProcessPhaseAgentJob::dispatch(
                 $this->projekt->id,
                 $this->phaseNr,
