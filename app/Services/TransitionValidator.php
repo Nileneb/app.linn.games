@@ -13,17 +13,9 @@ use Illuminate\Support\Facades\Config;
  */
 class TransitionValidator
 {
-    private PhaseCountService $countService;
-
-    private LangdockAgentService $agentService;
-
     public function __construct(
-        PhaseCountService $countService,
-        LangdockAgentService $agentService,
-    ) {
-        $this->countService = $countService;
-        $this->agentService = $agentService;
-    }
+        private PhaseCountService $countService,
+    ) {}
 
     /**
      * Validiert einen Phase-Übergang
@@ -123,7 +115,7 @@ class TransitionValidator
 
     /**
      * Führt einen Agent-Check durch (z.B. Qualitätsprüfung)
-     * Diese Implementierung ist placeholder; real würde das über LangdockAgentService laufen
+     * Diese Implementierung ist placeholder; real würde das über ClaudeService laufen
      */
     private function performAgentCheck(Projekt $projekt, int $fromPhase, int $toPhase, array $counts): bool
     {

@@ -51,6 +51,29 @@ test('deduct zieht guthaben ab und erstellt transaktion', function () {
     expect($tx->agent_config_key)->toBe('search_agent');
 });
 
+test('deduct zieht input und output tokens separat ab', function () {
+    config([
+        'services.anthropic.price_per_1k_input_tokens_cents' => 1,
+        'services.anthropic.price_per_1k_output_tokens_cents' => 4,
+    ]);
+
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::create(['owner_id' => $user->id, 'name' => 'Test']);
+    \App\Models\WorkspaceUser::create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => 'owner']);
+    app(CreditService::class)->topUp($workspace, 10000);
+    $workspace = $workspace->fresh();
+
+    app(CreditService::class)->deduct($workspace, 1000, 'search_agent', 1000);
+
+    $tx = CreditTransaction::where('workspace_id', $workspace->id)
+        ->where('type', 'usage')
+        ->first();
+
+    // 1000 input = 1 Cent, 1000 output = 4 Cent → 5 Cent total
+    expect($tx->amount_cents)->toBe(-5);
+    expect($tx->tokens_used)->toBe(2000); // 1000 + 1000
+});
+
 test('assertHasBalance wirft exception wenn guthaben leer', function () {
     $workspace = makeWorkspace();
 
@@ -66,7 +89,7 @@ test('assertHasBalance wirft keine exception wenn guthaben vorhanden', function 
 });
 
 test('toCents berechnet korrekt bei konfigurierbarem preis', function () {
-    config(['services.langdock.price_per_1k_tokens_cents' => 2]);
+    config(['services.anthropic.price_per_1k_input_tokens_cents' => 2]);
     $service = app(CreditService::class);
 
     expect($service->toCents(1000))->toBe(2);
@@ -98,10 +121,13 @@ test('deduct mit 0 tokens erstellt keine transaktion', function () {
 // ─── Low-Balance-Warnung ───────────────────────────────────────────
 
 test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', function () {
-    config(['services.langdock.low_balance_threshold_percent' => 10]);
+    config([
+        'services.anthropic.low_balance_threshold_percent' => 10,
+        'services.anthropic.price_per_1k_input_tokens_cents' => 2,
+    ]);
     $workspace = makeWorkspace(1000);
 
-    // Verbrauche 950 von 1000 → 5% übrig
+    // Verbrauche 950 von 1000 → 5% übrig (475000 tokens * 2 Cent/1k = 950 Cent)
     app(CreditService::class)->deduct($workspace->fresh(), 475000, 'test_agent');
 
     $result = app(CreditService::class)->checkLowBalance($workspace->fresh());
@@ -109,10 +135,13 @@ test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', func
 });
 
 test('checkLowBalance gibt false zurück wenn guthaben über schwellenwert', function () {
-    config(['services.langdock.low_balance_threshold_percent' => 10]);
+    config([
+        'services.anthropic.low_balance_threshold_percent' => 10,
+        'services.anthropic.price_per_1k_input_tokens_cents' => 2,
+    ]);
     $workspace = makeWorkspace(1000);
 
-    // Verbrauche nur 100 von 1000 → 90% übrig
+    // Verbrauche nur 100 von 1000 → 90% übrig (50000 tokens * 2 Cent/1k = 100 Cent)
     app(CreditService::class)->deduct($workspace->fresh(), 50000, 'test_agent');
 
     $result = app(CreditService::class)->checkLowBalance($workspace->fresh());
@@ -128,10 +157,13 @@ test('checkLowBalance gibt false zurück wenn kein topup vorhanden', function ()
 // ─── Tageslimit pro Agent ──────────────────────────────────────────
 
 test('assertAgentDailyLimit wirft exception wenn tageslimit überschritten', function () {
-    config(['services.langdock.agent_daily_limits.test_agent' => 100]);
+    config([
+        'services.anthropic.agent_daily_limits.test_agent' => 100,
+        'services.anthropic.price_per_1k_input_tokens_cents' => 2,
+    ]);
     $workspace = makeWorkspace(10000);
 
-    // Erste Nutzung: 80 cents → OK
+    // Erste Nutzung: 80 cents → OK (40000 tokens * 2 Cent/1k = 80 Cent)
     app(CreditService::class)->deduct($workspace->fresh(), 40000, 'test_agent');
 
     // Zweite Nutzung: nochmal 80 cents → 160 total > 100 Limit
@@ -140,7 +172,7 @@ test('assertAgentDailyLimit wirft exception wenn tageslimit überschritten', fun
 });
 
 test('assertAgentDailyLimit erlaubt nutzung wenn kein limit konfiguriert', function () {
-    config(['services.langdock.agent_daily_limits.unlimited_agent' => 0]);
+    config(['services.anthropic.agent_daily_limits.unlimited_agent' => 0]);
     $workspace = makeWorkspace(10000);
 
     // Kein Limit → sollte durchgehen
@@ -150,7 +182,7 @@ test('assertAgentDailyLimit erlaubt nutzung wenn kein limit konfiguriert', funct
 });
 
 test('assertAgentDailyLimit zählt nur heutige ausgaben', function () {
-    config(['services.langdock.agent_daily_limits.daily_agent' => 500]);
+    config(['services.anthropic.agent_daily_limits.daily_agent' => 500]);
     $workspace = makeWorkspace(10000);
 
     // Gestern: 400 cents ausgegeben
@@ -228,4 +260,21 @@ test('usageSummary gibt leeres array zurück wenn keine nutzung', function () {
     $workspace = makeWorkspace(1000);
     $summary = app(CreditService::class)->usageSummary($workspace);
     expect($summary)->toBe([]);
+});
+
+// ─── Input/Output Pricing ──────────────────────────────────────────
+
+test('toCents berechnet input und output separat', function () {
+    config([
+        'services.anthropic.price_per_1k_input_tokens_cents' => 1,
+        'services.anthropic.price_per_1k_output_tokens_cents' => 4,
+    ]);
+    $service = app(CreditService::class);
+
+    // 1000 input = 1 Cent, 1000 output = 4 Cent → 5 total
+    expect($service->toCents(1000, 1000))->toBe(5);
+    // 0 output → nur input
+    expect($service->toCents(1000, 0))->toBe(1);
+    // ceil: 1 token input → 1 Cent minimum
+    expect($service->toCents(1, 0))->toBe(1);
 });

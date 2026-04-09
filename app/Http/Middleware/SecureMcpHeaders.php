@@ -20,10 +20,10 @@ class SecureMcpHeaders
         // Prevent CSRF attacks
         $response->header('X-CSRF-Token', csrf_token());
 
-        // Content Security Policy - restrict to same origin + our Langdock MCP
+        // Content Security Policy - restrict to same origin + Claude API
         $response->header(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.langdock.com;",
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.anthropic.com;",
         );
 
         // Prevent MIME-sniffing

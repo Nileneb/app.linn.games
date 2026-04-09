@@ -1,26 +1,31 @@
 <?php
 
 use App\Actions\SendAgentMessage;
+use App\Services\ClaudeAgentException;
+use App\Services\ClaudeService;
 use App\Services\InsufficientCreditsException;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
-    // api_key is provided via LANGDOCK_API_KEY in phpunit.xml
-    Config::set('services.langdock.search_agent', 'search-uuid');
+    Config::set('services.anthropic.api_key', 'test-key');
+    Config::set('services.anthropic.agents.search_agent', 'search-agent.md');
+    Config::set('services.anthropic.model', 'claude-haiku-4-5-20251001');
+    Config::set('services.anthropic.max_tokens', 8192);
 });
 
 test('execute gibt erfolg mit content zurueck', function () {
-    Http::fake([
-        '*' => Http::response([
-            'messages' => [['id' => 'r-1', 'role' => 'assistant', 'content' => 'KI-Antwort']],
-        ], 200),
-    ]);
+    $mockService = Mockery::mock(ClaudeService::class);
+    $mockService->shouldReceive('callByConfigKey')
+        ->once()
+        ->andReturn([
+            'content' => 'KI-Antwort',
+            'raw' => ['id' => 'msg-1'],
+            'tokens_used' => 42,
+        ]);
 
-    $result = app(SendAgentMessage::class)->execute('search_agent', [
+    $action = new SendAgentMessage($mockService);
+    $result = $action->execute('search_agent', [
         ['role' => 'user', 'content' => 'Frage'],
     ]);
 
@@ -30,7 +35,7 @@ test('execute gibt erfolg mit content zurueck', function () {
 });
 
 test('execute gibt fehlermeldung bei insufficient credits', function () {
-    $mockService = Mockery::mock(LangdockAgentService::class);
+    $mockService = Mockery::mock(ClaudeService::class);
     $mockService->shouldReceive('callByConfigKey')
         ->andThrow(new InsufficientCreditsException);
 
@@ -41,10 +46,10 @@ test('execute gibt fehlermeldung bei insufficient credits', function () {
     expect($result['content'])->toContain('Guthaben');
 });
 
-test('execute gibt fehlermeldung bei langdock api fehler', function () {
-    $mockService = Mockery::mock(LangdockAgentService::class);
+test('execute gibt fehlermeldung bei claude agent fehler', function () {
+    $mockService = Mockery::mock(ClaudeService::class);
     $mockService->shouldReceive('callByConfigKey')
-        ->andThrow(new LangdockAgentException('API Error'));
+        ->andThrow(new ClaudeAgentException('API Error'));
 
     $action = new SendAgentMessage($mockService);
     $result = $action->execute('search_agent', [['role' => 'user', 'content' => 'Test']]);
@@ -56,7 +61,7 @@ test('execute gibt fehlermeldung bei langdock api fehler', function () {
 test('execute gibt fehlermeldung bei unerwarteter exception', function () {
     Log::spy();
 
-    $mockService = Mockery::mock(LangdockAgentService::class);
+    $mockService = Mockery::mock(ClaudeService::class);
     $mockService->shouldReceive('callByConfigKey')
         ->andThrow(new \RuntimeException('Connection refused'));
 

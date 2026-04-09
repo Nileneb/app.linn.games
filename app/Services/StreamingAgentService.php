@@ -8,40 +8,24 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Streams chat-agent responses as Server-Sent Events (SSE).
  *
- * Verwendet LangdockMcpClient für echtes SSE-Streaming direkt vom Langdock-API-Server.
- * ContextProvider baut die Messages inkl. System-Message und RAG-Kontext.
- * Nach vollständigem Stream wird das Gespräch via AgentResultStorageService persistiert.
- *
- * Aufruf:
- *   $service = app(StreamingAgentService::class);
- *   return $service->stream($agentId, $messages, $timeout, $context);
+ * Verwendet ClaudeService für synchrone API-Aufrufe, sendet den Response
+ * in 100-Zeichen-Chunks als SSE. ContextProvider baut die Messages inkl.
+ * System-Message und RAG-Kontext. Nach vollständigem Stream wird das
+ * Gespräch via AgentResultStorageService persistiert.
  *
  * SSE-Format (Browser-Seite):
  *   data: {"chunk":"Hallo","index":0,"type":"content"}\n\n
- *   data: {"chunk":" ","index":1,"type":"content"}\n\n
  *   ...
  *   data: {"status":"done","total_chars":42,"type":"complete"}\n\n
  */
 class StreamingAgentService
 {
     public function __construct(
-        private readonly LangdockMcpClient $mcpClient,
+        private readonly ClaudeService $claudeService,
         private readonly ContextProvider $contextProvider,
         private readonly AgentResultStorageService $storageService,
     ) {}
 
-    /**
-     * Streamt die Agent-Antwort als echtes SSE via LangdockMcpClient.
-     *
-     * @param  string  $agentId  Langdock Agent-ID
-     * @param  array  $messages  Nachrichten-Array [['role' => '...', 'content' => '...']]
-     *                           Muss die aktuelle User-Frage als letzte User-Message enthalten.
-     * @param  int  $timeout  Wird nicht mehr an den API-Call weitergegeben — der MCP-Client
-     *                        verwaltet eigene Timeouts (connect: 10s, read: 120s).
-     *                        Bleibt für Signatur-Kompatibilität mit StreamingMcpController erhalten.
-     * @param  array  $context  Optionaler Kontext. Für ContextProvider + Chat-Persistierung werden
-     *                          folgende Keys ausgewertet: projekt_id, workspace_id, user_id.
-     */
     public function stream(
         string $agentId,
         array $messages,
@@ -52,26 +36,25 @@ class StreamingAgentService
             function () use ($agentId, $messages, $context): void {
                 try {
                     $builtMessages = $this->buildMessages($messages, $context);
-                    $fullText = '';
+
+                    // Claude API synchron aufrufen (echtes Token-Streaming kommt in Spec 2)
+                    $result = $this->claudeService->callByConfigKey(
+                        $agentId,
+                        $builtMessages,
+                        $context,
+                    );
+
+                    $fullText = $result['content'];
                     $index = 0;
 
-                    // Echtes Streaming: Generator yieldet pro SSE-Chunk ['text' => string, 'raw' => array]
-                    foreach ($this->mcpClient->streamChatCompletion($builtMessages, $agentId) as $chunk) {
-                        $text = $chunk['text'] ?? '';
-
-                        if ($text === '') {
-                            continue;
-                        }
-
-                        $fullText .= $text;
-
+                    // Text chunk-weise senden (simuliertes Streaming, 100 Zeichen pro Chunk)
+                    foreach (str_split($fullText, 100) as $chunk) {
                         $this->sendChunk([
-                            'chunk' => $text,
+                            'chunk' => $chunk,
                             'index' => $index++,
                             'type' => 'content',
                         ]);
-
-                        // Jeden Chunk sofort an den Browser senden
+                        ob_flush();
                         flush();
                     }
 
@@ -85,8 +68,8 @@ class StreamingAgentService
                     // Chat persistieren (nur wenn Projekt-Kontext vorhanden)
                     $this->persistChat($fullText, $messages, $context);
 
-                } catch (LangdockConnectionException $e) {
-                    Log::error('StreamingAgentService: MCP-Streaming fehlgeschlagen', [
+                } catch (ClaudeAgentException $e) {
+                    Log::error('StreamingAgentService: Claude-Agent fehlgeschlagen', [
                         'agent_id' => $agentId,
                         'error' => $e->getMessage(),
                     ]);
@@ -96,6 +79,17 @@ class StreamingAgentService
                         'error' => $e->getMessage(),
                         'type' => 'error',
                     ]);
+                } catch (\Throwable $e) {
+                    Log::error('StreamingAgentService: Unerwarteter Fehler', [
+                        'agent_id' => $agentId,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    $this->sendChunk([
+                        'status' => 'error',
+                        'error' => 'Interner Fehler',
+                        'type' => 'error',
+                    ]);
                 }
             },
             200,
@@ -103,7 +97,7 @@ class StreamingAgentService
                 'Content-Type' => 'text/event-stream',
                 'Cache-Control' => 'no-cache',
                 'Connection' => 'keep-alive',
-                'X-Accel-Buffering' => 'no', // Nginx-Buffering deaktivieren
+                'X-Accel-Buffering' => 'no',
             ],
         );
     }
