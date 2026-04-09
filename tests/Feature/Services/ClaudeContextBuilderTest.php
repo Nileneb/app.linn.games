@@ -161,3 +161,70 @@ test('build phase 2 ohne kriterien enthält keinen p1Kriterien-Block', function 
 
     expect($result)->not->toContain('P1-Kriterien');
 });
+
+test('build enthält p3 datenbanken bei phase 4', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    \App\Models\Recherche\P3Datenbankmatrix::create([
+        'projekt_id' => $projekt->id,
+        'datenbank' => 'PubMed',
+        'disziplin' => 'Medizin',
+        'empfohlen' => true,
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 4,
+    ]);
+
+    expect($result)
+        ->toContain('P3-Datenbanken')
+        ->toContain('PubMed')
+        ->toContain('Medizin')
+        ->toContain('Ja');
+});
+
+test('build enthält p4 suchstrings bei phase 5', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    \App\Models\Recherche\P4Suchstring::create([
+        'projekt_id' => $projekt->id,
+        'datenbank' => 'PubMed',
+        'suchstring' => '("artificial intelligence" OR "machine learning") AND nursing',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 5,
+    ]);
+
+    expect($result)
+        ->toContain('P4-Suchstrings')
+        ->toContain('PubMed')
+        ->toContain('artificial intelligence');
+});
+
+test('build phase 6 enthält screening count ohne relation-guard', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    $treffer = \App\Models\Recherche\P5Treffer::create([
+        'projekt_id' => $projekt->id,
+        'record_id' => 'REC-SCREEN-01',
+        'titel' => 'Eingeschlossene Studie',
+    ]);
+
+    \App\Models\Recherche\P5ScreeningEntscheidung::create([
+        'treffer_id' => $treffer->id,
+        'level' => 'L1_titel_abstract',
+        'entscheidung' => 'eingeschlossen',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 6,
+    ]);
+
+    expect($result)
+        ->toContain('P5-Screening')
+        ->toContain('1 eingeschlossene Treffer');
+});

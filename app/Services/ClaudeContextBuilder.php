@@ -108,7 +108,7 @@ class ClaudeContextBuilder
             $lines[] = '| Name | Disziplin | Empfohlen |';
             $lines[] = '|------|-----------|-----------|';
             foreach ($projekt->p3Datenbankmatrix as $db) {
-                $lines[] = "| {$db->datenbank_name} | {$db->disziplin} | ".($db->empfohlen ? 'Ja' : 'Nein').' |';
+                $lines[] = "| {$db->datenbank} | {$db->disziplin} | ".($db->empfohlen ? 'Ja' : 'Nein').' |';
             }
             $lines[] = '';
         }
@@ -116,7 +116,7 @@ class ClaudeContextBuilder
         if ($phaseNr >= 5 && $projekt->relationLoaded('p4Suchstrings') && $projekt->p4Suchstrings->isNotEmpty()) {
             $lines[] = '### P4-Suchstrings';
             foreach ($projekt->p4Suchstrings as $s) {
-                $lines[] = "- **{$s->datenbank}** ({$s->suchstring_typ}): `{$s->suchstring_text}`";
+                $lines[] = "- **{$s->datenbank}**: `{$s->suchstring}`";
             }
             $lines[] = '';
         }
@@ -129,7 +129,7 @@ class ClaudeContextBuilder
             }
         }
 
-        if ($phaseNr >= 6 && $projekt->relationLoaded('p5Treffer')) {
+        if ($phaseNr >= 6) {
             $eingeschlossen = $projekt->p5Treffer()
                 ->whereHas('screeningEntscheidungen', fn ($q) => $q->where('entscheidung', 'eingeschlossen'))
                 ->count();
