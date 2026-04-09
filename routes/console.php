@@ -12,6 +12,7 @@ Artisan::addCommands([
     \App\Console\Commands\BackupExport::class,
     \App\Console\Commands\BackupImport::class,
     \App\Console\Commands\CleanupExpiredInvitations::class,
+    \App\Console\Commands\GenerateGalaxyData::class,
     \App\Console\Commands\Langdock\ApplyInstructionPatchFromExport::class,
     \App\Console\Commands\Langdock\GenerateFleetMapFromExport::class,
 ]);
