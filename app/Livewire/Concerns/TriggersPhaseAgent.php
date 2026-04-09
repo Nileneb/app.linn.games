@@ -45,9 +45,18 @@ trait TriggersPhaseAgent
                 ['role' => 'user', 'content' => $userPrompt],
             ];
 
-            // Call agent
+            // Kontext für RLS-Bootstrap aufbauen: projekt_id, workspace_id, user_id, phase_nr
+            // user_id = aktuell eingeloggter Nutzer (nicht Projekt-Ersteller) — Issue #154
+            $context = [
+                'projekt_id'   => $this->projekt->id,
+                'workspace_id' => $this->projekt->workspace_id,
+                'user_id'      => auth()->id(),
+                'phase_nr'     => $phaseNr,
+            ];
+
+            // Agent aufrufen mit Kontext, damit LangdockContextInjector SET LOCAL injizieren kann
             $sendAgent = app(SendAgentMessage::class);
-            $result = $sendAgent->execute($configKey, $messages, 120);
+            $result = $sendAgent->execute($configKey, $messages, 120, $context);
 
             if (!$result['success']) {
                 Log::warning('Agent execution failed', [
