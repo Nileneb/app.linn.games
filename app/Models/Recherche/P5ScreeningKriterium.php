@@ -11,6 +11,7 @@ class P5ScreeningKriterium extends Model
     use HasUuids;
 
     protected $table = 'p5_screening_kriterien';
+
     public $timestamps = false;
 
     protected $fillable = [

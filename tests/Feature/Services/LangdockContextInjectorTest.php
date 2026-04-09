@@ -3,7 +3,7 @@
 use App\Services\LangdockContextInjector;
 
 test('inject validates projekt_id as valid uuid format', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -16,7 +16,7 @@ test('inject validates projekt_id as valid uuid format', function () {
 });
 
 test('inject throws InvalidArgumentException for invalid projekt_id', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     try {
@@ -29,7 +29,7 @@ test('inject throws InvalidArgumentException for invalid projekt_id', function (
 });
 
 test('inject throws InvalidArgumentException for invalid workspace_id', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     try {
@@ -41,7 +41,7 @@ test('inject throws InvalidArgumentException for invalid workspace_id', function
 });
 
 test('inject throws InvalidArgumentException for invalid user_id format', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     // Should fail: not numeric, not UUID, not a simple string like "abc"
@@ -54,7 +54,7 @@ test('inject throws InvalidArgumentException for invalid user_id format', functi
 });
 
 test('inject accepts numeric user_id (like User auto-increment ID)', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     // Realistic: both projekt_id (UUID) and user_id (numeric, from User model)
@@ -72,7 +72,7 @@ test('inject accepts numeric user_id (like User auto-increment ID)', function ()
 });
 
 test('inject accepts uuid user_id as well', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     // UUID format
@@ -84,7 +84,7 @@ test('inject accepts uuid user_id as well', function () {
 });
 
 test('inject accepts null values as optional context fields', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $result = $injector->inject($messages, ['projekt_id' => null, 'workspace_id' => null, 'user_id' => null]);
@@ -94,7 +94,7 @@ test('inject accepts null values as optional context fields', function () {
 });
 
 test('inject rejects sql injection attempts in projekt_id', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $malicious = "'; DROP TABLE users; --";
@@ -109,7 +109,7 @@ test('inject rejects sql injection attempts in projekt_id', function () {
 });
 
 test('inject works with multiple valid uuids', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $projektId = '550e8400-e29b-41d4-a716-446655440000';
@@ -123,7 +123,7 @@ test('inject works with multiple valid uuids', function () {
 });
 
 test('inject correctly formats sql set statement with valid uuid', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -135,7 +135,7 @@ test('inject correctly formats sql set statement with valid uuid', function () {
 });
 
 test('inject includes phase-specific schema for phase 1', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -152,7 +152,7 @@ test('inject includes phase-specific schema for phase 1', function () {
 });
 
 test('inject includes phase-specific schema for all phases 1-8', function (int $phaseNr, array $expectedTables) {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -175,7 +175,7 @@ test('inject includes phase-specific schema for all phases 1-8', function (int $
 ]);
 
 test('inject omits phase schema when phase_nr is not provided', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';
@@ -187,7 +187,7 @@ test('inject omits phase schema when phase_nr is not provided', function () {
 });
 
 test('inject includes write instruction with phase schema', function () {
-    $injector = new LangdockContextInjector();
+    $injector = new LangdockContextInjector;
     $messages = [['id' => 'msg1', 'role' => 'user', 'parts' => [['type' => 'text', 'text' => 'Hello']]]];
 
     $validUuid = '550e8400-e29b-41d4-a716-446655440000';

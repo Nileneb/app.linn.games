@@ -23,8 +23,8 @@ class CreditTransaction extends Model
 
     protected $casts = [
         'amount_cents' => 'integer',
-        'tokens_used'  => 'integer',
-        'created_at'   => 'datetime',
+        'tokens_used' => 'integer',
+        'created_at' => 'datetime',
     ];
 
     public function workspace(): BelongsTo

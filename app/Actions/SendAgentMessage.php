@@ -32,22 +32,25 @@ class SendAgentMessage
             return [
                 'success' => true,
                 'content' => $response['content'],
-                'raw'     => $response['raw'],
+                'raw' => $response['raw'],
             ];
         } catch (InsufficientCreditsException) {
             return ['success' => false, 'content' => __('Guthaben aufgebraucht. Bitte den Admin kontaktieren.')];
         } catch (AgentDailyLimitExceededException $e) {
             Log::warning('Agent daily limit exceeded', ['key' => $configKey, 'message' => $e->getMessage()]);
+
             return ['success' => false, 'content' => __('Tageslimit für diesen Agenten erreicht. Bitte morgen erneut versuchen.')];
         } catch (LangdockAgentException $e) {
             Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
+
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
         } catch (\Throwable $e) {
             Log::error('SendAgentMessage: unerwartete Exception', [
-                'key'       => $configKey,
+                'key' => $configKey,
                 'exception' => $e::class,
-                'message'   => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
+
             return ['success' => false, 'content' => __('Verbindung fehlgeschlagen. Bitte versuche es später erneut.')];
         }
     }

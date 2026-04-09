@@ -46,7 +46,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p5_screening_kriterien ADD COLUMN level screening_level NOT NULL, ADD COLUMN kriterium_typ kriterium_typ NOT NULL");
+            DB::statement('ALTER TABLE p5_screening_kriterien ADD COLUMN level screening_level NOT NULL, ADD COLUMN kriterium_typ kriterium_typ NOT NULL');
         }
 
         // p5_treffer – central hit table
@@ -93,7 +93,7 @@ return new class extends Migration
                 $table->foreign('treffer_id')->references('id')->on('p5_treffer')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p5_screening_entscheidungen ADD COLUMN level screening_level NOT NULL, ADD COLUMN entscheidung screening_entscheidung NOT NULL");
+            DB::statement('ALTER TABLE p5_screening_entscheidungen ADD COLUMN level screening_level NOT NULL, ADD COLUMN entscheidung screening_entscheidung NOT NULL');
         }
 
         // p5_tool_entscheidung – uses tool_empfehlung ENUM
@@ -106,7 +106,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p5_tool_entscheidung ADD COLUMN tool tool_empfehlung NOT NULL");
+            DB::statement('ALTER TABLE p5_tool_entscheidung ADD COLUMN tool tool_empfehlung NOT NULL');
         }
     }
 

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Actions\ExportProjectAction;
 use App\Models\Recherche\Projekt;
 use App\Services\MayringSnippetService;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -47,7 +46,7 @@ class ProjektExportController extends Controller
 
         return response($markdown, 200, [
             'Content-Type' => 'text/markdown; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"mayring-{$projekt->id}-" . now()->format('Y-m-d-His') . ".md\"",
+            'Content-Disposition' => "attachment; filename=\"mayring-{$projekt->id}-".now()->format('Y-m-d-His').'.md"',
         ]);
     }
 

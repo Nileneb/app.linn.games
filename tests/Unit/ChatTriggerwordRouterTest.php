@@ -3,7 +3,7 @@
 use App\Services\ChatTriggerwordRouter;
 
 test('it falls back when no trigger is present', function () {
-    $router = new ChatTriggerwordRouter();
+    $router = new ChatTriggerwordRouter;
 
     $r = $router->route('Hello world');
 
@@ -13,7 +13,7 @@ test('it falls back when no trigger is present', function () {
 });
 
 test('it routes mapping trigger and extracts projekt uuid', function () {
-    $router = new ChatTriggerwordRouter();
+    $router = new ChatTriggerwordRouter;
 
     $r = $router->route('@mapping 123e4567-e89b-12d3-a456-426614174000 Meine Frage');
 
@@ -24,7 +24,7 @@ test('it routes mapping trigger and extracts projekt uuid', function () {
 });
 
 test('it keeps second token as message when not a uuid', function () {
-    $router = new ChatTriggerwordRouter();
+    $router = new ChatTriggerwordRouter;
 
     $r = $router->route('@review not-a-uuid Screen this');
 
@@ -34,7 +34,7 @@ test('it keeps second token as message when not a uuid', function () {
 });
 
 test('it routes evaluation trigger', function () {
-    $router = new ChatTriggerwordRouter();
+    $router = new ChatTriggerwordRouter;
 
     $r = $router->route('@bewertung 123e4567-e89b-12d3-a456-426614174000 Bitte bewerte RoB2');
 

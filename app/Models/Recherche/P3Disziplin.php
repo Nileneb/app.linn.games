@@ -11,6 +11,7 @@ class P3Disziplin extends Model
     use HasUuids;
 
     protected $table = 'p3_disziplinen';
+
     public $timestamps = false;
 
     protected $fillable = [

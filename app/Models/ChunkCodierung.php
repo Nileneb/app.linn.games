@@ -37,19 +37,19 @@ class ChunkCodierung extends Model
     public function markCompleted(array $parsed): void
     {
         $this->update([
-            'status'          => 'completed',
-            'paraphrase'      => $parsed['paraphrase'] ?? null,
+            'status' => 'completed',
+            'paraphrase' => $parsed['paraphrase'] ?? null,
             'generalisierung' => $parsed['generalisierung'] ?? null,
-            'reduktion'       => $parsed['reduktion'] ?? null,
-            'kategorie'       => $parsed['kategorie'] ?? null,
-            'error_message'   => null,
+            'reduktion' => $parsed['reduktion'] ?? null,
+            'kategorie' => $parsed['kategorie'] ?? null,
+            'error_message' => null,
         ]);
     }
 
     public function markFailed(string $errorMessage): void
     {
         $this->update([
-            'status'        => 'failed',
+            'status' => 'failed',
             'error_message' => $errorMessage,
         ]);
     }

@@ -35,7 +35,7 @@ return new class extends Migration
             $table->index(['source', 'paper_id']);
         });
 
-        DB::statement("ALTER TABLE papers ADD COLUMN erstellt_am timestamptz DEFAULT now()");
+        DB::statement('ALTER TABLE papers ADD COLUMN erstellt_am timestamptz DEFAULT now()');
 
         // Gate-Query-Indizes (fehlen in Original-Migrationen)
         DB::statement('CREATE INDEX IF NOT EXISTS idx_p4_suchstrings_projekt ON p4_suchstrings(projekt_id)');

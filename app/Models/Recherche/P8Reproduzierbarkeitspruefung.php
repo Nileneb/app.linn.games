@@ -11,6 +11,7 @@ class P8Reproduzierbarkeitspruefung extends Model
     use HasUuids;
 
     protected $table = 'p8_reproduzierbarkeitspruefung';
+
     public $timestamps = false;
 
     protected $fillable = [

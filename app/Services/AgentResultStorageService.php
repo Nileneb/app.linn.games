@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Jobs\IngestAgentResultJob;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Stores agent responses as Markdown files for data separation & compliance.
@@ -27,7 +26,7 @@ class AgentResultStorageService
      * @param  int  $phaseNumber  Phase number (1-8)
      * @param  array  $response  Agent response with 'content' and 'raw' keys
      * @param  ?string  $agentName  Name/ID of agent (optional, for filename)
-     * @return string  Relative file path
+     * @return string Relative file path
      */
     public function saveResult(
         string $workspaceId,
@@ -50,11 +49,11 @@ class AgentResultStorageService
     /**
      * Save a chat protocol as a Markdown file and dispatch embedding ingest.
      *
-     * @param  string  $content     Raw chat content (Markdown-formatted conversation)
-     * @param  string  $workspaceId UUID of workspace
-     * @param  string  $userId      User ID (string)
-     * @param  string  $projektId   UUID or slug of project
-     * @return string  Relative file path within storage/app/
+     * @param  string  $content  Raw chat content (Markdown-formatted conversation)
+     * @param  string  $workspaceId  UUID of workspace
+     * @param  string  $userId  User ID (string)
+     * @param  string  $projektId  UUID or slug of project
+     * @return string Relative file path within storage/app/
      */
     public function storeChat(
         string $content,
@@ -74,7 +73,7 @@ class AgentResultStorageService
     /**
      * Read agent result from file
      *
-     * @return string|null  File content or null if not found
+     * @return string|null File content or null if not found
      */
     public function readResult(
         string $workspaceId,
@@ -95,7 +94,7 @@ class AgentResultStorageService
     /**
      * List all result files for a project
      *
-     * @return array  List of file paths
+     * @return array List of file paths
      */
     public function listResults(
         string $workspaceId,
@@ -187,7 +186,8 @@ class AgentResultStorageService
     /**
      * Format response as Markdown document
      */
-    protected function formatAsMarkdown(array $response, ?string $agentName = null): string {
+    protected function formatAsMarkdown(array $response, ?string $agentName = null): string
+    {
         $content = $response['content'] ?? '';
         $raw = $response['raw'] ?? [];
 

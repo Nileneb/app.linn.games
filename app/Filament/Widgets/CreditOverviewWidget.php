@@ -27,11 +27,11 @@ class CreditOverviewWidget extends BaseWidget
         $runningResearch = Projekt::where('status', '!=', 'completed')->count();
 
         return [
-            Stat::make('Gesamtguthaben', number_format($totalBalance / 100, 2, ',', '.') . ' €')
+            Stat::make('Gesamtguthaben', number_format($totalBalance / 100, 2, ',', '.').' €')
                 ->description('Verfügbares Guthaben')
                 ->color($totalBalance <= 0 ? 'danger' : 'success')
                 ->icon('heroicon-o-banknotes'),
-            Stat::make('Verbrauch (30 Tage)', number_format(abs($usageLast30d) / 100, 2, ',', '.') . ' €')
+            Stat::make('Verbrauch (30 Tage)', number_format(abs($usageLast30d) / 100, 2, ',', '.').' €')
                 ->description('Gesamter Kostenaufwand')
                 ->color('warning')
                 ->icon('heroicon-o-arrow-trending-up'),

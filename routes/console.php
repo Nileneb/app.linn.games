@@ -28,9 +28,9 @@ Artisan::command('deploy:ensure-admin', function () {
     $user = User::firstOrCreate(
         ['email' => $email],
         [
-            'name'     => 'Bene',
+            'name' => 'Bene',
             'password' => bcrypt(bin2hex(random_bytes(32))),
-            'status'   => 'active',
+            'status' => 'active',
         ],
     );
 
@@ -49,14 +49,15 @@ Artisan::command('deploy:ensure-admin', function () {
 
 Artisan::command('deploy:ensure-workspace', function () {
     $email = 'bene@linn.games';
-    $user  = User::where('email', $email)->first();
+    $user = User::where('email', $email)->first();
 
     if (! $user) {
         $this->warn("User {$email} nicht gefunden. Zuerst deploy:ensure-admin ausführen.");
+
         return 1;
     }
 
-    $workspace    = $user->ensureDefaultWorkspace();
+    $workspace = $user->ensureDefaultWorkspace();
     $starterCents = (int) config('services.credits.starter_amount_cents', 100);
 
     if ($workspace->credits_balance_cents <= 0 && $starterCents > 0) {
@@ -69,12 +70,13 @@ Artisan::command('deploy:ensure-workspace', function () {
 })->purpose('Ensure default workspace with starter credits exists');
 
 Artisan::command('deploy:send-reset-link', function () {
-    $email  = 'bene@linn.games';
+    $email = 'bene@linn.games';
     $broker = Password::broker();
-    $user   = $broker->getUser(['email' => $email]);
+    $user = $broker->getUser(['email' => $email]);
 
     if (! $user) {
         $this->warn("User {$email} nicht gefunden für Password-Reset.");
+
         return 1;
     }
 

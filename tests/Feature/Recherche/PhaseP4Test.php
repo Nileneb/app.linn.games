@@ -1,6 +1,9 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P4Suchstring, P4ThesaurusMapping, P4Anpassungsprotokoll};
+use App\Models\Recherche\P4Anpassungsprotokoll;
+use App\Models\Recherche\P4Suchstring;
+use App\Models\Recherche\P4ThesaurusMapping;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

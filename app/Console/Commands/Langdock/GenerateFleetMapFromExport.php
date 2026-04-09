@@ -21,11 +21,13 @@ class GenerateFleetMapFromExport extends Command
         $exportPath = (string) ($this->option('export') ?? '');
         if ($exportPath === '') {
             $this->error('Missing --export=...');
+
             return self::FAILURE;
         }
 
         if (! is_file($exportPath)) {
             $this->error("Export file not found: {$exportPath}");
+
             return self::FAILURE;
         }
 
@@ -36,12 +38,14 @@ class GenerateFleetMapFromExport extends Command
 
         if (! is_dir($outDir)) {
             $this->error("Output directory not found: {$outDir}");
+
             return self::FAILURE;
         }
 
         $format = strtolower((string) ($this->option('format') ?? 'both'));
         if (! in_array($format, ['md', 'json', 'both'], true)) {
             $this->error('Invalid --format. Allowed: md|json|both');
+
             return self::FAILURE;
         }
 
@@ -50,12 +54,14 @@ class GenerateFleetMapFromExport extends Command
 
         if (! is_array($json)) {
             $this->error('Export file is not valid JSON.');
+
             return self::FAILURE;
         }
 
         $items = $json['items'] ?? null;
         if (! is_array($items)) {
             $this->error('Export JSON missing items[].');
+
             return self::FAILURE;
         }
 
@@ -90,9 +96,9 @@ class GenerateFleetMapFromExport extends Command
         $now = Carbon::now('UTC');
         $stamp = $now->format('Ymd-His');
 
-        $baseName = 'langdock-fleet-map-' . $stamp;
-        $mdPath = rtrim($outDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $baseName . '.md';
-        $jsonPath = rtrim($outDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $baseName . '.json';
+        $baseName = 'langdock-fleet-map-'.$stamp;
+        $mdPath = rtrim($outDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$baseName.'.md';
+        $jsonPath = rtrim($outDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$baseName.'.json';
 
         $payload = [
             'generated_at' => $now->toIso8601String(),
@@ -107,7 +113,7 @@ class GenerateFleetMapFromExport extends Command
         if ($format === 'json' || $format === 'both') {
             file_put_contents(
                 $jsonPath,
-                json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n",
+                json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)."\n",
             );
         }
 
@@ -115,12 +121,12 @@ class GenerateFleetMapFromExport extends Command
             $md = [];
             $md[] = '# Langdock Fleet Map (aus Export abgeleitet)';
             $md[] = '';
-            $md[] = '- generated_at: ' . $payload['generated_at'];
-            $md[] = '- source_export: ' . $exportPath;
+            $md[] = '- generated_at: '.$payload['generated_at'];
+            $md[] = '- source_export: '.$exportPath;
             $md[] = '';
             $md[] = '## Triggerwords';
-            $md[] = '- Syntax: ' . $payload['triggerwords']['syntax'];
-            $md[] = '- Hinweis: ' . $payload['triggerwords']['note'];
+            $md[] = '- Syntax: '.$payload['triggerwords']['syntax'];
+            $md[] = '- Hinweis: '.$payload['triggerwords']['note'];
             $md[] = '';
             $md[] = '## Agents';
             $md[] = '| config_key | agent_id | found | name | triggerwords |';
@@ -128,7 +134,7 @@ class GenerateFleetMapFromExport extends Command
 
             foreach ($rows as $row) {
                 $agentId = (string) $row['agent_id'];
-                $agentId = Str::isUuid($agentId) ? $agentId : ('(invalid) ' . $agentId);
+                $agentId = Str::isUuid($agentId) ? $agentId : ('(invalid) '.$agentId);
                 $triggers = $row['triggerwords'] !== [] ? implode(', ', $row['triggerwords']) : '-';
 
                 $md[] = sprintf(
@@ -146,15 +152,15 @@ class GenerateFleetMapFromExport extends Command
             $md[] = '- Diese Map enthält absichtlich keine Instructions/Prompts.';
             $md[] = '- Nutze die Export-JSON als editierbare Source of Truth für Instructions.';
 
-            file_put_contents($mdPath, implode("\n", $md) . "\n");
+            file_put_contents($mdPath, implode("\n", $md)."\n");
         }
 
         $this->info('Generated Fleet Map:');
         if ($format === 'json' || $format === 'both') {
-            $this->line('  JSON: ' . $jsonPath);
+            $this->line('  JSON: '.$jsonPath);
         }
         if ($format === 'md' || $format === 'both') {
-            $this->line('  MD:   ' . $mdPath);
+            $this->line('  MD:   '.$mdPath);
         }
 
         return self::SUCCESS;

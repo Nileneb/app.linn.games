@@ -11,6 +11,7 @@ class ChatMessage extends Model
     use HasUuids;
 
     protected $table = 'chat_messages';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -61,10 +62,10 @@ class ChatMessage extends Model
     public static function saveAssistantReply(string $workspaceId, int $userId, string $content): static
     {
         return static::create([
-            'user_id'      => $userId,
+            'user_id' => $userId,
             'workspace_id' => $workspaceId,
-            'role'         => 'assistant',
-            'content'      => $content,
+            'role' => 'assistant',
+            'content' => $content,
         ]);
     }
 }

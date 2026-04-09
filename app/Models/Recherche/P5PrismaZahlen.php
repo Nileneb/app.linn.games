@@ -11,6 +11,7 @@ class P5PrismaZahlen extends Model
     use HasUuids;
 
     protected $table = 'p5_prisma_zahlen';
+
     public $timestamps = false;
 
     protected $fillable = [

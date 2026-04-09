@@ -11,6 +11,7 @@ class P5ToolEntscheidung extends Model
     use HasUuids;
 
     protected $table = 'p5_tool_entscheidung';
+
     public $timestamps = false;
 
     protected $fillable = [

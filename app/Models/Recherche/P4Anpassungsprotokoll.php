@@ -11,6 +11,7 @@ class P4Anpassungsprotokoll extends Model
     use HasUuids;
 
     protected $table = 'p4_anpassungsprotokoll';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -17,7 +17,7 @@ class TrackPageView
     {
         $response = $next($request);
 
-        if ($request->isMethod('GET') && !$this->isBot($request->userAgent() ?? '')) {
+        if ($request->isMethod('GET') && ! $this->isBot($request->userAgent() ?? '')) {
             $pageView = PageView::firstOrCreate(
                 ['path' => $request->path()],
                 [

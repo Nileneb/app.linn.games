@@ -11,6 +11,7 @@ class P7SyntheseMethode extends Model
     use HasUuids;
 
     protected $table = 'p7_synthese_methode';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 trait HasWorkspaces
 {
     private bool $workspaceIdLoaded = false;
+
     private ?string $cachedWorkspaceId = null;
 
     public function ownedWorkspaces(): HasMany
@@ -77,7 +78,7 @@ trait HasWorkspaces
         // (statt des früheren generischen "Workspace").
         $workspace = Workspace::create([
             'owner_id' => $this->id,
-            'name' => (trim((string) $this->name) ?: 'My') . ' Workspace',
+            'name' => (trim((string) $this->name) ?: 'My').' Workspace',
         ]);
 
         WorkspaceUser::create([

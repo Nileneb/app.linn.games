@@ -11,6 +11,7 @@ class P2Trefferliste extends Model
     use HasUuids;
 
     protected $table = 'p2_trefferlisten';
+
     public $timestamps = false;
 
     protected $fillable = [

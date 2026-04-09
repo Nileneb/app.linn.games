@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Log;
 
 test('extractText returns empty string on parsing failure', function () {
     Log::spy();
-    
+
     $service = app(PdfParserService::class);
     $text = $service->extractText('not a valid pdf');
 
@@ -21,10 +21,10 @@ test('extractText returns empty string on parsing failure', function () {
 
 test('extractText logs error with size information when parsing fails', function () {
     Log::spy();
-    
+
     $invalidPdf = 'This is not a PDF file at all';
     $expectedSize = strlen($invalidPdf);
-    
+
     $service = app(PdfParserService::class);
     $service->extractText($invalidPdf);
 
@@ -50,4 +50,3 @@ test('extractText is defensive against null-like content', function () {
 
     expect($text)->toBeString();
 });
-

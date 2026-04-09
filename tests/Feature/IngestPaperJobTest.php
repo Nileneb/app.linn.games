@@ -42,7 +42,7 @@ test('ingest paper job stores correct parameters', function () {
 
 test('ingest paper job fails when ollama returns error', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response(null, 503),
+        config('services.ollama.url').'/api/embeddings' => Http::response(null, 503),
     ]);
 
     Log::spy();
@@ -90,7 +90,7 @@ test('ingest paper job chunks long text correctly', function () {
 
 test('ingest paper job handles text shorter than chunk size', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response(
+        config('services.ollama.url').'/api/embeddings' => Http::response(
             ['embedding' => array_fill(0, 768, 0.1)],
             200
         ),

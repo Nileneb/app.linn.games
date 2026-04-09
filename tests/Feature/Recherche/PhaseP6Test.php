@@ -1,6 +1,9 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P5Treffer, P6Qualitaetsbewertung, P6Luckenanalyse};
+use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\P6Luckenanalyse;
+use App\Models\Recherche\P6Qualitaetsbewertung;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

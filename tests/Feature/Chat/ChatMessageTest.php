@@ -8,17 +8,17 @@ use App\Models\User;
 // ---------------------------------------------------------------------------
 
 test('historyFor: gibt die letzten N nachrichten chronologisch zurück', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     // 5 Nachrichten anlegen, zeitlich gestaffelt
     foreach (range(1, 5) as $i) {
         ChatMessage::create([
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'workspace_id' => $workspace->id,
-            'role'         => $i % 2 === 0 ? 'assistant' : 'user',
-            'content'      => "Nachricht $i",
-            'created_at'   => now()->addSeconds($i),
+            'role' => $i % 2 === 0 ? 'assistant' : 'user',
+            'content' => "Nachricht $i",
+            'created_at' => now()->addSeconds($i),
         ]);
     }
 
@@ -33,16 +33,16 @@ test('historyFor: gibt die letzten N nachrichten chronologisch zurück', functio
 });
 
 test('historyFor: überschreitet das limit nicht, auch wenn mehr nachrichten vorhanden', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     foreach (range(1, 30) as $i) {
         ChatMessage::create([
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'workspace_id' => $workspace->id,
-            'role'         => 'user',
-            'content'      => "Nachricht $i",
-            'created_at'   => now()->addSeconds($i),
+            'role' => 'user',
+            'content' => "Nachricht $i",
+            'created_at' => now()->addSeconds($i),
         ]);
     }
 
@@ -54,25 +54,25 @@ test('historyFor: überschreitet das limit nicht, auch wenn mehr nachrichten vor
 });
 
 test('historyFor: schließt nachrichten mit null-content aus', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     ChatMessage::create([
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $workspace->id,
-        'role'         => 'user',
-        'content'      => 'Gültige Nachricht',
-        'created_at'   => now()->addSeconds(1),
+        'role' => 'user',
+        'content' => 'Gültige Nachricht',
+        'created_at' => now()->addSeconds(1),
     ]);
 
     // Direkt per DB einfügen, da fillable kein null-content erlaubt
     \Illuminate\Support\Facades\DB::table('chat_messages')->insert([
-        'id'           => (string) \Illuminate\Support\Str::uuid(),
-        'user_id'      => $user->id,
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'user_id' => $user->id,
         'workspace_id' => $workspace->id,
-        'role'         => 'assistant',
-        'content'      => null,
-        'created_at'   => now()->addSeconds(2),
+        'role' => 'assistant',
+        'content' => null,
+        'created_at' => now()->addSeconds(2),
     ]);
 
     $history = ChatMessage::historyFor($workspace->id, $user->id, limit: 10);
@@ -82,22 +82,22 @@ test('historyFor: schließt nachrichten mit null-content aus', function () {
 });
 
 test('historyFor: isoliert nachrichten nach workspace und user', function () {
-    $userA      = User::factory()->withoutTwoFactor()->create();
-    $userB      = User::factory()->withoutTwoFactor()->create();
+    $userA = User::factory()->withoutTwoFactor()->create();
+    $userB = User::factory()->withoutTwoFactor()->create();
     $workspaceA = $userA->ensureDefaultWorkspace();
     $workspaceB = $userB->ensureDefaultWorkspace();
 
     ChatMessage::create([
-        'user_id'      => $userA->id,
+        'user_id' => $userA->id,
         'workspace_id' => $workspaceA->id,
-        'role'         => 'user',
-        'content'      => 'Nachricht von A',
+        'role' => 'user',
+        'content' => 'Nachricht von A',
     ]);
     ChatMessage::create([
-        'user_id'      => $userB->id,
+        'user_id' => $userB->id,
         'workspace_id' => $workspaceB->id,
-        'role'         => 'user',
-        'content'      => 'Nachricht von B',
+        'role' => 'user',
+        'content' => 'Nachricht von B',
     ]);
 
     $historyA = ChatMessage::historyFor($workspaceA->id, $userA->id);
@@ -108,14 +108,14 @@ test('historyFor: isoliert nachrichten nach workspace und user', function () {
 });
 
 test('historyFor: gibt korrektes role+content format zurück', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     ChatMessage::create([
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $workspace->id,
-        'role'         => 'assistant',
-        'content'      => 'Ich bin der Assistent',
+        'role' => 'assistant',
+        'content' => 'Ich bin der Assistent',
     ]);
 
     $history = ChatMessage::historyFor($workspace->id, $user->id);
@@ -130,7 +130,7 @@ test('historyFor: gibt korrektes role+content format zurück', function () {
 // ---------------------------------------------------------------------------
 
 test('saveAssistantReply: persistiert eine assistant-nachricht korrekt', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     $msg = ChatMessage::saveAssistantReply($workspace->id, $user->id, 'KI-Antwort');
@@ -142,14 +142,14 @@ test('saveAssistantReply: persistiert eine assistant-nachricht korrekt', functio
 
     $this->assertDatabaseHas('chat_messages', [
         'workspace_id' => $workspace->id,
-        'user_id'      => $user->id,
-        'role'         => 'assistant',
-        'content'      => 'KI-Antwort',
+        'user_id' => $user->id,
+        'role' => 'assistant',
+        'content' => 'KI-Antwort',
     ]);
 });
 
 test('saveAssistantReply: gibt eine chatmessage-instanz zurück', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     $msg = ChatMessage::saveAssistantReply($workspace->id, $user->id, 'Test');

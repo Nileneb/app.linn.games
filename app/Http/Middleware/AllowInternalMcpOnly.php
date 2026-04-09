@@ -88,7 +88,7 @@ class AllowInternalMcpOnly
     {
         [$subnet, $prefixLength] = explode('/', $cidr);
 
-        $ipLong     = ip2long($ip);
+        $ipLong = ip2long($ip);
         $subnetLong = ip2long($subnet);
 
         if ($ipLong === false || $subnetLong === false) {

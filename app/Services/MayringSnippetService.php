@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Recherche\P7MayringSnippet;
 use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\P7MayringSnippet;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -116,6 +116,7 @@ class MayringSnippetService
     public function delete(string $snippetId): bool
     {
         $snippet = P7MayringSnippet::findOrFail($snippetId);
+
         return (bool) $snippet->delete();
     }
 

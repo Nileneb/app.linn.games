@@ -30,9 +30,9 @@ test('webhook to viewer end to end', function () {
     ];
 
     $timestamp = now()->unix();
-    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
+    $signedPayload = $timestamp.'.'.json_encode($webhookPayload);
     $webhookResponse = $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Signature' => 'sha256='.hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
         'X-Langdock-Timestamp' => $timestamp,
     ]);
 
@@ -55,9 +55,9 @@ test('webhook then viewer unauthorized', function () {
     ];
 
     $timestamp = now()->unix();
-    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
+    $signedPayload = $timestamp.'.'.json_encode($webhookPayload);
     $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Signature' => 'sha256='.hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
         'X-Langdock-Timestamp' => $timestamp,
     ])->assertStatus(200);
 
@@ -71,9 +71,9 @@ test('webhook then viewer invalid phase', function () {
     ];
 
     $timestamp = now()->unix();
-    $signedPayload = $timestamp . '.' . json_encode($webhookPayload);
+    $signedPayload = $timestamp.'.'.json_encode($webhookPayload);
     $this->postJson('/api/webhooks/langdock/agent-result', $webhookPayload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
+        'X-Langdock-Signature' => 'sha256='.hash_hmac('sha256', $signedPayload, config('services.langdock.webhook_secret')),
         'X-Langdock-Timestamp' => $timestamp,
     ])->assertStatus(200);
 

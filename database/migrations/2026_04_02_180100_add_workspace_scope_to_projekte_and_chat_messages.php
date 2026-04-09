@@ -26,7 +26,7 @@ return new class extends Migration
 
         foreach ($users as $user) {
             $workspaceId = (string) Str::uuid();
-            $workspaceName = trim((string) ($user->name ?: 'Workspace')) . ' Workspace';
+            $workspaceName = trim((string) ($user->name ?: 'Workspace')).' Workspace';
 
             DB::table('workspaces')->insert([
                 'id' => $workspaceId,

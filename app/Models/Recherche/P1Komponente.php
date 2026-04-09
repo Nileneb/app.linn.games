@@ -11,6 +11,7 @@ class P1Komponente extends Model
     use HasUuids;
 
     protected $table = 'p1_komponenten';
+
     public $timestamps = false;
 
     protected $fillable = [

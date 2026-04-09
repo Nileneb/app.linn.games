@@ -17,19 +17,19 @@ beforeEach(function () {
 
 function makeTreffer(array $attrs = []): P5Treffer
 {
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::create([
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $user->ensureDefaultWorkspace()->id,
-        'titel'        => 'Test',
-        'status'       => 'aktiv',
+        'titel' => 'Test',
+        'status' => 'aktiv',
     ]);
 
     return P5Treffer::create(array_merge([
-        'projekt_id'       => $projekt->id,
-        'record_id'        => 'rec-001',
-        'titel'            => 'Test Paper',
-        'doi'              => '10.1234/test',
+        'projekt_id' => $projekt->id,
+        'record_id' => 'rec-001',
+        'titel' => 'Test Paper',
+        'doi' => '10.1234/test',
         'datenbank_quelle' => 'pubmed',
         'retrieval_status' => null,
     ], $attrs));
@@ -39,19 +39,19 @@ test('job setzt status auf pending wenn treffer mit doi angelegt wird', function
     Http::fake(); // Observer feuert → Job dispatcht, wir prüfen nur den pending-Status
     Queue::fake();
 
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::create([
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $user->ensureDefaultWorkspace()->id,
-        'titel'        => 'Test',
-        'status'       => 'aktiv',
+        'titel' => 'Test',
+        'status' => 'aktiv',
     ]);
 
     $treffer = P5Treffer::create([
-        'projekt_id'       => $projekt->id,
-        'record_id'        => 'rec-002',
-        'titel'            => 'Observer Test',
-        'doi'              => '10.9999/obs',
+        'projekt_id' => $projekt->id,
+        'record_id' => 'rec-002',
+        'titel' => 'Observer Test',
+        'doi' => '10.9999/obs',
         'datenbank_quelle' => 'test',
     ]);
 
@@ -60,20 +60,20 @@ test('job setzt status auf pending wenn treffer mit doi angelegt wird', function
 });
 
 test('job tut nichts wenn kein doi vorhanden', function () {
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::create([
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $user->ensureDefaultWorkspace()->id,
-        'titel'        => 'Test',
-        'status'       => 'aktiv',
+        'titel' => 'Test',
+        'status' => 'aktiv',
     ]);
 
     Queue::fake();
 
     P5Treffer::create([
-        'projekt_id'       => $projekt->id,
-        'record_id'        => 'rec-nodoi',
-        'titel'            => 'Kein DOI',
+        'projekt_id' => $projekt->id,
+        'record_id' => 'rec-nodoi',
+        'titel' => 'Kein DOI',
         'datenbank_quelle' => 'test',
     ]);
 

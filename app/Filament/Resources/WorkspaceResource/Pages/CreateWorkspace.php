@@ -22,8 +22,8 @@ class CreateWorkspace extends CreateRecord
         ) {
             WorkspaceUser::create([
                 'workspace_id' => $workspace->id,
-                'user_id'      => $workspace->owner_id,
-                'role'         => 'owner',
+                'user_id' => $workspace->owner_id,
+                'role' => 'owner',
             ]);
         }
     }

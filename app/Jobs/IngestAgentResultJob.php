@@ -18,10 +18,13 @@ class IngestAgentResultJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30;
+
     public int $timeout = 120;
 
     private const CHUNK_SIZE = 500;
+
     private const CHUNK_OVERLAP = 100;
 
     public function __construct(
@@ -38,9 +41,10 @@ class IngestAgentResultJob implements ShouldQueue
         if ($content === null) {
             Log::error('IngestAgentResultJob: source file not found', [
                 'source_path' => $this->sourcePath,
-                'projekt_id'  => $this->projektId,
+                'projekt_id' => $this->projektId,
             ]);
             $this->fail(new \RuntimeException("Source file not found: {$this->sourcePath}"));
+
             return;
         }
 
@@ -76,9 +80,9 @@ class IngestAgentResultJob implements ShouldQueue
                 } catch (\Throwable $e) {
                     Log::error('IngestAgentResultJob: chunk processing failed, rolling back', [
                         'source_path' => $this->sourcePath,
-                        'projekt_id'  => $this->projektId,
+                        'projekt_id' => $this->projektId,
                         'chunk_index' => $index,
-                        'message'     => $e->getMessage(),
+                        'message' => $e->getMessage(),
                     ]);
                     throw $e;
                 }
@@ -87,7 +91,7 @@ class IngestAgentResultJob implements ShouldQueue
 
         Log::info('IngestAgentResultJob: agent result ingested successfully', [
             'source_path' => $this->sourcePath,
-            'projekt_id'  => $this->projektId,
+            'projekt_id' => $this->projektId,
             'chunk_count' => count($chunks),
         ]);
     }

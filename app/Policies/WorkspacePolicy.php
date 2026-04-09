@@ -15,7 +15,10 @@ class WorkspacePolicy
 
     public function view(User $user, Workspace $workspace): bool
     {
-        if ($user->hasRole(UserRole::ADMIN)) return true;
+        if ($user->hasRole(UserRole::ADMIN)) {
+            return true;
+        }
+
         return $user->workspaceRole($workspace->id) !== null;
     }
 
@@ -26,13 +29,19 @@ class WorkspacePolicy
 
     public function update(User $user, Workspace $workspace): bool
     {
-        if ($user->hasRole(UserRole::ADMIN)) return true;
+        if ($user->hasRole(UserRole::ADMIN)) {
+            return true;
+        }
+
         return in_array($user->workspaceRole($workspace->id), ['owner', 'editor'], true);
     }
 
     public function delete(User $user, Workspace $workspace): bool
     {
-        if ($user->hasRole(UserRole::ADMIN)) return true;
+        if ($user->hasRole(UserRole::ADMIN)) {
+            return true;
+        }
+
         return $user->workspaceRole($workspace->id) === 'owner';
     }
 }

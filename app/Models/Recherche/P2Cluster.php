@@ -11,6 +11,7 @@ class P2Cluster extends Model
     use HasUuids;
 
     protected $table = 'p2_cluster';
+
     public $timestamps = false;
 
     protected $fillable = [

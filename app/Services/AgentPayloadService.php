@@ -24,12 +24,12 @@ class AgentPayloadService
     {
         $dbPayload = $agentResponse['db_payload'] ?? null;
 
-        if (!$dbPayload || !is_array($dbPayload)) {
+        if (! $dbPayload || ! is_array($dbPayload)) {
             return ['success' => true, 'tables_written' => 0, 'rows_written' => 0];
         }
 
         $tables = $dbPayload['tables'] ?? [];
-        if (!is_array($tables) || empty($tables)) {
+        if (! is_array($tables) || empty($tables)) {
             return ['success' => true, 'tables_written' => 0, 'rows_written' => 0];
         }
 
@@ -41,7 +41,7 @@ class AgentPayloadService
             DB::statement('SET LOCAL app.current_projekt_id = ?', [$projektId]);
 
             foreach ($tables as $tableName => $rows) {
-                if (!is_string($tableName) || !is_array($rows) || empty($rows)) {
+                if (! is_string($tableName) || ! is_array($rows) || empty($rows)) {
                     continue;
                 }
 
@@ -55,7 +55,7 @@ class AgentPayloadService
                         'projekt_id' => $projektId,
                     ]);
                 } catch (\Throwable $e) {
-                    $error = "Table {$tableName}: " . $e->getMessage();
+                    $error = "Table {$tableName}: ".$e->getMessage();
                     $errors[] = $error;
                     Log::warning("AgentPayloadService: Failed to write to {$tableName}", [
                         'table' => $tableName,
@@ -81,7 +81,7 @@ class AgentPayloadService
                 'success' => false,
                 'tables_written' => 0,
                 'rows_written' => 0,
-                'error' => 'RLS context setup failed: ' . $e->getMessage(),
+                'error' => 'RLS context setup failed: '.$e->getMessage(),
             ];
         }
     }
@@ -92,7 +92,7 @@ class AgentPayloadService
      * @param  string  $tableName  Table name (validated against whitelist)
      * @param  array  $rows  Array of row objects/arrays to insert
      * @param  string  $projektId  Project UUID for RLS
-     * @return int  Number of rows inserted
+     * @return int Number of rows inserted
      */
     private function insertRows(string $tableName, array $rows, string $projektId): int
     {
@@ -119,30 +119,30 @@ class AgentPayloadService
             'p8_update_plan',
         ];
 
-        if (!in_array($tableName, $allowedTables, true)) {
+        if (! in_array($tableName, $allowedTables, true)) {
             throw new \InvalidArgumentException("Table {$tableName} is not whitelisted for agent payload insertion");
         }
 
         $inserted = 0;
 
         foreach ($rows as $row) {
-            if (!is_array($row) && !is_object($row)) {
+            if (! is_array($row) && ! is_object($row)) {
                 continue;
             }
 
             $data = (array) $row;
 
             // Ensure projekt_id is set
-            if (!isset($data['projekt_id'])) {
+            if (! isset($data['projekt_id'])) {
                 $data['projekt_id'] = $projektId;
             }
 
             // Add timestamps if missing
             $now = now();
-            if (!isset($data['created_at'])) {
+            if (! isset($data['created_at'])) {
                 $data['created_at'] = $now;
             }
-            if (!isset($data['updated_at'])) {
+            if (! isset($data['updated_at'])) {
                 $data['updated_at'] = $now;
             }
 

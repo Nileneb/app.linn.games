@@ -27,7 +27,7 @@ return new class extends Migration
                 $table->text('begruendung')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p1_strukturmodell_wahl ADD COLUMN modell strukturmodell NOT NULL");
+            DB::statement('ALTER TABLE p1_strukturmodell_wahl ADD COLUMN modell strukturmodell NOT NULL');
         }
 
         if (! Schema::hasTable('p1_komponenten')) {
@@ -43,7 +43,7 @@ return new class extends Migration
                 $table->text('anmerkungen')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p1_komponenten ADD COLUMN modell strukturmodell NOT NULL, ADD COLUMN synonyme jsonb");
+            DB::statement('ALTER TABLE p1_komponenten ADD COLUMN modell strukturmodell NOT NULL, ADD COLUMN synonyme jsonb');
         }
 
         if (! Schema::hasTable('p1_kriterien')) {
@@ -55,7 +55,7 @@ return new class extends Migration
                 $table->text('quellbezug')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p1_kriterien ADD COLUMN kriterium_typ kriterium_typ NOT NULL");
+            DB::statement('ALTER TABLE p1_kriterien ADD COLUMN kriterium_typ kriterium_typ NOT NULL');
         }
 
         if (! Schema::hasTable('p1_warnsignale')) {

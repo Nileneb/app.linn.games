@@ -47,7 +47,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement("DROP TYPE IF EXISTS user_status CASCADE");
+            DB::statement('DROP TYPE IF EXISTS user_status CASCADE');
         }
     }
 };

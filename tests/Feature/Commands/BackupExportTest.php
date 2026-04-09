@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -11,16 +10,16 @@ beforeEach(function () {
 test('backup:export erzeugt eine ndjson-datei im out-dir', function () {
     $user = User::factory()->withoutTwoFactor()->create(['name' => 'Test User']);
 
-    $outDir = sys_get_temp_dir() . '/backup_test_' . uniqid();
+    $outDir = sys_get_temp_dir().'/backup_test_'.uniqid();
 
     $this->artisan('backup:export', ['--tables' => 'users', '--out-dir' => $outDir])
         ->assertSuccessful();
 
-    $files = glob($outDir . '/backup_*.ndjson');
+    $files = glob($outDir.'/backup_*.ndjson');
     expect($files)->toHaveCount(1);
 
     $lines = array_filter(explode("\n", file_get_contents($files[0])));
-    $meta  = json_decode(array_values($lines)[0], true);
+    $meta = json_decode(array_values($lines)[0], true);
 
     expect($meta['__meta']['table'])->toBe('users');
     expect($meta['__meta']['schema_version'])->toBe(1);
@@ -34,12 +33,12 @@ test('backup:export erzeugt eine ndjson-datei im out-dir', function () {
 test('backup:export enthält die erstellten user-datensätze', function () {
     $user = User::factory()->withoutTwoFactor()->create(['name' => 'Export Tester', 'email' => 'export@test.de']);
 
-    $outDir = sys_get_temp_dir() . '/backup_test_' . uniqid();
+    $outDir = sys_get_temp_dir().'/backup_test_'.uniqid();
 
     $this->artisan('backup:export', ['--tables' => 'users', '--out-dir' => $outDir])
         ->assertSuccessful();
 
-    $files = glob($outDir . '/backup_*.ndjson');
+    $files = glob($outDir.'/backup_*.ndjson');
     $lines = array_values(array_filter(explode("\n", file_get_contents($files[0]))));
 
     // First line is __meta, remaining are data rows
@@ -53,13 +52,13 @@ test('backup:export enthält die erstellten user-datensätze', function () {
 });
 
 test('backup:export überspringt nicht existierende tabellen mit warnung', function () {
-    $outDir = sys_get_temp_dir() . '/backup_test_' . uniqid();
+    $outDir = sys_get_temp_dir().'/backup_test_'.uniqid();
 
     $this->artisan('backup:export', ['--tables' => 'nicht_vorhanden', '--out-dir' => $outDir])
         ->expectsOutputToContain('does not exist')
         ->assertSuccessful();
 
-    $files = glob($outDir . '/backup_*.ndjson');
+    $files = glob($outDir.'/backup_*.ndjson');
     expect($files)->toHaveCount(1);
 
     array_map('unlink', $files);

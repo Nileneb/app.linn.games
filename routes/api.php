@@ -28,5 +28,3 @@ Route::middleware([VerifyMcpToken::class, SecureMcpHeaders::class, 'throttle:mcp
 
 // Webhook route — no middleware (signature-verified inside controller)
 Route::post('/webhooks/langdock/agent-result', [AgentResultWebhookController::class, 'handleAgentResult']);
-
-

@@ -16,10 +16,9 @@ class SynthesisMarkdownService
     /**
      * Generate synthesis markdown with embedded traceability metadata.
      *
-     * @param  int  $phaseNr
      * @param  array  $agentData  Parsed JSON response from agent (expects 'data' key)
      * @param  array<object>  $retrievedChunks  Results from RetrieverService::retrieve()
-     * @return string  Formatted markdown content
+     * @return string Formatted markdown content
      */
     public function generateSynthesis(int $phaseNr, array $agentData, array $retrievedChunks): string
     {
@@ -35,10 +34,10 @@ class SynthesisMarkdownService
         $md[] = '## Table of Contents';
         $md[] = '';
         $md[] = match ($phaseNr) {
-            5 => '- [Screening Criteria](#screening-criteria)' . "\n" . '- [Screening Decisions](#screening-decisions)',
-            6 => '- [Quality Assessment](#quality-assessment)' . "\n" . '- [Risk of Bias Summary](#risk-of-bias-summary)',
-            7 => '- [Data Extraction](#data-extraction)' . "\n" . '- [Pattern Analysis](#pattern-analysis)',
-            8 => '- [Search Protocol](#search-protocol)' . "\n" . '- [Limitations](#limitations)' . "\n" . '- [Reproducibility Checklist](#reproducibility-checklist)',
+            5 => '- [Screening Criteria](#screening-criteria)'."\n".'- [Screening Decisions](#screening-decisions)',
+            6 => '- [Quality Assessment](#quality-assessment)'."\n".'- [Risk of Bias Summary](#risk-of-bias-summary)',
+            7 => '- [Data Extraction](#data-extraction)'."\n".'- [Pattern Analysis](#pattern-analysis)',
+            8 => '- [Search Protocol](#search-protocol)'."\n".'- [Limitations](#limitations)'."\n".'- [Reproducibility Checklist](#reproducibility-checklist)',
             default => '- Overview',
         };
         $md[] = '';
@@ -51,7 +50,7 @@ class SynthesisMarkdownService
             6 => $this->appendP6Content($md, $agentData, $chunksByPaper),
             7 => $this->appendP7Content($md, $agentData, $chunksByPaper),
             8 => $this->appendP8Content($md, $agentData, $chunksByPaper),
-            default => $md[] = '## Content' . "\n" . 'Agent response data available.',
+            default => $md[] = '## Content'."\n".'Agent response data available.',
         };
 
         $md[] = '';
@@ -67,7 +66,7 @@ class SynthesisMarkdownService
         foreach ($chunksByPaper as $paperId => $paperChunks) {
             $firstChunk = $paperChunks->first();
             $avgSim = number_format($paperChunks->avg('similarity'), 2);
-            $md[] = "| `{$paperId}` | {$firstChunk->title} | " . count($paperChunks) . " | {$avgSim} |";
+            $md[] = "| `{$paperId}` | {$firstChunk->title} | ".count($paperChunks)." | {$avgSim} |";
         }
 
         $md[] = '';
@@ -86,10 +85,10 @@ class SynthesisMarkdownService
         $md[] = '3. Retrieve full text from: `retrieval_storage_path` field';
         $md[] = '4. Locate chunk via `chunk_index` from `paper_embeddings` table';
         $md[] = '';
-        $md[] = '**Chunks used in synthesis:** ' . count($retrievedChunks);
-        $md[] = '**Unique papers referenced:** ' . count($chunksByPaper);
-        $md[] = '**Average similarity:** ' . number_format($chunks->avg('similarity'), 2);
-        $md[] = '**Generation date:** ' . now()->toDateTimeString();
+        $md[] = '**Chunks used in synthesis:** '.count($retrievedChunks);
+        $md[] = '**Unique papers referenced:** '.count($chunksByPaper);
+        $md[] = '**Average similarity:** '.number_format($chunks->avg('similarity'), 2);
+        $md[] = '**Generation date:** '.now()->toDateTimeString();
 
         return implode("\n", $md);
     }
@@ -103,7 +102,7 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $criteria = $agentData['screening_criteria'] ?? [];
-        if (is_array($criteria) && !empty($criteria)) {
+        if (is_array($criteria) && ! empty($criteria)) {
             $md[] = '### Inclusion Criteria';
             $md[] = '';
             foreach ($criteria as $criterion) {
@@ -121,7 +120,7 @@ class SynthesisMarkdownService
         $md[] = '### Exclusion Criteria';
         $md[] = '';
 
-        if (is_array($criteria) && !empty($criteria)) {
+        if (is_array($criteria) && ! empty($criteria)) {
             foreach ($criteria as $criterion) {
                 if (is_array($criterion)) {
                     $type = $criterion['kriterium_typ'] ?? 'criterion';
@@ -138,9 +137,9 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $decisions = $agentData['screening_entscheidungen'] ?? [];
-        if (is_array($decisions) && !empty($decisions)) {
+        if (is_array($decisions) && ! empty($decisions)) {
             foreach ($decisions as $idx => $decision) {
-                if (!is_array($decision)) {
+                if (! is_array($decision)) {
                     continue;
                 }
 
@@ -166,8 +165,8 @@ class SynthesisMarkdownService
                     $md[] = '';
                     foreach ($chunksByPaper->get($paperId) as $chunk) {
                         $md[] = "> {$chunk->text_chunk}";
-                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: " .
-                                number_format($chunk->similarity, 2) . "; source: Abstract -->";
+                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: ".
+                                number_format($chunk->similarity, 2).'; source: Abstract -->';
                         $md[] = '';
                     }
                 }
@@ -187,9 +186,9 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $assessments = $agentData['qualitaetsbewertung'] ?? $agentData['quality_assessments'] ?? [];
-        if (is_array($assessments) && !empty($assessments)) {
+        if (is_array($assessments) && ! empty($assessments)) {
             foreach ($assessments as $assessment) {
-                if (!is_array($assessment)) {
+                if (! is_array($assessment)) {
                     continue;
                 }
 
@@ -213,8 +212,8 @@ class SynthesisMarkdownService
                     $md[] = '';
                     foreach ($chunksByPaper->get($paperId) as $chunk) {
                         $md[] = "> {$chunk->text_chunk}";
-                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: " .
-                                number_format($chunk->similarity, 2) . "; source: Methods -->";
+                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: ".
+                                number_format($chunk->similarity, 2).'; source: Methods -->';
                         $md[] = '';
                     }
                 }
@@ -234,9 +233,9 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $extractions = $agentData['datenextraktion'] ?? $agentData['data_extractions'] ?? [];
-        if (is_array($extractions) && !empty($extractions)) {
+        if (is_array($extractions) && ! empty($extractions)) {
             foreach ($extractions as $extraction) {
-                if (!is_array($extraction)) {
+                if (! is_array($extraction)) {
                     continue;
                 }
 
@@ -248,13 +247,13 @@ class SynthesisMarkdownService
                 $md[] = '';
 
                 // Key characteristics
-                if (!empty($extraction['stichprobe'])) {
+                if (! empty($extraction['stichprobe'])) {
                     $md[] = "**Sample Size:** {$extraction['stichprobe']}";
                 }
-                if (!empty($extraction['land'])) {
+                if (! empty($extraction['land'])) {
                     $md[] = "**Country:** {$extraction['land']}";
                 }
-                if (!empty($extraction['intervention'])) {
+                if (! empty($extraction['intervention'])) {
                     $md[] = "**Intervention:** {$extraction['intervention']}";
                 }
 
@@ -262,7 +261,7 @@ class SynthesisMarkdownService
 
                 // Outcomes and findings
                 $outcomes = $extraction['befunde'] ?? $extraction['outcomes'] ?? [];
-                if (is_array($outcomes) && !empty($outcomes)) {
+                if (is_array($outcomes) && ! empty($outcomes)) {
                     $md[] = '**Findings:**';
                     $md[] = '';
                     foreach ($outcomes as $outcome) {
@@ -281,8 +280,8 @@ class SynthesisMarkdownService
                     $md[] = '';
                     foreach ($chunksByPaper->get($paperId) as $chunk) {
                         $md[] = "> {$chunk->text_chunk}";
-                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: " .
-                                number_format($chunk->similarity, 2) . "; source: Results -->";
+                        $md[] = "<!-- chunk_index: {$chunk->chunk_index}; similarity: ".
+                                number_format($chunk->similarity, 2).'; source: Results -->';
                         $md[] = '';
                     }
                 }
@@ -314,7 +313,7 @@ class SynthesisMarkdownService
 
         $protocol = $agentData['suchprotokoll'] ?? $agentData['search_protocol'] ?? [];
         if (is_array($protocol)) {
-            if (!empty($protocol['datenbanken'])) {
+            if (! empty($protocol['datenbanken'])) {
                 $md[] = '**Databases:**';
                 $md[] = '';
                 foreach ((array) $protocol['datenbanken'] as $db) {
@@ -323,7 +322,7 @@ class SynthesisMarkdownService
                 $md[] = '';
             }
 
-            if (!empty($protocol['suchstrings'])) {
+            if (! empty($protocol['suchstrings'])) {
                 $md[] = '**Search Strings:**';
                 $md[] = '';
                 foreach ((array) $protocol['suchstrings'] as $string) {
@@ -337,7 +336,7 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $limitations = $agentData['limitationen'] ?? $agentData['limitations'] ?? [];
-        if (is_array($limitations) && !empty($limitations)) {
+        if (is_array($limitations) && ! empty($limitations)) {
             foreach ($limitations as $limitation) {
                 if (is_array($limitation)) {
                     $desc = $limitation['beschreibung'] ?? $limitation['description'] ?? '';
@@ -353,7 +352,7 @@ class SynthesisMarkdownService
         $md[] = '';
 
         $checklist = $agentData['reproduzierbarkeitspruefung'] ?? $agentData['reproducibility_checklist'] ?? [];
-        if (is_array($checklist) && !empty($checklist)) {
+        if (is_array($checklist) && ! empty($checklist)) {
             foreach ($checklist as $item) {
                 if (is_array($item)) {
                     $check = $item['item'] ?? $item['beschreibung'] ?? '';

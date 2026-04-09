@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\Contact;
-
 test('contact form accepts valid submission', function () {
     $response = $this->postJson(route('contact.store'), [
         'name' => 'Max Mustermann',

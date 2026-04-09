@@ -15,6 +15,7 @@ function makeAdmin(): User
 {
     $user = User::factory()->withoutTwoFactor()->create();
     $user->syncRoles(['admin']);
+
     return $user;
 }
 
@@ -22,6 +23,7 @@ function makeWorkspaceWithOwner(): array
 {
     $owner = User::factory()->withoutTwoFactor()->create();
     $workspace = Workspace::create(['owner_id' => $owner->id, 'name' => 'Test Workspace']);
+
     return ['workspace' => $workspace, 'owner' => $owner];
 }
 

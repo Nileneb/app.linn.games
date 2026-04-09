@@ -13,7 +13,7 @@ test('SetUpNewUser erstellt Workspace und Startguthaben bei neuer User-Erstellun
     expect(Workspace::where('owner_id', $user->id)->exists())->toBeTrue();
 
     $this->assertDatabaseHas('credit_transactions', [
-        'type'        => 'topup',
+        'type' => 'topup',
         'amount_cents' => 100,
         'description' => 'Startguthaben',
     ]);
@@ -48,6 +48,6 @@ test('SetUpNewUser loggt Fehler und lässt User-Erstellung durch wenn CreditServ
         ->once()
         ->with('User-Initialisierung fehlgeschlagen', \Mockery::subset([
             'user_id' => $user->id,
-            'error'   => 'DB unavailable',
+            'error' => 'DB unavailable',
         ]));
 });

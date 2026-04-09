@@ -11,6 +11,7 @@ class P2MappingSuchstringKomponente extends Model
     use HasUuids;
 
     protected $table = 'p2_mapping_suchstring_komponenten';
+
     public $timestamps = false;
 
     protected $fillable = [

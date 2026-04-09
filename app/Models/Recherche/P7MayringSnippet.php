@@ -2,14 +2,13 @@
 
 namespace App\Models\Recherche;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * P7MayringSnippet
- * Repräsentiert einen markierten Text-Ausschnitt aus einem Paper 
+ * Repräsentiert einen markierten Text-Ausschnitt aus einem Paper
  * mit automatischer Quellenreferenz (Mayring-Analyse).
  */
 class P7MayringSnippet extends Model

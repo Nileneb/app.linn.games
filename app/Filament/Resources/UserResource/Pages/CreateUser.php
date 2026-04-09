@@ -15,6 +15,7 @@ class CreateUser extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['password'] = Str::random(32);
+
         return $data;
     }
 
@@ -25,7 +26,7 @@ class CreateUser extends CreateRecord
         if ($status === Password::RESET_LINK_SENT) {
             Notification::make()
                 ->title('Einladung verschickt')
-                ->body('Eine E-Mail mit dem Einladungslink wurde an ' . $this->record->email . ' gesendet.')
+                ->body('Eine E-Mail mit dem Einladungslink wurde an '.$this->record->email.' gesendet.')
                 ->success()
                 ->send();
         } else {

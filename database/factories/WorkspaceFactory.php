@@ -14,7 +14,7 @@ class WorkspaceFactory extends Factory
     {
         return [
             'owner_id' => User::factory(),
-            'name' => fake()->company() . ' Workspace',
+            'name' => fake()->company().' Workspace',
         ];
     }
 }

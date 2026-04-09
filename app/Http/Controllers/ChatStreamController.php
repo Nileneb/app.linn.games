@@ -34,9 +34,9 @@ class ChatStreamController extends Controller
             timeout: 120,
             context: [
                 'workspace_id' => Auth::user()?->activeWorkspaceId(),
-                'user_id'      => Auth::id(),
-                'user_name'    => Auth::user()?->name,
-                'source'       => 'dashboard_chat',
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user()?->name,
+                'source' => 'dashboard_chat',
             ],
         );
     }

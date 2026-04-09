@@ -12,6 +12,7 @@ class P5Treffer extends Model
     use HasUuids;
 
     protected $table = 'p5_treffer';
+
     public $timestamps = false;
 
     protected $fillable = [

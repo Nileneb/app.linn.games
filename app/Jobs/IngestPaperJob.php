@@ -9,7 +9,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -18,9 +17,11 @@ class IngestPaperJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 30;
 
     private const CHUNK_SIZE = 500;
+
     private const CHUNK_OVERLAP = 100;
 
     public function __construct(
@@ -61,8 +62,8 @@ class IngestPaperJob implements ShouldQueue
                 } catch (\Throwable $e) {
                     Log::error('Chunk processing failed, rolling back all inserts', [
                         'paper_id' => $this->paperId,
-                        'chunk'    => $index,
-                        'message'  => $e->getMessage(),
+                        'chunk' => $index,
+                        'message' => $e->getMessage(),
                     ]);
                     throw $e;
                 }

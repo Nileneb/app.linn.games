@@ -11,6 +11,7 @@ class P1Strukturmodellwahl extends Model
     use HasUuids;
 
     protected $table = 'p1_strukturmodell_wahl';
+
     public $timestamps = false;
 
     protected $fillable = [

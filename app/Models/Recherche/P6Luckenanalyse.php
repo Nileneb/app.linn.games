@@ -11,6 +11,7 @@ class P6Luckenanalyse extends Model
     use HasUuids;
 
     protected $table = 'p6_luckenanalyse';
+
     public $timestamps = false;
 
     protected $fillable = [

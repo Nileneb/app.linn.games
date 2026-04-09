@@ -11,6 +11,7 @@ class P7GradeEinschaetzung extends Model
     use HasUuids;
 
     protected $table = 'p7_grade_einschaetzung';
+
     public $timestamps = false;
 
     protected $fillable = [

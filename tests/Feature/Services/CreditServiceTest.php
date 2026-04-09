@@ -13,7 +13,7 @@ function makeWorkspace(int $balanceCents = 0): Workspace
     $user = User::factory()->withoutTwoFactor()->create();
     $workspace = Workspace::create([
         'owner_id' => $user->id,
-        'name' => $user->name . ' Workspace',
+        'name' => $user->name.' Workspace',
     ]);
     \App\Models\WorkspaceUser::create([
         'workspace_id' => $workspace->id,
@@ -23,6 +23,7 @@ function makeWorkspace(int $balanceCents = 0): Workspace
     if ($balanceCents > 0) {
         app(CreditService::class)->topUp($workspace, $balanceCents);
     }
+
     return $workspace->fresh();
 }
 
@@ -154,12 +155,12 @@ test('assertAgentDailyLimit zählt nur heutige ausgaben', function () {
 
     // Gestern: 400 cents ausgegeben
     CreditTransaction::create([
-        'workspace_id'     => $workspace->id,
-        'type'             => 'usage',
-        'amount_cents'     => -400,
-        'tokens_used'      => 200000,
+        'workspace_id' => $workspace->id,
+        'type' => 'usage',
+        'amount_cents' => -400,
+        'tokens_used' => 200000,
         'agent_config_key' => 'daily_agent',
-        'created_at'       => Carbon::yesterday(),
+        'created_at' => Carbon::yesterday(),
     ]);
 
     // Heute: 80 cents → innerhalb des Limits da gestern nicht zählt
@@ -201,13 +202,13 @@ test('usageSummary filtert nach zeitraum', function () {
 
     // Alte Transaktion (vor 60 Tagen) — direkt in DB
     DB::table('credit_transactions')->insert([
-        'id'               => \Illuminate\Support\Str::uuid()->toString(),
-        'workspace_id'     => $workspace->id,
-        'type'             => 'usage',
-        'amount_cents'     => -50,
-        'tokens_used'      => 25000,
+        'id' => \Illuminate\Support\Str::uuid()->toString(),
+        'workspace_id' => $workspace->id,
+        'type' => 'usage',
+        'amount_cents' => -50,
+        'tokens_used' => 25000,
         'agent_config_key' => 'old_agent',
-        'created_at'       => Carbon::now()->subDays(60),
+        'created_at' => Carbon::now()->subDays(60),
     ]);
 
     // Standard: letzte 30 Tage → nur search_agent

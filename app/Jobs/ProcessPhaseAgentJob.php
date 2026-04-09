@@ -22,6 +22,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
+
     public int $timeout = 180; // Queue worker timeout (not HTTP)
 
     /** @var array<object>|null Retrieved chunks for synthesis */
@@ -29,10 +30,10 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
     public function __construct(
         public readonly string $projektId,
-        public readonly int    $phaseNr,
+        public readonly int $phaseNr,
         public readonly string $agentConfigKey,
-        public readonly array  $messages,
-        public readonly array  $context,
+        public readonly array $messages,
+        public readonly array $context,
     ) {}
 
     public function handle(): void
@@ -126,7 +127,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
             }
         } catch (\Throwable $e) {
             if ($result !== null) {
-                $result->markFailed(__('Verarbeitung fehlgeschlagen: ') . $e->getMessage());
+                $result->markFailed(__('Verarbeitung fehlgeschlagen: ').$e->getMessage());
             }
             Log::error('Phase agent job exception', [
                 'projekt_id' => $this->projektId,
@@ -155,7 +156,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
         }
 
         $retriever = app(RetrieverService::class);
-        $chunks    = $retriever->retrieve($query, $this->projektId);
+        $chunks = $retriever->retrieve($query, $this->projektId);
 
         if (empty($chunks)) {
             return $messages;
@@ -166,10 +167,10 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
         $contextText = $retriever->formatAsContext($chunks);
 
-        Log::info('Retriever: ' . count($chunks) . ' Chunks für Phase-Agent vorbereitet', [
+        Log::info('Retriever: '.count($chunks).' Chunks für Phase-Agent vorbereitet', [
             'projekt_id' => $this->projektId,
-            'phase_nr'   => $this->phaseNr,
-            'chunks'     => count($chunks),
+            'phase_nr' => $this->phaseNr,
+            'chunks' => count($chunks),
         ]);
 
         return [['role' => 'user', 'content' => $contextText], ...$messages];
@@ -184,7 +185,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
      *
      * @param  string  $rawContent  Raw agent response (JSON or text)
      * @param  array<object>  $retrievedChunks  Document chunks used in context
-     * @return string  Enhanced response with synthesis markdown embedded
+     * @return string Enhanced response with synthesis markdown embedded
      */
     private function enrichResponseWithSynthesis(string $rawContent, array $retrievedChunks): string
     {
@@ -210,10 +211,10 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
             // Ensure md_files array exists in response (support both structures)
             if (isset($parsed['result']['data'])) {
-                if (!isset($parsed['result']['data']['md_files'])) {
+                if (! isset($parsed['result']['data']['md_files'])) {
                     $parsed['result']['data']['md_files'] = [];
                 }
-                if (!is_array($parsed['result']['data']['md_files'])) {
+                if (! is_array($parsed['result']['data']['md_files'])) {
                     $parsed['result']['data']['md_files'] = [];
                 }
                 $parsed['result']['data']['md_files'][] = [
@@ -221,10 +222,10 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'content' => $synthesisMarkdown,
                 ];
             } elseif (isset($parsed['data'])) {
-                if (!isset($parsed['data']['md_files'])) {
+                if (! isset($parsed['data']['md_files'])) {
                     $parsed['data']['md_files'] = [];
                 }
-                if (!is_array($parsed['data']['md_files'])) {
+                if (! is_array($parsed['data']['md_files'])) {
                     $parsed['data']['md_files'] = [];
                 }
                 $parsed['data']['md_files'][] = [
@@ -255,14 +256,14 @@ class ProcessPhaseAgentJob implements ShouldQueue
     {
         $trimmed = trim($rawContent);
 
-        if ($trimmed === '' || !str_starts_with($trimmed, '{')) {
+        if ($trimmed === '' || ! str_starts_with($trimmed, '{')) {
             return null;
         }
 
         try {
             $decoded = json_decode($trimmed, true, flags: JSON_THROW_ON_ERROR);
 
-            if (!is_array($decoded)) {
+            if (! is_array($decoded)) {
                 return null;
             }
 

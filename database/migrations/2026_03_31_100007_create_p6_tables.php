@@ -32,7 +32,7 @@ return new class extends Migration
                 $table->foreign('treffer_id')->references('id')->on('p5_treffer')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p6_qualitaetsbewertung ADD COLUMN studientyp studientyp NOT NULL, ADD COLUMN rob_tool rob_tool NOT NULL, ADD COLUMN gesamturteil rob_urteil NOT NULL");
+            DB::statement('ALTER TABLE p6_qualitaetsbewertung ADD COLUMN studientyp studientyp NOT NULL, ADD COLUMN rob_tool rob_tool NOT NULL, ADD COLUMN gesamturteil rob_urteil NOT NULL');
         }
 
         if (! Schema::hasTable('p6_luckenanalyse')) {

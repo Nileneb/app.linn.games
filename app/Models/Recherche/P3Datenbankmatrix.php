@@ -11,6 +11,7 @@ class P3Datenbankmatrix extends Model
     use HasUuids;
 
     protected $table = 'p3_datenbankmatrix';
+
     public $timestamps = false;
 
     protected $fillable = [

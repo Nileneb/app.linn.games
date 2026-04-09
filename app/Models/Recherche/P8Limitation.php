@@ -11,6 +11,7 @@ class P8Limitation extends Model
     use HasUuids;
 
     protected $table = 'p8_limitationen';
+
     public $timestamps = false;
 
     protected $fillable = [

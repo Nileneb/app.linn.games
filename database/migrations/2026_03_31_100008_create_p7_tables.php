@@ -32,7 +32,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p7_synthese_methode ADD COLUMN methode synthese_methode NOT NULL");
+            DB::statement('ALTER TABLE p7_synthese_methode ADD COLUMN methode synthese_methode NOT NULL');
         }
 
         // p7_datenextraktion – uses rob_urteil ENUM
@@ -49,7 +49,7 @@ return new class extends Migration
                 $table->foreign('treffer_id')->references('id')->on('p5_treffer')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p7_datenextraktion ADD COLUMN qualitaetsurteil rob_urteil");
+            DB::statement('ALTER TABLE p7_datenextraktion ADD COLUMN qualitaetsurteil rob_urteil');
         }
 
         // p7_muster_konsistenz – uses jsonb arrays (compatible with Laravel array cast)
@@ -62,7 +62,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p7_muster_konsistenz ADD COLUMN unterstuetzende_quellen jsonb, ADD COLUMN widersprechende_quellen jsonb");
+            DB::statement('ALTER TABLE p7_muster_konsistenz ADD COLUMN unterstuetzende_quellen jsonb, ADD COLUMN widersprechende_quellen jsonb');
         }
 
         // p7_grade_einschaetzung – uses rob_urteil, grade_urteil ENUMs
@@ -79,7 +79,7 @@ return new class extends Migration
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
 
-            DB::statement("ALTER TABLE p7_grade_einschaetzung ADD COLUMN rob_gesamt rob_urteil, ADD COLUMN grade_urteil grade_urteil NOT NULL");
+            DB::statement('ALTER TABLE p7_grade_einschaetzung ADD COLUMN rob_gesamt rob_urteil, ADD COLUMN grade_urteil grade_urteil NOT NULL');
         }
     }
 

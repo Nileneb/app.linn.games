@@ -9,9 +9,9 @@ function writeNdjson(string $path, string $table, array $columns, array $rows): 
     $lines[] = json_encode([
         '__meta' => [
             'schema_version' => 1,
-            'exported_at'    => now()->toIso8601String(),
-            'table'          => $table,
-            'columns'        => $columns,
+            'exported_at' => now()->toIso8601String(),
+            'table' => $table,
+            'columns' => $columns,
         ],
     ]);
 
@@ -19,7 +19,7 @@ function writeNdjson(string $path, string $table, array $columns, array $rows): 
         $lines[] = json_encode($row);
     }
 
-    file_put_contents($path, implode("\n", $lines) . "\n");
+    file_put_contents($path, implode("\n", $lines)."\n");
 }
 
 test('backup:import importiert einen user idempotent', function () {
@@ -27,9 +27,9 @@ test('backup:import importiert einen user idempotent', function () {
 
     // Export the row as NDJSON, then delete the user, then import
     $columns = DB::getSchemaBuilder()->getColumnListing('users');
-    $row     = (array) DB::table('users')->where('id', $user->id)->first();
+    $row = (array) DB::table('users')->where('id', $user->id)->first();
 
-    $file = sys_get_temp_dir() . '/import_test_' . uniqid() . '.ndjson';
+    $file = sys_get_temp_dir().'/import_test_'.uniqid().'.ndjson';
     writeNdjson($file, 'users', $columns, [$row]);
 
     DB::table('users')->where('id', $user->id)->delete();
@@ -48,15 +48,15 @@ test('backup:import importiert einen user idempotent', function () {
 });
 
 test('backup:import ignoriert unbekannte spalten aus dem export', function () {
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $columns = DB::getSchemaBuilder()->getColumnListing('users');
-    $row     = (array) DB::table('users')->where('id', $user->id)->first();
+    $row = (array) DB::table('users')->where('id', $user->id)->first();
 
     // Add a column that doesn't exist in the current schema
     $columnsWithExtra = array_merge($columns, ['old_column_no_longer_exists']);
-    $rowWithExtra     = array_merge($row, ['old_column_no_longer_exists' => 'stale_value']);
+    $rowWithExtra = array_merge($row, ['old_column_no_longer_exists' => 'stale_value']);
 
-    $file = sys_get_temp_dir() . '/import_test_' . uniqid() . '.ndjson';
+    $file = sys_get_temp_dir().'/import_test_'.uniqid().'.ndjson';
     writeNdjson($file, 'users', $columnsWithExtra, [$rowWithExtra]);
 
     DB::table('users')->where('id', $user->id)->delete();
@@ -71,11 +71,11 @@ test('backup:import ignoriert unbekannte spalten aus dem export', function () {
 });
 
 test('backup:import dry-run schreibt nichts in die datenbank', function () {
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $columns = DB::getSchemaBuilder()->getColumnListing('users');
-    $row     = (array) DB::table('users')->where('id', $user->id)->first();
+    $row = (array) DB::table('users')->where('id', $user->id)->first();
 
-    $file = sys_get_temp_dir() . '/import_test_' . uniqid() . '.ndjson';
+    $file = sys_get_temp_dir().'/import_test_'.uniqid().'.ndjson';
     writeNdjson($file, 'users', $columns, [$row]);
 
     DB::table('users')->where('id', $user->id)->delete();
@@ -91,11 +91,11 @@ test('backup:import dry-run schreibt nichts in die datenbank', function () {
 });
 
 test('backup:import überspringt tabellen per --tables-filter', function () {
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $columns = DB::getSchemaBuilder()->getColumnListing('users');
-    $row     = (array) DB::table('users')->where('id', $user->id)->first();
+    $row = (array) DB::table('users')->where('id', $user->id)->first();
 
-    $file = sys_get_temp_dir() . '/import_test_' . uniqid() . '.ndjson';
+    $file = sys_get_temp_dir().'/import_test_'.uniqid().'.ndjson';
     writeNdjson($file, 'users', $columns, [$row]);
 
     DB::table('users')->where('id', $user->id)->delete();

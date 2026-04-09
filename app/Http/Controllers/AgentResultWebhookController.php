@@ -13,7 +13,7 @@ class AgentResultWebhookController extends Controller
     public function handleAgentResult(Request $request)
     {
         // Verify HMAC signature
-        if (!$this->verifySignature($request)) {
+        if (! $this->verifySignature($request)) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
@@ -37,8 +37,8 @@ class AgentResultWebhookController extends Controller
         // Persist markdown files to storage
         $basePath = "recherche/{$projektId}/{$phase}";
         foreach ($mdFiles as $file) {
-            if (!$this->validateFilePath($file['path'])) {
-                return response()->json(['error' => 'Invalid file path: ' . $file['path']], 400);
+            if (! $this->validateFilePath($file['path'])) {
+                return response()->json(['error' => 'Invalid file path: '.$file['path']], 400);
             }
             Storage::disk('local')->put("{$basePath}/{$file['path']}", $file['content']);
         }
@@ -85,11 +85,11 @@ class AgentResultWebhookController extends Controller
             return false;
         }
         // Require .md extension
-        if (!str_ends_with($path, '.md')) {
+        if (! str_ends_with($path, '.md')) {
             return false;
         }
         // Only allow safe filename characters
-        if (!preg_match('/^[\w\-]+\.md$/', $path)) {
+        if (! preg_match('/^[\w\-]+\.md$/', $path)) {
             return false;
         }
 
@@ -99,7 +99,7 @@ class AgentResultWebhookController extends Controller
     private function verifySignature(Request $request): bool
     {
         $signature = $request->header('X-Langdock-Signature');
-        if (!$signature) {
+        if (! $signature) {
             return false;
         }
 
@@ -118,7 +118,7 @@ class AgentResultWebhookController extends Controller
         $timestamp = $request->header('X-Langdock-Timestamp');
 
         // Ensure header exists and is a digit-only string
-        if (!is_string($timestamp) || !ctype_digit($timestamp)) {
+        if (! is_string($timestamp) || ! ctype_digit($timestamp)) {
             return false;
         }
 
@@ -133,13 +133,13 @@ class AgentResultWebhookController extends Controller
         }
 
         $secret = config('services.langdock.webhook_secret');
-        if (!$secret) {
+        if (! $secret) {
             return false;
         }
 
         // Include timestamp in signed payload to prevent replay attacks
         // where an attacker reuses an old signature with a new timestamp
-        $payload = $request->header('X-Langdock-Timestamp') . '.' . $request->getContent();
+        $payload = $request->header('X-Langdock-Timestamp').'.'.$request->getContent();
         $expectedHash = hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($hash, $expectedHash);

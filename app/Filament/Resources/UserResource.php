@@ -5,8 +5,8 @@ namespace App\Filament\Resources;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Password;
@@ -28,10 +28,10 @@ class UserResource extends Resource
                 ->label('Rolle')
                 ->relationship('roles', 'name')
                 ->getOptionLabelFromRecordUsing(fn ($record) => match ($record->name) {
-                    'admin'    => 'Admin – Voller Zugriff',
-                    'editor'   => 'Editor – Projekte erstellen & bearbeiten',
+                    'admin' => 'Admin – Voller Zugriff',
+                    'editor' => 'Editor – Projekte erstellen & bearbeiten',
                     'mitglied' => 'Mitglied – Zugewiesene Projekte sehen & bearbeiten',
-                    default    => $record->name,
+                    default => $record->name,
                 })
                 ->multiple()
                 ->minItems(1)
@@ -40,8 +40,8 @@ class UserResource extends Resource
             Forms\Components\Select::make('status')
                 ->required()
                 ->options([
-                    'trial'     => 'Trial',
-                    'active'    => 'Aktiv',
+                    'trial' => 'Trial',
+                    'active' => 'Aktiv',
                     'suspended' => 'Gesperrt',
                     'cancelled' => 'Gekündigt',
                 ])
@@ -78,8 +78,8 @@ class UserResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'trial'     => 'Trial',
-                        'active'    => 'Aktiv',
+                        'trial' => 'Trial',
+                        'active' => 'Aktiv',
                         'suspended' => 'Gesperrt',
                         'cancelled' => 'Gekündigt',
                     ]),
@@ -92,7 +92,7 @@ class UserResource extends Resource
                     ->color('gray')
                     ->requiresConfirmation()
                     ->modalHeading('Einladung erneut senden')
-                    ->modalDescription(fn (User $record) => 'Einen neuen Einladungslink an ' . $record->email . ' senden?')
+                    ->modalDescription(fn (User $record) => 'Einen neuen Einladungslink an '.$record->email.' senden?')
                     ->modalSubmitActionLabel('Senden')
                     ->action(function (User $record) {
                         $status = Password::broker()->sendResetLink(['email' => $record->email]);
@@ -100,7 +100,7 @@ class UserResource extends Resource
                         if ($status === Password::RESET_LINK_SENT) {
                             Notification::make()
                                 ->title('Einladung gesendet')
-                                ->body('Ein neuer Einladungslink wurde an ' . $record->email . ' verschickt.')
+                                ->body('Ein neuer Einladungslink wurde an '.$record->email.' verschickt.')
                                 ->success()
                                 ->send();
                         } else {
@@ -114,16 +114,16 @@ class UserResource extends Resource
                 \Filament\Actions\DeleteAction::make()
                     ->hidden(fn (User $record) => $record->id === auth()->id())
                     ->requiresConfirmation()
-                    ->modalDescription(fn (User $record) => 'Nutzer "' . $record->name . '" und alle zugehörigen Daten unwiderruflich löschen?'),
+                    ->modalDescription(fn (User $record) => 'Nutzer "'.$record->name.'" und alle zugehörigen Daten unwiderruflich löschen?'),
             ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => \App\Filament\Resources\UserResource\Pages\ListUsers::route('/'),
+            'index' => \App\Filament\Resources\UserResource\Pages\ListUsers::route('/'),
             'create' => \App\Filament\Resources\UserResource\Pages\CreateUser::route('/create'),
-            'edit'   => \App\Filament\Resources\UserResource\Pages\EditUser::route('/{record}/edit'),
+            'edit' => \App\Filament\Resources\UserResource\Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

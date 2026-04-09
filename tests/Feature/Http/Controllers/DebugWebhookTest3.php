@@ -37,7 +37,7 @@ test('debug webhook error', function () {
     ];
 
     $response = test()->postJson('/api/webhooks/langdock/agent-result', $payload, [
-        'X-Langdock-Signature' => 'sha256=' . hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
+        'X-Langdock-Signature' => 'sha256='.hash_hmac('sha256', json_encode($payload), config('services.langdock.webhook_secret')),
         'X-Langdock-Timestamp' => now()->unix(),
     ]);
 

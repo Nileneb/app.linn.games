@@ -13,7 +13,6 @@ class LangdockContextInjector
      * Numeric IDs are used for user_id (User model uses auto-increment integers).
      *
      * @param  mixed  $value
-     * @return bool
      */
     private function isValidIdentifier($value): bool
     {
@@ -34,9 +33,6 @@ class LangdockContextInjector
 
     /**
      * Validates if a string is a valid UUID format.
-     *
-     * @param  string|null  $value
-     * @return bool
      */
     private function isValidUuid(?string $value): bool
     {
@@ -63,7 +59,7 @@ class LangdockContextInjector
         ];
 
         foreach ($hexParts as $part) {
-            if (!ctype_xdigit($part)) {
+            if (! ctype_xdigit($part)) {
                 return false;
             }
         }
@@ -78,29 +74,30 @@ class LangdockContextInjector
      * @param  array<int, array{id: string, role: string, parts: array}>  $messages
      * @param  array{projekt_id?: string, workspace_id?: string, user_id?: string}  $context
      * @return array<int, array{id: string, role: string, parts: array}>
+     *
      * @throws \InvalidArgumentException if UUIDs are invalid format
      */
     public function inject(array $messages, array $context): array
     {
-        $projektId     = $context['projekt_id'] ?? null;
-        $workspaceId   = $context['workspace_id'] ?? null;
-        $userId        = $context['user_id'] ?? null;
-        $userName      = $context['user_name'] ?? null;
+        $projektId = $context['projekt_id'] ?? null;
+        $workspaceId = $context['workspace_id'] ?? null;
+        $userId = $context['user_id'] ?? null;
+        $userName = $context['user_name'] ?? null;
         $workspaceName = $context['workspace_name'] ?? null;
         $structuredOutput = (bool) ($context['structured_output'] ?? false);
         $triggerword = $context['triggerword'] ?? null;
 
         // Validate UUIDs defensively before using in SQL context
-        if ($projektId !== null && !$this->isValidUuid((string) $projektId)) {
+        if ($projektId !== null && ! $this->isValidUuid((string) $projektId)) {
             throw new \InvalidArgumentException("Invalid projekt_id format: '{$projektId}'. Must be a valid UUID.");
         }
 
-        if ($workspaceId !== null && !$this->isValidUuid((string) $workspaceId)) {
+        if ($workspaceId !== null && ! $this->isValidUuid((string) $workspaceId)) {
             throw new \InvalidArgumentException("Invalid workspace_id format: '{$workspaceId}'. Must be a valid UUID.");
         }
 
         // user_id can be either a numeric ID (from User model) or UUID
-        if ($userId !== null && !$this->isValidIdentifier($userId)) {
+        if ($userId !== null && ! $this->isValidIdentifier($userId)) {
             throw new \InvalidArgumentException("Invalid user_id format: '{$userId}'. Must be a valid UUID or numeric ID.");
         }
 
@@ -162,43 +159,43 @@ class LangdockContextInjector
             $lines[] = '';
         }
 
-        $lines[] = 'Kontext: ' . json_encode(
+        $lines[] = 'Kontext: '.json_encode(
             array_filter([
-                'projekt_id'     => $projektId,
-                'workspace_id'   => $workspaceId,
+                'projekt_id' => $projektId,
+                'workspace_id' => $workspaceId,
                 'workspace_name' => $workspaceName,
-                'user_id'        => $userId,
-                'user_name'      => $userName,
-            'triggerword' => $triggerword,
-            'structured_output' => $structuredOutput ?: null,
+                'user_id' => $userId,
+                'user_name' => $userName,
+                'triggerword' => $triggerword,
+                'structured_output' => $structuredOutput ?: null,
             ]),
             JSON_UNESCAPED_UNICODE,
         );
 
         if ($structuredOutput) {
-          $lines[] = '';
-          $lines[] = '=== OUTPUT FORMAT (JSON ENVELOPE v1) ===';
-          $lines[] = 'Antworte mit exakt EINEM gültigen JSON-Objekt. Keine Markdown-Fences, kein Fließtext davor/danach.';
-          $lines[] = 'Wenn du unsicher bist oder Daten fehlen: trage es in warnings ein (statt zu halluzinieren).';
-          $lines[] = '';
-          $lines[] = 'Schema (MUSS diese Keys enthalten):';
-          $lines[] = '{';
-          $lines[] = '  "meta": {"projekt_id": string|null, "workspace_id": string|null, "user_id": string|null, "triggerword": string|null, "version": 1},';
-          $lines[] = '  "db": {"bootstrapped": boolean, "loaded": string[]},';
-          $lines[] = '  "result": {"type": string, "summary": string, "data": object},';
-          $lines[] = '  "next": {"route_to": string|null, "reason": string|null},';
-          $lines[] = '  "warnings": string[]';
-          $lines[] = '}';
-          $lines[] = '';
-          $lines[] = 'Arbeitsreihenfolge:';
-          $lines[] = '1) DB bootstrap (SET LOCAL...)';
-          $lines[] = '2) Lade dir deine Arbeitsgrundlage aus der DB (mindestens projekte + phasen + relevante p*-Tabellen)';
-          $lines[] = '3) Bearbeite den Auftrag und persistiere Ergebnisse in DB (wenn Schema mitgeliefert)';
+            $lines[] = '';
+            $lines[] = '=== OUTPUT FORMAT (JSON ENVELOPE v1) ===';
+            $lines[] = 'Antworte mit exakt EINEM gültigen JSON-Objekt. Keine Markdown-Fences, kein Fließtext davor/danach.';
+            $lines[] = 'Wenn du unsicher bist oder Daten fehlen: trage es in warnings ein (statt zu halluzinieren).';
+            $lines[] = '';
+            $lines[] = 'Schema (MUSS diese Keys enthalten):';
+            $lines[] = '{';
+            $lines[] = '  "meta": {"projekt_id": string|null, "workspace_id": string|null, "user_id": string|null, "triggerword": string|null, "version": 1},';
+            $lines[] = '  "db": {"bootstrapped": boolean, "loaded": string[]},';
+            $lines[] = '  "result": {"type": string, "summary": string, "data": object},';
+            $lines[] = '  "next": {"route_to": string|null, "reason": string|null},';
+            $lines[] = '  "warnings": string[]';
+            $lines[] = '}';
+            $lines[] = '';
+            $lines[] = 'Arbeitsreihenfolge:';
+            $lines[] = '1) DB bootstrap (SET LOCAL...)';
+            $lines[] = '2) Lade dir deine Arbeitsgrundlage aus der DB (mindestens projekte + phasen + relevante p*-Tabellen)';
+            $lines[] = '3) Bearbeite den Auftrag und persistiere Ergebnisse in DB (wenn Schema mitgeliefert)';
         }
 
         $contextMessage = [
-            'id'    => 'system_context',
-            'role'  => 'system',
+            'id' => 'system_context',
+            'role' => 'system',
             'parts' => [['type' => 'text', 'text' => implode("\n", $lines)]],
         ];
 

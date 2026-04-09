@@ -33,6 +33,7 @@ return new class extends Migration
         // Safety guard: Hauptdatenbankbenutzer niemals deaktivieren
         if ($role === env('DB_USERNAME', 'linn_games')) {
             Log::warning("Migration: LANGDOCK_DB_USERNAME ist identisch mit DB_USERNAME ('{$role}') — Migration wird übersprungen um Datenbankzugriff nicht zu sperren.");
+
             return;
         }
 

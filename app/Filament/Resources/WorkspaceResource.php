@@ -6,6 +6,9 @@ use App\Filament\Resources\WorkspaceResource\Pages;
 use App\Filament\Resources\WorkspaceResource\RelationManagers;
 use App\Models\Workspace;
 use App\Services\CreditService;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,19 +17,21 @@ use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class WorkspaceResource extends Resource
 {
     protected static ?string $model = Workspace::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-building-office';
+
     protected static ?string $navigationLabel = 'Workspaces';
+
     protected static ?string $modelLabel = 'Workspace';
+
     protected static ?string $pluralModelLabel = 'Workspaces';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
@@ -52,7 +57,7 @@ class WorkspaceResource extends Resource
                 TextColumn::make('owner.name')->label('Inhaber')->searchable(),
                 TextColumn::make('credits_balance_cents')
                     ->label('Guthaben')
-                    ->formatStateUsing(fn (int $state): string => number_format($state / 100, 2, ',', '.') . ' €')
+                    ->formatStateUsing(fn (int $state): string => number_format($state / 100, 2, ',', '.').' €')
                     ->sortable()
                     ->color(fn (int $state): string => $state <= 0 ? 'danger' : ($state < 500 ? 'warning' : 'success')),
                 TextColumn::make('credit_transactions_count')
@@ -71,9 +76,9 @@ class WorkspaceResource extends Resource
                             ->label('Schnellauswahl')
                             ->inline()
                             ->options([
-                                '0.50'  => '0,50 €',
-                                '1.00'  => '1,00 €',
-                                '5.00'  => '5,00 €',
+                                '0.50' => '0,50 €',
+                                '1.00' => '1,00 €',
+                                '5.00' => '5,00 €',
                                 '10.00' => '10,00 €',
                                 '50.00' => '50,00 €',
                             ])
@@ -100,7 +105,7 @@ class WorkspaceResource extends Resource
 
                         Notification::make()
                             ->title('Guthaben aufgeladen')
-                            ->body(number_format($data['amount_eur'], 2, ',', '.') . ' € wurden dem Workspace "' . $record->name . '" gutgeschrieben.')
+                            ->body(number_format($data['amount_eur'], 2, ',', '.').' € wurden dem Workspace "'.$record->name.'" gutgeschrieben.')
                             ->success()
                             ->send();
                     }),
@@ -121,7 +126,7 @@ class WorkspaceResource extends Resource
         }
 
         if ($record->credits_balance_cents > 0) {
-            $lines[] = 'Achtung: Guthaben von ' . number_format($record->credits_balance_cents / 100, 2, ',', '.') . ' € geht verloren.';
+            $lines[] = 'Achtung: Guthaben von '.number_format($record->credits_balance_cents / 100, 2, ',', '.').' € geht verloren.';
         }
 
         return implode(' ', $lines);
@@ -138,10 +143,10 @@ class WorkspaceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListWorkspaces::route('/'),
+            'index' => Pages\ListWorkspaces::route('/'),
             'create' => Pages\CreateWorkspace::route('/create'),
-            'edit'   => Pages\EditWorkspace::route('/{record}/edit'),
-            'view'   => Pages\ViewWorkspace::route('/{record}'),
+            'edit' => Pages\EditWorkspace::route('/{record}/edit'),
+            'view' => Pages\ViewWorkspace::route('/{record}'),
         ];
     }
 }

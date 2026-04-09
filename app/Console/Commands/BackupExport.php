@@ -30,17 +30,19 @@ class BackupExport extends Command
 
         if (! is_dir($outDir) && ! mkdir($outDir, 0755, true)) {
             $this->error("Cannot create output directory: {$outDir}");
+
             return self::FAILURE;
         }
 
-        $now       = Carbon::now('UTC');
-        $stamp     = $now->format('Y-m-d_His');
-        $fileName  = "backup_{$stamp}.ndjson";
-        $filePath  = rtrim($outDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $fileName;
+        $now = Carbon::now('UTC');
+        $stamp = $now->format('Y-m-d_His');
+        $fileName = "backup_{$stamp}.ndjson";
+        $filePath = rtrim($outDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$fileName;
 
         $handle = fopen($filePath, 'w');
         if ($handle === false) {
             $this->error("Cannot write to: {$filePath}");
+
             return self::FAILURE;
         }
 
@@ -49,12 +51,14 @@ class BackupExport extends Command
         foreach ($tables as $table) {
             if (! $this->tableExists($table)) {
                 $this->warn("Table '{$table}' does not exist — skipping.");
+
                 continue;
             }
 
             $columns = $this->getColumns($table);
             if ($columns === []) {
                 $this->warn("Table '{$table}' has no readable columns — skipping.");
+
                 continue;
             }
 
@@ -62,17 +66,17 @@ class BackupExport extends Command
             fwrite($handle, json_encode([
                 '__meta' => [
                     'schema_version' => 1,
-                    'exported_at'    => $now->toIso8601String(),
-                    'table'          => $table,
-                    'columns'        => $columns,
+                    'exported_at' => $now->toIso8601String(),
+                    'table' => $table,
+                    'columns' => $columns,
                 ],
-            ], JSON_UNESCAPED_UNICODE) . "\n");
+            ], JSON_UNESCAPED_UNICODE)."\n");
 
             // Stream rows to avoid loading entire table into memory
             $count = 0;
             DB::table($table)->orderBy($this->pkColumn($table))->chunk(500, function ($rows) use ($handle, &$count) {
                 foreach ($rows as $row) {
-                    fwrite($handle, json_encode((array) $row, JSON_UNESCAPED_UNICODE) . "\n");
+                    fwrite($handle, json_encode((array) $row, JSON_UNESCAPED_UNICODE)."\n");
                     $count++;
                 }
             });

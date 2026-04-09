@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Recherche\Projekt;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 
 /**
@@ -22,13 +21,13 @@ class ProjectExportService
     public function generateMarkdown(Projekt $projekt): string
     {
         $lines = [
-            '# ' . ($projekt->titel ?? 'Systematisches Literaturreview'),
+            '# '.($projekt->titel ?? 'Systematisches Literaturreview'),
             '',
-            '**Forschungsfrage:** ' . $projekt->forschungsfrage,
-            '**Review-Typ:** ' . ($projekt->review_typ ?? 'N/A'),
-            '**Projekt-ID:** ' . $projekt->id,
-            '**Erstellt:** ' . $projekt->created_at?->format('d.m.Y H:i'),
-            '**Aktualisiert:** ' . $projekt->updated_at?->format('d.m.Y H:i'),
+            '**Forschungsfrage:** '.$projekt->forschungsfrage,
+            '**Review-Typ:** '.($projekt->review_typ ?? 'N/A'),
+            '**Projekt-ID:** '.$projekt->id,
+            '**Erstellt:** '.$projekt->created_at?->format('d.m.Y H:i'),
+            '**Aktualisiert:** '.$projekt->updated_at?->format('d.m.Y H:i'),
             '',
             '---',
             '',
@@ -69,7 +68,8 @@ class ProjectExportService
 
         if ($komponenten->isEmpty()) {
             $lines[] = '_Keine Einträge_';
-            return implode("\n", $lines) . "\n";
+
+            return implode("\n", $lines)."\n";
         }
 
         $lines[] = '';
@@ -93,7 +93,8 @@ class ProjectExportService
 
         if ($cluster->isEmpty() && $mappings->isEmpty()) {
             $lines[] = '_Keine Einträge_';
-            return implode("\n", $lines) . "\n";
+
+            return implode("\n", $lines)."\n";
         }
 
         $lines[] = '';
@@ -130,7 +131,8 @@ class ProjectExportService
 
         if ($datenbanken->isEmpty()) {
             $lines[] = '_Keine Einträge_';
-            return implode("\n", $lines) . "\n";
+
+            return implode("\n", $lines)."\n";
         }
 
         $lines[] = '';
@@ -156,7 +158,8 @@ class ProjectExportService
 
         if ($suchstrings->isEmpty()) {
             $lines[] = '_Keine Einträge_';
-            return implode("\n", $lines) . "\n";
+
+            return implode("\n", $lines)."\n";
         }
 
         $lines[] = '';
@@ -179,7 +182,7 @@ class ProjectExportService
     {
         $lines = ['## Phase 5: Screening & Treffer'];
         $lines[] = '';
-        $lines[] = "**Status:** Screening & Treffer-Import (Details siehe Anwendung)";
+        $lines[] = '**Status:** Screening & Treffer-Import (Details siehe Anwendung)';
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -189,7 +192,7 @@ class ProjectExportService
     {
         $lines = ['## Phase 6: Qualitätsbewertung'];
         $lines[] = '';
-        $lines[] = "**Status:** Qualitätsbewertung (Details siehe Anwendung)";
+        $lines[] = '**Status:** Qualitätsbewertung (Details siehe Anwendung)';
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -199,7 +202,7 @@ class ProjectExportService
     {
         $lines = ['## Phase 7: Datenextraktion & Synthese'];
         $lines[] = '';
-        $lines[] = "**Status:** Datenextraktion & Synthese (Details siehe Anwendung)";
+        $lines[] = '**Status:** Datenextraktion & Synthese (Details siehe Anwendung)';
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -209,7 +212,7 @@ class ProjectExportService
     {
         $lines = ['## Phase 8: Suchprotokoll & Final Report'];
         $lines[] = '';
-        $lines[] = "**Status:** Final Report & Dokumentation (Details siehe Anwendung)";
+        $lines[] = '**Status:** Final Report & Dokumentation (Details siehe Anwendung)';
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -280,9 +283,9 @@ TEX;
     public function exportAsMarkdown(Projekt $projekt): string
     {
         $markdown = $this->generateMarkdown($projekt);
-        $filename = 'export_' . Str::slug($projekt->titel ?? 'projekt') . '_' . date('Y-m-d_His') . '.md';
+        $filename = 'export_'.Str::slug($projekt->titel ?? 'projekt').'_'.date('Y-m-d_His').'.md';
 
-        return storage_path('exports/' . $filename);
+        return storage_path('exports/'.$filename);
     }
 
     /**
@@ -291,8 +294,8 @@ TEX;
     public function exportAsLaTeX(Projekt $projekt, ?string $markdown = null): string
     {
         $latex = $this->generateLaTeX($projekt, $markdown);
-        $filename = 'export_' . Str::slug($projekt->titel ?? 'projekt') . '_' . date('Y-m-d_His') . '.tex';
+        $filename = 'export_'.Str::slug($projekt->titel ?? 'projekt').'_'.date('Y-m-d_His').'.tex';
 
-        return storage_path('exports/' . $filename);
+        return storage_path('exports/'.$filename);
     }
 }

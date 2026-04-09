@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
+use App\Models\Recherche\P3Datenbankmatrix;
+use App\Models\Recherche\P3Disziplin;
+use App\Models\Recherche\P3GeografischerFilter;
+use App\Models\Recherche\P3GraueLiteratur;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

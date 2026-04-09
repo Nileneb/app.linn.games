@@ -53,7 +53,7 @@ class P5DiagnosticService
     private function checkEnvVariable(string $projektId): array
     {
         try {
-            DB::statement("SET LOCAL app.current_projekt_id = ?", [$projektId]);
+            DB::statement('SET LOCAL app.current_projekt_id = ?', [$projektId]);
             $value = DB::selectOne("SELECT current_setting('app.current_projekt_id') as value")?->value;
 
             return [
@@ -112,10 +112,10 @@ class P5DiagnosticService
     private function countHitsWithRls(string $projektId, int $userId): array
     {
         try {
-            DB::statement("SET LOCAL app.current_projekt_id = ?", [$projektId]);
+            DB::statement('SET LOCAL app.current_projekt_id = ?', [$projektId]);
 
             if ($userId > 0) {
-                DB::statement("SET LOCAL app.current_user_id = ?", [$userId]);
+                DB::statement('SET LOCAL app.current_user_id = ?', [$userId]);
             }
 
             $count = DB::selectOne('SELECT COUNT(*) as count FROM p5_treffer')?->count;

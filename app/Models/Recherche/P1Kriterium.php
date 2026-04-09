@@ -11,6 +11,7 @@ class P1Kriterium extends Model
     use HasUuids;
 
     protected $table = 'p1_kriterien';
+
     public $timestamps = false;
 
     protected $fillable = [

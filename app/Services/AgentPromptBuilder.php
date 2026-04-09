@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 
 /**
  * AgentPromptBuilder
- * Erstellt kontextbewusste Prompts für Agenten, die Phase-Schwellwerte und 
+ * Erstellt kontextbewusste Prompts für Agenten, die Phase-Schwellwerte und
  * Best-Practices einbeziehen.
  */
 class AgentPromptBuilder
@@ -35,7 +35,7 @@ class AgentPromptBuilder
             $this->buildTemplateGuidance($phase),
             '',
             '## CRITICAL REMINDERS',
-            '- Alle Datenbankoperationen verwenden: SET LOCAL app.current_projekt_id = \'' . $projekt->id . '\'',
+            '- Alle Datenbankoperationen verwenden: SET LOCAL app.current_projekt_id = \''.$projekt->id.'\'',
             '- Keine Bestätigungen ohne tatsächliche Arbeit ("okay", "understood", etc.)',
             '- Fokus auf SUBSTANZIELLE ERGEBNISSE, nicht Checklisten',
         ];
@@ -49,29 +49,29 @@ class AgentPromptBuilder
     private function buildPhaseGuidance(int $phase): string
     {
         return match ($phase) {
-            1 => '## PHASE 1: KOMPONENTEN & STRUKTURMODELL' . "\n" .
-                 'Ziel: Finde **mind. 3 Komponenten** der Forschungsfrage (Intervention, Population, Outcome)' . "\n" .
+            1 => '## PHASE 1: KOMPONENTEN & STRUKTURMODELL'."\n".
+                 'Ziel: Finde **mind. 3 Komponenten** der Forschungsfrage (Intervention, Population, Outcome)'."\n".
                  'Dies ist notwendig, um zu Phase 2 überzugehen (kein Hard Block, aber starke Empfehlung).',
-            2 => '## PHASE 2: CLUSTER & MAPPING' . "\n" .
-                 'Ziel: Ordne P1-Komponenten zu Clustern; erstelle Suchstring-Komponenten-Mappings' . "\n" .
+            2 => '## PHASE 2: CLUSTER & MAPPING'."\n".
+                 'Ziel: Ordne P1-Komponenten zu Clustern; erstelle Suchstring-Komponenten-Mappings'."\n".
                  'Keine strikten Schwellwerte — Warnung wird ausgegeben, wenn keine Cluster/Mappings vorhanden.',
-            3 => '## PHASE 3: DATENBANKMATRIX' . "\n" .
-                 'Ziel: Erstelle eine Matrix mit verfügbaren Datenbanken, Disziplinen, geograph. Filtern' . "\n" .
+            3 => '## PHASE 3: DATENBANKMATRIX'."\n".
+                 'Ziel: Erstelle eine Matrix mit verfügbaren Datenbanken, Disziplinen, geograph. Filtern'."\n".
                  'Keine strikten Schwellwerte — aber mind. 1 DB sollte ausgewählt sein für P4.',
-            4 => '## PHASE 4: SUCHSTRINGS' . "\n" .
-                 'Ziel: Generiere Suchstrings basierend auf P3-Datenbankmatrix' . "\n" .
+            4 => '## PHASE 4: SUCHSTRINGS'."\n".
+                 'Ziel: Generiere Suchstrings basierend auf P3-Datenbankmatrix'."\n".
                  'Minimum: 1 String pro Datenbank. Qualitätscheck erfolgt separat.',
-            5 => '## PHASE 5: SCREENING & IMPORT' . "\n" .
-                 'Ziel: Importiere Papers und führe Screening durch' . "\n" .
+            5 => '## PHASE 5: SCREENING & IMPORT'."\n".
+                 'Ziel: Importiere Papers und führe Screening durch'."\n".
                  'Empfehlter Schwellwert: >5 Treffer für sinnvolles Screening in Phase 6.',
-            6 => '## PHASE 6: QUALITÄTSBEWERTUNG' . "\n" .
-                 'Ziel: Bewerte Paper-Qualität (z.B. GRADE)' . "\n" .
+            6 => '## PHASE 6: QUALITÄTSBEWERTUNG'."\n".
+                 'Ziel: Bewerte Paper-Qualität (z.B. GRADE)'."\n".
                  'Hard Block: Mind. 1 Bewertung erforderlich, bevor zu Phase 7.',
-            7 => '## PHASE 7: DATENEXTRAKTION & SYNTHESE' . "\n" .
-                 'Ziel: Extrahiere Daten aus Papers; wähle Synthesemethode' . "\n" .
+            7 => '## PHASE 7: DATENEXTRAKTION & SYNTHESE'."\n".
+                 'Ziel: Extrahiere Daten aus Papers; wähle Synthesemethode'."\n".
                  'Hard Block: Mind. 1 Extraktion erforderlich, bevor zu Phase 8.',
-            8 => '## PHASE 8: FINAL REPORT' . "\n" .
-                 'Ziel: Erstelle Suchprotokoll & Report-Dokumentation' . "\n" .
+            8 => '## PHASE 8: FINAL REPORT'."\n".
+                 'Ziel: Erstelle Suchprotokoll & Report-Dokumentation'."\n".
                  'Finale Phase — fokussiere auf Vollständigkeit und Lesbarkeit.',
             default => '',
         };
@@ -179,7 +179,7 @@ class AgentPromptBuilder
             return '';
         }
 
-        return "## TEMPLATE FÜR DIESE PHASE\n" . implode("\n", $templates);
+        return "## TEMPLATE FÜR DIESE PHASE\n".implode("\n", $templates);
     }
 
     /**
@@ -198,7 +198,7 @@ class AgentPromptBuilder
             $lines[] = '=== VORHERIGE PHASEN-ERGEBNISSE ===';
             foreach ($previousResults as $prevPhase => $result) {
                 $lines[] = "--- Phase P{$prevPhase} ---";
-                $lines[] = substr($result, 0, 300) . (strlen($result) > 300 ? '...' : '');
+                $lines[] = substr($result, 0, 300).(strlen($result) > 300 ? '...' : '');
                 $lines[] = '';
             }
         }

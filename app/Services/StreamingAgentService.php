@@ -25,35 +25,35 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class StreamingAgentService
 {
     public function __construct(
-        private readonly LangdockMcpClient        $mcpClient,
-        private readonly ContextProvider          $contextProvider,
+        private readonly LangdockMcpClient $mcpClient,
+        private readonly ContextProvider $contextProvider,
         private readonly AgentResultStorageService $storageService,
     ) {}
 
     /**
      * Streamt die Agent-Antwort als echtes SSE via LangdockMcpClient.
      *
-     * @param  string  $agentId   Langdock Agent-ID
-     * @param  array   $messages  Nachrichten-Array [['role' => '...', 'content' => '...']]
-     *                            Muss die aktuelle User-Frage als letzte User-Message enthalten.
-     * @param  int     $timeout   Wird nicht mehr an den API-Call weitergegeben — der MCP-Client
-     *                            verwaltet eigene Timeouts (connect: 10s, read: 120s).
-     *                            Bleibt für Signatur-Kompatibilität mit StreamingMcpController erhalten.
-     * @param  array   $context   Optionaler Kontext. Für ContextProvider + Chat-Persistierung werden
-     *                            folgende Keys ausgewertet: projekt_id, workspace_id, user_id.
+     * @param  string  $agentId  Langdock Agent-ID
+     * @param  array  $messages  Nachrichten-Array [['role' => '...', 'content' => '...']]
+     *                           Muss die aktuelle User-Frage als letzte User-Message enthalten.
+     * @param  int  $timeout  Wird nicht mehr an den API-Call weitergegeben — der MCP-Client
+     *                        verwaltet eigene Timeouts (connect: 10s, read: 120s).
+     *                        Bleibt für Signatur-Kompatibilität mit StreamingMcpController erhalten.
+     * @param  array  $context  Optionaler Kontext. Für ContextProvider + Chat-Persistierung werden
+     *                          folgende Keys ausgewertet: projekt_id, workspace_id, user_id.
      */
     public function stream(
         string $agentId,
-        array  $messages,
-        int    $timeout = 120,
-        array  $context = [],
+        array $messages,
+        int $timeout = 120,
+        array $context = [],
     ): StreamedResponse {
         return new StreamedResponse(
             function () use ($agentId, $messages, $context): void {
                 try {
                     $builtMessages = $this->buildMessages($messages, $context);
-                    $fullText      = '';
-                    $index         = 0;
+                    $fullText = '';
+                    $index = 0;
 
                     // Echtes Streaming: Generator yieldet pro SSE-Chunk ['text' => string, 'raw' => array]
                     foreach ($this->mcpClient->streamChatCompletion($builtMessages, $agentId) as $chunk) {
@@ -68,7 +68,7 @@ class StreamingAgentService
                         $this->sendChunk([
                             'chunk' => $text,
                             'index' => $index++,
-                            'type'  => 'content',
+                            'type' => 'content',
                         ]);
 
                         // Jeden Chunk sofort an den Browser senden
@@ -77,9 +77,9 @@ class StreamingAgentService
 
                     // Abschluss-Signal senden
                     $this->sendChunk([
-                        'status'      => 'done',
+                        'status' => 'done',
                         'total_chars' => mb_strlen($fullText),
-                        'type'        => 'complete',
+                        'type' => 'complete',
                     ]);
 
                     // Chat persistieren (nur wenn Projekt-Kontext vorhanden)
@@ -88,21 +88,21 @@ class StreamingAgentService
                 } catch (LangdockConnectionException $e) {
                     Log::error('StreamingAgentService: MCP-Streaming fehlgeschlagen', [
                         'agent_id' => $agentId,
-                        'error'    => $e->getMessage(),
+                        'error' => $e->getMessage(),
                     ]);
 
                     $this->sendChunk([
                         'status' => 'error',
-                        'error'  => $e->getMessage(),
-                        'type'   => 'error',
+                        'error' => $e->getMessage(),
+                        'type' => 'error',
                     ]);
                 }
             },
             200,
             [
-                'Content-Type'      => 'text/event-stream',
-                'Cache-Control'     => 'no-cache',
-                'Connection'        => 'keep-alive',
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache',
+                'Connection' => 'keep-alive',
                 'X-Accel-Buffering' => 'no', // Nginx-Buffering deaktivieren
             ],
         );
@@ -121,10 +121,10 @@ class StreamingAgentService
      */
     private function buildMessages(array $messages, array $context): array
     {
-        $projektId   = $context['projekt_id'] ?? null;
+        $projektId = $context['projekt_id'] ?? null;
         $workspaceId = $context['workspace_id'] ?? null;
-        $userId      = isset($context['user_id']) ? (string) $context['user_id'] : '';
-        $userQuery   = $this->extractLastUserQuery($messages);
+        $userId = isset($context['user_id']) ? (string) $context['user_id'] : '';
+        $userQuery = $this->extractLastUserQuery($messages);
 
         if ($projektId && $workspaceId && $userId !== '' && $userQuery !== '') {
             try {
@@ -137,9 +137,9 @@ class StreamingAgentService
                 );
             } catch (\Throwable $e) {
                 Log::warning('StreamingAgentService: ContextProvider fehlgeschlagen, Fallback auf Roh-Messages', [
-                    'projekt_id'   => $projektId,
+                    'projekt_id' => $projektId,
                     'workspace_id' => $workspaceId,
-                    'error'        => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -158,9 +158,9 @@ class StreamingAgentService
      */
     private function persistChat(string $assistantText, array $messages, array $context): void
     {
-        $projektId   = $context['projekt_id'] ?? null;
+        $projektId = $context['projekt_id'] ?? null;
         $workspaceId = $context['workspace_id'] ?? null;
-        $userId      = isset($context['user_id']) ? (string) $context['user_id'] : '';
+        $userId = isset($context['user_id']) ? (string) $context['user_id'] : '';
 
         if (! $projektId || ! $workspaceId || $userId === '' || $assistantText === '') {
             return;
@@ -169,7 +169,7 @@ class StreamingAgentService
         // Gespräch als Markdown-Protokoll aufbauen
         $lines = [];
         foreach ($messages as $msg) {
-            $role    = ucfirst((string) ($msg['role'] ?? 'unknown'));
+            $role = ucfirst((string) ($msg['role'] ?? 'unknown'));
             $content = (string) ($msg['content'] ?? '');
             $lines[] = "## {$role}\n\n{$content}";
         }
@@ -181,9 +181,9 @@ class StreamingAgentService
             $this->storageService->storeChat($chatMarkdown, $workspaceId, $userId, $projektId);
         } catch (\Throwable $e) {
             Log::warning('StreamingAgentService: Chat-Persistierung fehlgeschlagen', [
-                'projekt_id'   => $projektId,
+                'projekt_id' => $projektId,
                 'workspace_id' => $workspaceId,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -208,6 +208,6 @@ class StreamingAgentService
      */
     private function sendChunk(array $data): void
     {
-        echo 'data: ' . json_encode($data, JSON_UNESCAPED_UNICODE) . "\n\n";
+        echo 'data: '.json_encode($data, JSON_UNESCAPED_UNICODE)."\n\n";
     }
 }

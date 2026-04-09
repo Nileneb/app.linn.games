@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\WorkspaceResource\Pages;
 
-use App\Filament\Actions\DeleteAction;
-use App\Filament\Actions\EditAction;
 use App\Filament\Resources\WorkspaceResource;
 use Filament\Resources\Pages\ViewRecord;
 

@@ -11,6 +11,7 @@ class P3GeografischerFilter extends Model
     use HasUuids;
 
     protected $table = 'p3_geografische_filter';
+
     public $timestamps = false;
 
     protected $fillable = [

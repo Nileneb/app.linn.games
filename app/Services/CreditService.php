@@ -43,10 +43,10 @@ class CreditService
 
             $workspace->decrement('credits_balance_cents', $cents);
             CreditTransaction::create([
-                'workspace_id'     => $workspace->id,
-                'type'             => 'usage',
-                'amount_cents'     => -$cents,
-                'tokens_used'      => $tokensUsed,
+                'workspace_id' => $workspace->id,
+                'type' => 'usage',
+                'amount_cents' => -$cents,
+                'tokens_used' => $tokensUsed,
                 'agent_config_key' => $agentKey,
             ]);
         });
@@ -60,9 +60,9 @@ class CreditService
             $workspace->increment('credits_balance_cents', $cents);
             CreditTransaction::create([
                 'workspace_id' => $workspace->id,
-                'type'         => 'topup',
+                'type' => 'topup',
                 'amount_cents' => $cents,
-                'description'  => $description ?: null,
+                'description' => $description ?: null,
             ]);
         });
     }
@@ -70,6 +70,7 @@ class CreditService
     public function toCents(int $tokens): int
     {
         $pricePerK = (int) config('services.langdock.price_per_1k_tokens_cents', 2);
+
         return (int) ceil($tokens * $pricePerK / 1000);
     }
 
@@ -94,10 +95,10 @@ class CreditService
 
         if ($percentRemaining <= $thresholdPercent && $currentBalance > 0) {
             Log::warning('Low credit balance warning', [
-                'workspace_id'       => $workspace->id,
-                'balance_cents'      => $currentBalance,
-                'percent_remaining'  => $percentRemaining,
-                'threshold_percent'  => $thresholdPercent,
+                'workspace_id' => $workspace->id,
+                'balance_cents' => $currentBalance,
+                'percent_remaining' => $percentRemaining,
+                'threshold_percent' => $thresholdPercent,
             ]);
 
             return true;
@@ -123,11 +124,11 @@ class CreditService
 
         if (($spentToday + $cents) > $dailyLimitCents) {
             Log::warning('Agent daily limit exceeded', [
-                'workspace_id'    => $workspace->id,
-                'agent_key'       => $agentKey,
-                'spent_today'     => $spentToday,
+                'workspace_id' => $workspace->id,
+                'agent_key' => $agentKey,
+                'spent_today' => $spentToday,
                 'requested_cents' => $cents,
-                'daily_limit'     => $dailyLimitCents,
+                'daily_limit' => $dailyLimitCents,
             ]);
 
             throw new AgentDailyLimitExceededException(
@@ -155,9 +156,9 @@ class CreditService
             ->get()
             ->map(fn ($row) => [
                 'agent_config_key' => $row->agent_config_key,
-                'total_cents'      => (int) $row->total_cents,
-                'total_tokens'     => (int) $row->total_tokens,
-                'request_count'    => (int) $row->request_count,
+                'total_cents' => (int) $row->total_cents,
+                'total_tokens' => (int) $row->total_tokens,
+                'request_count' => (int) $row->request_count,
             ])
             ->all();
     }
