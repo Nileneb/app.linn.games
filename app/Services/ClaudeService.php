@@ -56,6 +56,11 @@ class ClaudeService
 
         $startedAt = microtime(true);
 
+        // Mayring-Agent erhält Tool-Use-Zugriff auf MayringCoder-MCP
+        if ($promptFile === 'mayring-agent') {
+            return $this->callWithToolUse($apiKey, $model, $systemPrompt, $messages, $maxTok, $configKey, $workspace);
+        }
+
         $response = $this->callWithRetry($apiKey, $model, $systemPrompt, $messages, $maxTok, $configKey);
 
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -151,6 +156,146 @@ class ClaudeService
         }
 
         throw new ClaudeAgentException('Claude API nicht erreichbar: '.($lastException?->getMessage() ?? 'Unbekannter Fehler'));
+    }
+
+    /**
+     * Tool-Use-Loop für den Mayring-Agent.
+     * Claude ruft Tools auf → MayringMcpClient führt sie aus → Ergebnis zurück an Claude.
+     *
+     * @return array{content: string, raw: array, tokens_used: int}
+     */
+    private function callWithToolUse(
+        string $apiKey,
+        string $model,
+        string $systemPrompt,
+        array $messages,
+        int $maxTokens,
+        string $configKey,
+        ?Workspace $workspace,
+    ): array {
+        $tools = [
+            [
+                'name' => 'search_documents',
+                'description' => 'Semantische Suche über Dokument-Chunks mit optionalem Mayring-Kategorie-Filter',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'query' => ['type' => 'string', 'description' => 'Suchanfrage in natürlicher Sprache'],
+                        'categories' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Mayring-Kategorien als Filter'],
+                        'top_k' => ['type' => 'integer', 'default' => 8],
+                    ],
+                    'required' => ['query'],
+                ],
+            ],
+            [
+                'name' => 'ingest_and_categorize',
+                'description' => 'Inhalt in MayringCoder ingesten und qualitative Kategorisierung via Ollama ausführen',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'content' => ['type' => 'string', 'description' => 'Text-Inhalt der kategorisiert werden soll'],
+                        'source_id' => ['type' => 'string', 'description' => 'Eindeutige ID der Quelle'],
+                    ],
+                    'required' => ['content', 'source_id'],
+                ],
+            ],
+        ];
+
+        $totalInputTokens = 0;
+        $totalOutputTokens = 0;
+        $maxIterations = 10;
+        $iteration = 0;
+        $currentMessages = $messages;
+        $raw = [];
+        $contentBlocks = [];
+
+        do {
+            $body = [
+                'model' => $model,
+                'max_tokens' => $maxTokens,
+                'system' => $systemPrompt,
+                'messages' => $currentMessages,
+                'tools' => $tools,
+            ];
+
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->timeout(120)->post(self::API_URL, $body);
+
+            if ($response->failed()) {
+                throw new ClaudeAgentException("Claude API Tool-Use Fehler {$response->status()}: ".$response->body());
+            }
+
+            $raw = $response->json() ?? [];
+            $stopReason = $raw['stop_reason'] ?? 'end_turn';
+            $totalInputTokens += (int) ($raw['usage']['input_tokens'] ?? 0);
+            $totalOutputTokens += (int) ($raw['usage']['output_tokens'] ?? 0);
+            $contentBlocks = $raw['content'] ?? [];
+
+            if ($stopReason !== 'tool_use') {
+                break;
+            }
+
+            // Tool-Calls ausführen
+            $currentMessages[] = ['role' => 'assistant', 'content' => $contentBlocks];
+            $toolResults = [];
+
+            foreach ($contentBlocks as $block) {
+                if (($block['type'] ?? '') !== 'tool_use') {
+                    continue;
+                }
+
+                $toolName = $block['name'];
+                $toolInput = $block['input'] ?? [];
+                $toolId = $block['id'];
+
+                try {
+                    $result = match ($toolName) {
+                        'search_documents' => $this->mayringClient->searchDocuments(
+                            $toolInput['query'],
+                            $toolInput['categories'] ?? [],
+                            (int) ($toolInput['top_k'] ?? 8),
+                        ),
+                        'ingest_and_categorize' => $this->mayringClient->ingestAndCategorize(
+                            $toolInput['content'],
+                            $toolInput['source_id'],
+                        ),
+                        default => throw new \RuntimeException("Unbekanntes Tool: {$toolName}"),
+                    };
+                    $toolResults[] = [
+                        'type' => 'tool_result',
+                        'tool_use_id' => $toolId,
+                        'content' => json_encode($result, JSON_UNESCAPED_UNICODE),
+                    ];
+                } catch (\Throwable $e) {
+                    Log::error('MayringCoder Tool-Use Fehler', ['tool' => $toolName, 'error' => $e->getMessage()]);
+                    $toolResults[] = [
+                        'type' => 'tool_result',
+                        'tool_use_id' => $toolId,
+                        'content' => 'Fehler: '.$e->getMessage(),
+                        'is_error' => true,
+                    ];
+                }
+            }
+
+            $currentMessages[] = ['role' => 'user', 'content' => $toolResults];
+            $iteration++;
+        } while ($iteration < $maxIterations);
+
+        $tokensUsed = $totalInputTokens + $totalOutputTokens;
+        $textContent = collect($contentBlocks)->firstWhere('type', 'text')['text'] ?? '';
+
+        if ($workspace !== null && $tokensUsed > 0) {
+            $this->creditService->deduct($workspace, $totalInputTokens, $configKey, $totalOutputTokens);
+        }
+
+        return [
+            'content' => $textContent,
+            'raw' => $raw,
+            'tokens_used' => $tokensUsed,
+        ];
     }
 
     private function resolveWorkspace(array $context): ?Workspace
