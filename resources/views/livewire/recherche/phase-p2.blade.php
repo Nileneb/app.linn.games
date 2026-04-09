@@ -307,7 +307,7 @@ new class extends Component {
 
 <div class="space-y-6">
     {{-- KI-Agent Trigger --}}
-    <x-phase-agent-trigger :phase-nr="2" />
+    <x-phase-agent-trigger :phase-nr="2" :dispatched="$agentDispatched" />
 
     {{-- ═══ Review-Typ-Entscheidung ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">

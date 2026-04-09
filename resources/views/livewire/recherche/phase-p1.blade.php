@@ -344,7 +344,7 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Button --}}
-    <x-phase-agent-trigger :phase-nr="1" />
+    <x-phase-agent-trigger :phase-nr="1" :dispatched="$agentDispatched" />
 
     {{-- ═══ Strukturmodellwahl ═══ --}}
     <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">
