@@ -45,13 +45,19 @@ class SynthesisMarkdownService
         $md[] = '';
 
         // Phase-specific content sections
-        match ($phaseNr) {
-            5 => $this->appendP5Content($md, $agentData, $chunksByPaper),
-            6 => $this->appendP6Content($md, $agentData, $chunksByPaper),
-            7 => $this->appendP7Content($md, $agentData, $chunksByPaper),
-            8 => $this->appendP8Content($md, $agentData, $chunksByPaper),
-            default => $md[] = '## Content'."\n".'Agent response data available.',
-        };
+        try {
+            match ($phaseNr) {
+                5 => $this->appendP5Content($md, $agentData, $chunksByPaper),
+                6 => $this->appendP6Content($md, $agentData, $chunksByPaper),
+                7 => $this->appendP7Content($md, $agentData, $chunksByPaper),
+                8 => $this->appendP8Content($md, $agentData, $chunksByPaper),
+                default => $md[] = '## Content'."\n".'Agent response data available.',
+            };
+        } catch (\Throwable $e) {
+            $md[] = '## Content';
+            $md[] = '';
+            $md[] = '> [Fehler beim Generieren des Phaseninhalts: '.$e->getMessage().']';
+        }
 
         $md[] = '';
         $md[] = '---';
