@@ -63,11 +63,11 @@ docker compose up -d
 - DSGVO-Datenexport & Account-Löschung (`/dsgvo/export`, `/dsgvo/delete-account`)
 
 ### Systematische Literaturrecherche
-- **ResearchInput** — Forschungsfrage eingeben → Projekt erstellen → Langdock-KI-Agent via Queue auslösen
+- **ResearchInput** — Forschungsfrage eingeben → Projekt erstellen → KI-Agent (Claude API) via Queue auslösen
 - **ProjektListe** — Alle Recherche-Projekte des Benutzers (sortiert nach Erstellungsdatum)
 - **ProjektDetail** — Einzelprojekt mit Phasen (P1–P8) und Trefferliste (P5)
 - 32 Eloquent-Models für 8 Phasen eines systematischen Reviews
-- KI-Integration: `LangdockAgentService` → Langdock Agents Completions API (phasenweise Agent-Calls)
+- KI-Integration: `ClaudeService` → Anthropic Claude API (direkte HTTP-Aufrufe, testbar via `Http::fake()`)
 - Vektor-Embeddings: `paper_embeddings`-Tabelle mit pgvector (IVFFlat-Index)
 - Activity-Logging: Änderungen an `Projekt` und `User` via `spatie/laravel-activitylog`
 
@@ -88,18 +88,84 @@ docker compose up -d
 - Optionen: `--skip-build`, `--skip-migrate`
 
 ### MCP PostgreSQL Endpoint
-- Langdock-KI-Zugriff auf die Datenbank via SSE (`/mcp/sse`)
-- Authentifizierung: Bearer-Token, X-API-Key oder Query-Parameter
-- Eingeschränkter DB-Benutzer (`langdock_agent`)
+- Entwickler-Datenbankzugriff via SSE (`/mcp/sse`) — für Claude Code und ähnliche MCP-Clients
+- Authentifizierung: Bearer-Token, X-API-Key oder Query-Parameter (alle Endpunkte inkl. `/messages/`)
+- Eingeschränkter DB-Benutzer — kein Schreibzugriff auf produktive Tabellen
 
 ### Ollama Embedding Endpoint
 - Lokales Embedding-Modell (`nomic-embed-text`) via Ollama
 - Nginx-Proxy unter `/ollama/` mit Token-Authentifizierung
-- Genutzt von Langdock für Vektor-Suche in Recherche-Treffern
+- Genutzt für Vektor-Suche in Recherche-Treffern und Agent-Outputs
 
 ### Paper-Search MCP
 - Literatursuche und Paper-Ingestion via MCP-Protokoll (`/paper-mcp/`)
 - Automatischer Paper-Download und Embedding-Erzeugung
+
+## Service-Architektur
+
+### KI-Agent Flow
+
+```
+UI (Volt/Livewire)
+  → TriggersPhaseAgent trait | agent-action-button.blade.php
+  → SendAgentMessage::execute()
+  → ClaudeService::callByConfigKey()
+      ├─ PromptLoaderService (lädt .md aus resources/prompts/agents/ + Skills)
+      ├─ ClaudeContextBuilder::build() (Projektdaten als Markdown in System-Prompt)
+      └─ HTTP POST api.anthropic.com/v1/messages
+  → AgentPayloadService::persistPayload() (JSON Envelope → DB)
+  → LangdockArtifactService::persistFromAgentResponse() (Markdown-Files)
+  → PhaseAgentResult gespeichert
+  → PhaseChainService::maybeDispatchNext() (auto-chain P1→P4, P5→P8)
+```
+
+**Async:** `ProcessPhaseAgentJob` (Queue) für alle Phasen-Agents.
+
+### Zentrale Services
+
+| Service | Datei | Aufgabe |
+|---------|-------|---------|
+| `ClaudeService` | `app/Services/ClaudeService.php` | Ruft Claude API auf, Retry-Logik, Tool-Use-Loop (Mayring), Token-Abrechnung |
+| `PromptLoaderService` | `app/Services/PromptLoaderService.php` | Lädt Agent-Prompts aus `.md`-Dateien inkl. Skill-Includes via YAML-Frontmatter |
+| `ClaudeContextBuilder` | `app/Services/ClaudeContextBuilder.php` | Baut strukturierten Markdown-Kontext aus Projektdaten (P1–P6) für den System-Prompt |
+| `PhaseChainService` | `app/Services/PhaseChainService.php` | Orchestriert Auto-Chain zwischen Phasen nach Agent-Abschluss |
+| `CreditService` | `app/Services/CreditService.php` | Workspace-Guthaben, Token→Cent-Umrechnung (Input/Output getrennt), Tageslimits |
+| `RetrieverService` | `app/Services/RetrieverService.php` | Semantische Suche via pgvector (Ollama Embeddings) |
+| `AgentPayloadService` | `app/Services/AgentPayloadService.php` | Parst JSON Envelope v1 und schreibt in Phasen-Tabellen |
+| `MayringMcpClient` | `app/Services/MayringMcpClient.php` | HTTP-Client zum MayringCoder-Service (Tool-Use-API für P7) |
+| `StreamingAgentService` | `app/Services/StreamingAgentService.php` | SSE-Streaming für Dashboard-Chat |
+
+### 8-Phasen Systematic Review
+
+| Phase | Beschreibung | Agent-Config-Key |
+|-------|-------------|-----------------|
+| P1 | PICO/SPIDER/PEO-Komponenten | `scoping_mapping_agent` |
+| P2 | Review-Typ & Scoping | `scoping_mapping_agent` |
+| P3 | Datenbankauswahl | `scoping_mapping_agent` |
+| P4 | Suchstrings generieren | `search_agent` |
+| P5 | Screening (L1/L2) | `review_agent` |
+| P6 | Qualitätsbewertung (RoB2/CASP) | `review_agent` |
+| P7 | Datenextraktion & Synthese | `review_agent` |
+| P8 | Dokumentation & Abschluss | `review_agent` |
+
+**P4→P5:** Kein Auto-Chain (manueller Paper-Import über CSV/DOI nötig).
+
+### Credit-System
+
+- `CreditService::deduct()` bucht Token-Kosten pro Agent-Call
+- Preise konfigurierbar via `config/services.php` (`anthropic.price_per_1k_input_tokens_cents`)
+- `CreditTransaction` loggt jeden Verbrauch mit Agent-Key und Token-Count
+- Exceptions: `InsufficientCreditsException`, `AgentDailyLimitExceededException`
+
+### Benutzerverwaltung & Beta
+
+User-Status-Flow:
+```
+Selbst-Registrierung → waitlisted → [Admin genehmigt] → trial → [Admin aktiviert] → active
+Admin-Einladung     → invited    → [User akzeptiert]  → trial → [Admin aktiviert] → active
+```
+
+---
 
 ## Routes
 
@@ -165,8 +231,8 @@ Umgebungsvariablen in `.env`:
 | `CACHE_STORE` | `redis` |
 | `SESSION_DRIVER` | `redis` |
 | `MAIL_HOST` | SMTP (Strato) |
+| `ANTHROPIC_API_KEY` | Anthropic Claude API Key (KI-Agent-Aufrufe) |
 | `MCP_AUTH_TOKEN` | Token für MCP-PostgreSQL-Endpoint |
-| `LANGDOCK_DB_*` | Eingeschränkter DB-Benutzer für KI-Agent |
 
 ## Tests
 
@@ -175,7 +241,7 @@ Umgebungsvariablen in `.env`:
 docker compose run --rm php-test vendor/bin/pest
 ```
 
-**247 Tests** — Unit, Auth, Kontakt, Dashboard-Chat, Recherche P1–P8, ProjektPolicy, Agent-Integration.
+**440+ Tests** — Unit, Auth, Kontakt, Dashboard-Chat, Recherche P1–P8, ProjektPolicy, Agent-Integration, Einladungssystem.
 
 | Testsuite | Abdeckung |
 |---|---|
@@ -188,15 +254,15 @@ docker compose run --rm php-test vendor/bin/pest
 
 ## Dokumentation & API
 
-Externe Systeme (Langdock, MCP-Server) nutzen die folgenden Endpunkte:
+MCP-Endpunkte und API:
 
 | Endpunkt | Beschreibung | Doku |
 |----------|-------------|------|
-| `/mcp/sse` & `/messages/` | PostgreSQL MCP für KI-Datenbankzugriff | [docs/API.md](docs/API.md#-postgresql-mcp-endpoint) |
+| `/mcp/sse` & `/messages/` | PostgreSQL MCP (Entwickler-Datenbankzugriff) | [docs/API.md](docs/API.md#-postgresql-mcp-endpoint) |
 | `/paper-mcp/sse` & `/paper-messages/` | Paper-Search MCP für Literatursuche | [docs/API.md](docs/API.md#-paper-search-mcp-endpoint) |
-| `/ollama/*` | Embedding-Proxy (Langdock) | [docs/API.md](docs/API.md#-ollama-embedding-endpoint) |
-| `/api/webhooks/langdock` | Webhook für Phase-Ergebnisse & Chat-Responses | [docs/API.md](docs/API.md#-langdock-webhook-endpoint) |
-| `/api/user` | Sanctum User-Endpunkt (Authentifizierung) | [docs/API.md](docs/API.md#-sanctum-user-endpoint) |
+| `/ollama/*` | Embedding-Proxy (nomic-embed-text) | [docs/API.md](docs/API.md#-ollama-embedding-endpoint) |
+| `/api/papers/ingest` | Paper-Ingestion (MCP-Token) | [docs/API.md](docs/API.md) |
+| `/api/papers/rag-search` | Vektor-Suche (MCP-Token) | [docs/API.md](docs/API.md) |
 
 **Alle MCP-Endpunkte nutzen:** Bearer Token, X-API-Key oder Query-Parameter (`?token=...`)
 
