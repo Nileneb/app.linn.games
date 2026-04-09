@@ -82,6 +82,27 @@ class ClaudeContextBuilder
             $lines[] = '';
         }
 
+        if ($phaseNr >= 2 && $projekt->relationLoaded('p1Kriterien') && $projekt->p1Kriterien->isNotEmpty()) {
+            $lines[] = '### P1-Kriterien (Ein-/Ausschlusskriterien)';
+            $lines[] = '| Typ | Beschreibung |';
+            $lines[] = '|-----|-------------|';
+            foreach ($projekt->p1Kriterien as $k) {
+                $type = $k->kriterium_typ ?? '';
+                $desc = $k->beschreibung ?? '';
+                $lines[] = "| {$type} | {$desc} |";
+            }
+            $lines[] = '';
+        }
+
+        if ($phaseNr >= 3 && $projekt->relationLoaded('p2Cluster') && $projekt->p2Cluster->isNotEmpty()) {
+            $lines[] = '### P2-Cluster';
+            foreach ($projekt->p2Cluster as $cluster) {
+                $name = $cluster->cluster_label ?? $cluster->cluster_id ?? '';
+                $lines[] = "- {$name}";
+            }
+            $lines[] = '';
+        }
+
         if ($phaseNr >= 4 && $projekt->relationLoaded('p3Datenbankmatrix') && $projekt->p3Datenbankmatrix->isNotEmpty()) {
             $lines[] = '### P3-Datenbanken';
             $lines[] = '| Name | Disziplin | Empfohlen |';
@@ -100,11 +121,25 @@ class ClaudeContextBuilder
             $lines[] = '';
         }
 
+        if ($phaseNr >= 5) {
+            $trefferCount = $projekt->p5Treffer()->count();
+            if ($trefferCount > 0) {
+                $lines[] = "### Suchergebnisse: {$trefferCount} importierte Treffer";
+                $lines[] = '';
+            }
+        }
+
         if ($phaseNr >= 6 && $projekt->relationLoaded('p5Treffer')) {
             $eingeschlossen = $projekt->p5Treffer()
                 ->whereHas('screeningEntscheidungen', fn ($q) => $q->where('entscheidung', 'eingeschlossen'))
                 ->count();
             $lines[] = "### P5-Screening: {$eingeschlossen} eingeschlossene Treffer";
+            $lines[] = '';
+        }
+
+        if ($phaseNr >= 7 && $projekt->relationLoaded('p6Qualitaetsbewertungen') && $projekt->p6Qualitaetsbewertungen->isNotEmpty()) {
+            $lines[] = '### P6-Qualitätsbewertungen';
+            $lines[] = "- {$projekt->p6Qualitaetsbewertungen->count()} Studien bewertet";
             $lines[] = '';
         }
     }
@@ -118,6 +153,7 @@ class ClaudeContextBuilder
 
         if ($phaseNr >= 2) {
             $relations[] = 'p1Komponenten';
+            $relations[] = 'p1Kriterien';
         }
         if ($phaseNr >= 3) {
             $relations[] = 'p2Cluster';

@@ -68,3 +68,96 @@ test('build enthält structured_output hinweis wenn gesetzt', function () {
 
     expect($result)->toContain('JSON Envelope v1');
 });
+
+test('build phase 2 enthält p1Kriterien wenn vorhanden', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    \App\Models\Recherche\P1Kriterium::create([
+        'projekt_id' => $projekt->id,
+        'kriterium_typ' => 'einschluss',
+        'beschreibung' => 'RCT-Studien',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 2,
+    ]);
+
+    expect($result)
+        ->toContain('P1-Kriterien')
+        ->toContain('einschluss')
+        ->toContain('RCT-Studien');
+});
+
+test('build phase 3 enthält p2Cluster wenn vorhanden', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    \App\Models\Recherche\P2Cluster::create([
+        'projekt_id' => $projekt->id,
+        'cluster_id' => 'C1',
+        'cluster_label' => 'KI-Assistenz',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 3,
+    ]);
+
+    expect($result)
+        ->toContain('P2-Cluster')
+        ->toContain('KI-Assistenz');
+});
+
+test('build phase 5 enthält treffer-count wenn treffer vorhanden', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    \App\Models\Recherche\P5Treffer::create([
+        'projekt_id' => $projekt->id,
+        'record_id' => 'REC-001',
+        'titel' => 'Teststudie',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 5,
+    ]);
+
+    expect($result)->toContain('1 importierte Treffer');
+});
+
+test('build phase 7 enthält p6Qualitaetsbewertungen wenn vorhanden', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    $treffer = \App\Models\Recherche\P5Treffer::create([
+        'projekt_id' => $projekt->id,
+        'record_id' => 'REC-002',
+        'titel' => 'Bewertete Studie',
+    ]);
+
+    \App\Models\Recherche\P6Qualitaetsbewertung::create([
+        'treffer_id' => $treffer->id,
+        'studientyp' => 'RCT',
+        'rob_tool' => 'RoB2',
+        'gesamturteil' => 'niedrig',
+    ]);
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 7,
+    ]);
+
+    expect($result)
+        ->toContain('P6-Qualitätsbewertungen')
+        ->toContain('1 Studien bewertet');
+});
+
+test('build phase 2 ohne kriterien enthält keinen p1Kriterien-Block', function () {
+    [$projekt] = makeProjektWithWorkspace();
+
+    $result = app(ClaudeContextBuilder::class)->build([
+        'projekt_id' => $projekt->id,
+        'phase_nr' => 2,
+    ]);
+
+    expect($result)->not->toContain('P1-Kriterien');
+});
