@@ -71,7 +71,10 @@ class AgentResultStorageService
     }
 
     /**
-     * Read agent result from file
+     * Read agent result from file.
+     *
+     * Finds the latest file matching the phase/agent pattern, since the exact
+     * timestamp from save time cannot be reconstructed at read time.
      *
      * @return string|null File content or null if not found
      */
@@ -82,9 +85,9 @@ class AgentResultStorageService
         int $phaseNumber,
         ?string $agentName = null,
     ): ?string {
-        $path = $this->buildPath($workspaceId, $userId, $projectId, $phaseNumber, $agentName);
+        $path = $this->findLatestFile($workspaceId, $userId, $projectId, $phaseNumber, $agentName);
 
-        if (! Storage::disk($this->disk)->exists($path)) {
+        if ($path === null) {
             return null;
         }
 
@@ -120,9 +123,9 @@ class AgentResultStorageService
         int $phaseNumber,
         ?string $agentName = null,
     ): bool {
-        $path = $this->buildPath($workspaceId, $userId, $projectId, $phaseNumber, $agentName);
+        $path = $this->findLatestFile($workspaceId, $userId, $projectId, $phaseNumber, $agentName);
 
-        if (! Storage::disk($this->disk)->exists($path)) {
+        if ($path === null) {
             return false;
         }
 
@@ -144,6 +147,41 @@ class AgentResultStorageService
         }
 
         return Storage::disk($this->disk)->deleteDirectory($basePath);
+    }
+
+    /**
+     * Find the latest result file matching the given phase/agent pattern.
+     * Uses directory listing because the exact timestamp from save time is unknown.
+     *
+     * @return string|null Relative path to the latest matching file, or null if none found
+     */
+    protected function findLatestFile(
+        string $workspaceId,
+        int $userId,
+        string $projectId,
+        int $phaseNumber,
+        ?string $agentName = null,
+    ): ?string {
+        $basePath = "agent-results/$workspaceId/$userId/{$projectId}";
+
+        if (! Storage::disk($this->disk)->exists($basePath)) {
+            return null;
+        }
+
+        $agentSuffix = $agentName ? "_{$agentName}" : '';
+        $prefix = sprintf('P%d%s__', $phaseNumber, $agentSuffix);
+
+        $matches = array_filter(
+            Storage::disk($this->disk)->files($basePath),
+            fn ($f) => str_contains(basename($f), $prefix),
+        );
+
+        if (empty($matches)) {
+            return null;
+        }
+
+        // Return the most recently saved file (filenames are timestamp-sorted)
+        return max($matches);
     }
 
     /**
