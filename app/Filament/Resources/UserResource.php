@@ -40,12 +40,37 @@ class UserResource extends Resource
             Forms\Components\Select::make('status')
                 ->required()
                 ->options([
+                    'waitlisted' => 'Warteliste',
                     'trial' => 'Trial',
                     'active' => 'Aktiv',
                     'suspended' => 'Gesperrt',
                     'cancelled' => 'Gekündigt',
                 ])
                 ->default('trial'),
+            Forms\Components\Textarea::make('forschungsfrage')
+                ->label('Forschungsfrage')
+                ->rows(3)
+                ->nullable(),
+            Forms\Components\Select::make('forschungsbereich')
+                ->label('Forschungsbereich')
+                ->options([
+                    'Gesundheit & Medizin' => 'Gesundheit & Medizin',
+                    'Psychologie & Sozialwissenschaften' => 'Psychologie & Sozialwissenschaften',
+                    'Bildung & Pädagogik' => 'Bildung & Pädagogik',
+                    'Informatik & Technologie' => 'Informatik & Technologie',
+                    'Wirtschaft & Management' => 'Wirtschaft & Management',
+                    'Umwelt & Nachhaltigkeit' => 'Umwelt & Nachhaltigkeit',
+                    'Sonstiges' => 'Sonstiges',
+                ])
+                ->nullable(),
+            Forms\Components\Select::make('erfahrung')
+                ->label('Erfahrung mit Literaturrecherchen')
+                ->options([
+                    'Nein, das wäre mein erstes Mal' => 'Nein, das wäre mein erstes Mal',
+                    'Ja, 1–2 Mal' => 'Ja, 1–2 Mal',
+                    'Ja, regelmäßig' => 'Ja, regelmäßig',
+                ])
+                ->nullable(),
         ]);
     }
 
@@ -59,6 +84,7 @@ class UserResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
+                        'waitlisted' => 'info',
                         'trial' => 'warning',
                         'active' => 'success',
                         'suspended' => 'danger',
@@ -66,6 +92,14 @@ class UserResource extends Resource
                         default => 'gray',
                     })
                     ->sortable(),
+                Tables\Columns\TextColumn::make('forschungsbereich')
+                    ->label('Bereich')
+                    ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('erfahrung')
+                    ->label('Erfahrung')
+                    ->limit(30)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Rolle')
                     ->badge()
@@ -78,6 +112,7 @@ class UserResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
+                        'waitlisted' => 'Warteliste',
                         'trial' => 'Trial',
                         'active' => 'Aktiv',
                         'suspended' => 'Gesperrt',
@@ -86,6 +121,24 @@ class UserResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('freischalten')
+                    ->label('Freischalten')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (User $record) => $record->status === 'waitlisted')
+                    ->requiresConfirmation()
+                    ->modalHeading('Nutzer freischalten')
+                    ->modalDescription('Nutzer freischalten und in Trial überführen?')
+                    ->modalSubmitActionLabel('Freischalten')
+                    ->action(function (User $record) {
+                        $record->update(['status' => 'trial']);
+
+                        Notification::make()
+                            ->title('Nutzer freigeschaltet')
+                            ->body($record->name.' wurde erfolgreich freigeschaltet.')
+                            ->success()
+                            ->send();
+                    }),
                 \Filament\Actions\Action::make('resend_invitation')
                     ->label('Einladung erneut senden')
                     ->icon('heroicon-o-envelope')

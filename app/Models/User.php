@@ -30,6 +30,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'email',
         'password',
         'status',
+        'forschungsfrage',
+        'forschungsbereich',
+        'erfahrung',
     ];
 
     /**
@@ -85,6 +88,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function isTrial(): bool
     {
         return $this->status === 'trial';
+    }
+
+    public function isWaitlisted(): bool
+    {
+        return $this->status === 'waitlisted';
     }
 
     public function canAccessPanel(Panel $panel): bool
