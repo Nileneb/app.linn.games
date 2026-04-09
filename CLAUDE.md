@@ -121,5 +121,3 @@ Lokales Setup: `langdock-mcp` Repo klonen, `LANGDOCK_API_KEY` setzen, `python se
 ## Bekannte Lücken
 
 - Admin-Panel Tests fehlen
-- TriggersPhaseAgent übergibt keinen $context an SendAgentMessage (→ Issue #154)
-- user_id in PhaseChain = Projekt-Ersteller statt aktiver User (→ Issue #154)
