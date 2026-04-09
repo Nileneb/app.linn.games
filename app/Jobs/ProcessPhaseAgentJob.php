@@ -47,7 +47,8 @@ class ProcessPhaseAgentJob implements ShouldQueue
             // Create pending result record
             $result = PhaseAgentResult::create([
                 'projekt_id' => $this->projektId,
-                'user_id' => $projekt->user_id,
+                // Aktiver Nutzer aus Kontext; Fallback auf Projekt-Ersteller (Issue #154)
+                'user_id' => $this->context['user_id'] ?? $projekt->user_id,
                 'phase_nr' => $this->phaseNr,
                 'agent_config_key' => $this->agentConfigKey,
                 'status' => 'pending',
@@ -107,7 +108,13 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'artifacts_stored' => count($artifact['stored_paths'] ?? []),
                 ]);
 
-                app(PhaseChainService::class)->maybeDispatchNext($projekt, $this->phaseNr);
+                // Aktiven Nutzer aus dem Kontext propagieren, damit die Phasenkette
+                // den richtigen user_id erhält statt immer den Projekt-Ersteller (Issue #154)
+                app(PhaseChainService::class)->maybeDispatchNext(
+                    $projekt,
+                    $this->phaseNr,
+                    $this->context['user_id'] ?? null,
+                );
             } else {
                 $result->markFailed($response['content']);
                 Log::warning('Phase agent job failed', [
