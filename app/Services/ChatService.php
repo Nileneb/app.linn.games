@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\ChatMessage;
-use App\Services\AgentResultStorageService;
 use Illuminate\Support\Collection;
 
 /**
@@ -24,10 +23,10 @@ class ChatService
     public function saveUserMessage(string $workspaceId, int $userId, string $content): ChatMessage
     {
         return ChatMessage::create([
-            'user_id'      => $userId,
+            'user_id' => $userId,
             'workspace_id' => $workspaceId,
-            'role'         => 'user',
-            'content'      => $content,
+            'role' => 'user',
+            'content' => $content,
         ]);
     }
 
@@ -54,10 +53,10 @@ class ChatService
         ?string $relatedUserMsgId = null,
     ): ChatMessage {
         return ChatMessage::create([
-            'user_id'      => $userId,
+            'user_id' => $userId,
             'workspace_id' => $workspaceId,
-            'role'         => 'assistant',
-            'content'      => $content,
+            'role' => 'assistant',
+            'content' => $content,
         ]);
     }
 

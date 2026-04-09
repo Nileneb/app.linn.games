@@ -11,6 +11,7 @@ class P7Datenextraktion extends Model
     use HasUuids;
 
     protected $table = 'p7_datenextraktion';
+
     public $timestamps = false;
 
     protected $fillable = [

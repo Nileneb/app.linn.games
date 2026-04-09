@@ -12,10 +12,11 @@ function makeChainProjekt(): Projekt
 {
     $user = User::factory()->withoutTwoFactor()->create();
     $workspace = Workspace::create(['owner_id' => $user->id, 'name' => 'Test']);
+
     return Projekt::factory()->create([
-        'user_id'          => $user->id,
-        'workspace_id'     => $workspace->id,
-        'forschungsfrage'  => 'Testfrage',
+        'user_id' => $user->id,
+        'workspace_id' => $workspace->id,
+        'forschungsfrage' => 'Testfrage',
     ]);
 }
 
@@ -27,12 +28,12 @@ test('maybeDispatchNext dispatcht den nächsten job wenn konfiguriert', function
 
     // Quality-Gate requires a substantial completed result for phase 1
     PhaseAgentResult::create([
-        'projekt_id'       => $projekt->id,
-        'user_id'          => $projekt->user_id,
-        'phase_nr'         => 1,
+        'projekt_id' => $projekt->id,
+        'user_id' => $projekt->user_id,
+        'phase_nr' => 1,
         'agent_config_key' => 'scoping_mapping_agent',
-        'status'           => 'completed',
-        'content'          => str_repeat('x', 150), // >100 chars to pass quality gate
+        'status' => 'completed',
+        'content' => str_repeat('x', 150), // >100 chars to pass quality gate
     ]);
 
     app(PhaseChainService::class)->maybeDispatchNext($projekt, 1);
@@ -83,18 +84,19 @@ test('maybeDispatchNext enthält vorherige phase-ergebnisse im context', functio
     $projekt = makeChainProjekt();
 
     PhaseAgentResult::create([
-        'projekt_id'       => $projekt->id,
-        'user_id'          => $projekt->user_id,
-        'phase_nr'         => 1,
+        'projekt_id' => $projekt->id,
+        'user_id' => $projekt->user_id,
+        'phase_nr' => 1,
         'agent_config_key' => 'scoping_mapping_agent',
-        'status'           => 'completed',
-        'content'          => 'Ergebnis Phase 1 — ' . str_repeat('x', 120), // >100 chars to pass quality gate
+        'status' => 'completed',
+        'content' => 'Ergebnis Phase 1 — '.str_repeat('x', 120), // >100 chars to pass quality gate
     ]);
 
     app(PhaseChainService::class)->maybeDispatchNext($projekt, 1);
 
     Queue::assertPushed(ProcessPhaseAgentJob::class, function ($job) {
         $messageContent = $job->messages[0]['content'] ?? '';
+
         return str_contains($messageContent, 'Ergebnis Phase 1');
     });
 });
@@ -145,7 +147,7 @@ test('isValidPhaseResult accepts valid substantial content', function () {
 
     $service = app(PhaseChainService::class);
 
-    $validContent = 'X' . str_repeat('|', 110);  // >100 chars
+    $validContent = 'X'.str_repeat('|', 110);  // >100 chars
 
     $result = new PhaseAgentResult(['content' => $validContent]);
 

@@ -13,7 +13,7 @@ class ChatResponseReady implements ShouldBroadcast
 
     public function __construct(
         public readonly string $workspaceId,
-        public readonly int    $userId,
+        public readonly int $userId,
         public readonly string $messageId,
         public readonly string $content,
     ) {}

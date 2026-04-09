@@ -12,6 +12,7 @@ class Phase extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'phasen';
+
     public $timestamps = false;
 
     protected $fillable = [

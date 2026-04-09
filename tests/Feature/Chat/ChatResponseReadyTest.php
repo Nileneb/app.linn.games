@@ -6,15 +6,15 @@ use Illuminate\Support\Str;
 
 test('ChatResponseReady broadcasted auf privatem user-channel', function () {
     $workspaceId = (string) Str::uuid();
-    $userId      = 42;
-    $messageId   = (string) Str::uuid();
-    $content     = 'KI-Antwort auf deine Frage';
+    $userId = 42;
+    $messageId = (string) Str::uuid();
+    $content = 'KI-Antwort auf deine Frage';
 
     $event = new ChatResponseReady(
         workspaceId: $workspaceId,
-        userId:      $userId,
-        messageId:   $messageId,
-        content:     $content,
+        userId: $userId,
+        messageId: $messageId,
+        content: $content,
     );
 
     $channels = $event->broadcastOn();
@@ -26,15 +26,15 @@ test('ChatResponseReady broadcasted auf privatem user-channel', function () {
 
 test('ChatResponseReady hat korrekte Properties', function () {
     $workspaceId = 'ws-123';
-    $userId      = 7;
-    $messageId   = 'msg-456';
-    $content     = 'Test-Antwort';
+    $userId = 7;
+    $messageId = 'msg-456';
+    $content = 'Test-Antwort';
 
     $event = new ChatResponseReady(
         workspaceId: $workspaceId,
-        userId:      $userId,
-        messageId:   $messageId,
-        content:     $content,
+        userId: $userId,
+        messageId: $messageId,
+        content: $content,
     );
 
     expect($event->workspaceId)->toBe($workspaceId);

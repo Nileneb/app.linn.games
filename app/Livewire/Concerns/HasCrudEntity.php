@@ -35,7 +35,7 @@ trait HasCrudEntity
     /**
      * Öffnet ein leeres Formular für eine neue Entität.
      *
-     * @param string $entity Entity-Kürzel (z.B. 'Smw', 'Komp', 'Krit')
+     * @param  string  $entity  Entity-Kürzel (z.B. 'Smw', 'Komp', 'Krit')
      */
     protected function newEntity(string $entity): void
     {
@@ -47,10 +47,10 @@ trait HasCrudEntity
     /**
      * Speichert (erstellt oder aktualisiert) eine Entität.
      *
-     * @param string $entity Entity-Kürzel
-     * @param class-string<Model> $modelClass Eloquent Model-Klasse
-     * @param array<string, string> $validationRules Validierungsregeln
-     * @param callable(): array<string, mixed> $dataBuilder Closure, die das $data-Array zurückgibt
+     * @param  string  $entity  Entity-Kürzel
+     * @param  class-string<Model>  $modelClass  Eloquent Model-Klasse
+     * @param  array<string, string>  $validationRules  Validierungsregeln
+     * @param  callable(): array<string, mixed>  $dataBuilder  Closure, die das $data-Array zurückgibt
      */
     protected function saveEntity(
         string $entity,
@@ -82,10 +82,10 @@ trait HasCrudEntity
     /**
      * Lädt eine bestehende Entität ins Bearbeitungsformular.
      *
-     * @param string $entity Entity-Kürzel
-     * @param class-string<Model> $modelClass Eloquent Model-Klasse
-     * @param string $id UUID der Entität
-     * @param callable(Model): array<string, mixed> $propertyMapper Closure, die Model → Component-Properties mappt
+     * @param  string  $entity  Entity-Kürzel
+     * @param  class-string<Model>  $modelClass  Eloquent Model-Klasse
+     * @param  string  $id  UUID der Entität
+     * @param  callable(Model): array<string, mixed>  $propertyMapper  Closure, die Model → Component-Properties mappt
      */
     protected function editEntity(
         string $entity,
@@ -112,8 +112,8 @@ trait HasCrudEntity
     /**
      * Löscht eine Entität.
      *
-     * @param class-string<Model> $modelClass Eloquent Model-Klasse
-     * @param string $id UUID der Entität
+     * @param  class-string<Model>  $modelClass  Eloquent Model-Klasse
+     * @param  string  $id  UUID der Entität
      */
     protected function deleteEntity(string $modelClass, string $id): void
     {
@@ -127,9 +127,9 @@ trait HasCrudEntity
     /**
      * Bricht Formular-Bearbeitung ab und setzt alle Entity-Properties zurück.
      *
-     * @param string $entity Entity-Kürzel
-     * @param array<string> $propertyNames Liste der zu resettenden Property-Namen
-     * @param array<string, mixed> $defaultValues Optional: Default-Werte nach Reset
+     * @param  string  $entity  Entity-Kürzel
+     * @param  array<string>  $propertyNames  Liste der zu resettenden Property-Namen
+     * @param  array<string, mixed>  $defaultValues  Optional: Default-Werte nach Reset
      */
     protected function cancelEntity(string $entity, array $propertyNames, array $defaultValues = []): void
     {

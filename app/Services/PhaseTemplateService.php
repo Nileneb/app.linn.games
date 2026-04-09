@@ -36,7 +36,7 @@ class PhaseTemplateService
 
         // Simple string replacement for {{key}} placeholders
         foreach ($variables as $key => $value) {
-            $content = str_replace("{{" . $key . "}}", $value, $content);
+            $content = str_replace('{{'.$key.'}}', $value, $content);
         }
 
         return $content;
@@ -56,75 +56,76 @@ class PhaseTemplateService
 
         $lines = [];
         $lines[] = "# Suchprotokoll – {$projekt->titel}";
-        $lines[] = "";
+        $lines[] = '';
         $lines[] = "**Forschungsfrage:** {$projekt->forschungsfrage}";
-        $lines[] = "**Review-Typ:** " . ($projekt->review_typ ?? 'nicht festgelegt');
-        $lines[] = "**Datum:** " . now()->format('d.m.Y');
-        $lines[] = "";
-        $lines[] = "---";
-        $lines[] = "";
+        $lines[] = '**Review-Typ:** '.($projekt->review_typ ?? 'nicht festgelegt');
+        $lines[] = '**Datum:** '.now()->format('d.m.Y');
+        $lines[] = '';
+        $lines[] = '---';
+        $lines[] = '';
 
         // Projektkontext
-        $lines[] = "## Projektkontext";
-        $lines[] = "";
-        $lines[] = "| Feld | Wert |";
-        $lines[] = "|------|------|";
+        $lines[] = '## Projektkontext';
+        $lines[] = '';
+        $lines[] = '| Feld | Wert |';
+        $lines[] = '|------|------|';
         $lines[] = "| Forschungsfrage | {$projekt->forschungsfrage} |";
-        $lines[] = "| Review-Typ | " . ($projekt->review_typ ?? '—') . " |";
-        $lines[] = "| Erstellt | " . ($projekt->erstellt_am?->format('d.m.Y H:i') ?? '—') . " |";
-        $lines[] = "";
+        $lines[] = '| Review-Typ | '.($projekt->review_typ ?? '—').' |';
+        $lines[] = '| Erstellt | '.($projekt->erstellt_am?->format('d.m.Y H:i') ?? '—').' |';
+        $lines[] = '';
 
         // Komponenten
         if ($projekt->p1Komponenten->isNotEmpty()) {
-            $lines[] = "## Strukturmodell & Komponenten";
-            $lines[] = "";
-            $lines[] = "| Kürzel | Label | Modell |";
-            $lines[] = "|--------|-------|--------|";
+            $lines[] = '## Strukturmodell & Komponenten';
+            $lines[] = '';
+            $lines[] = '| Kürzel | Label | Modell |';
+            $lines[] = '|--------|-------|--------|';
             foreach ($projekt->p1Komponenten as $komp) {
                 $lines[] = "| {$komp->komponente_kuerzel} | {$komp->komponente_label} | {$komp->modell} |";
             }
-            $lines[] = "";
+            $lines[] = '';
         }
 
         // Datenbankmatrix
         if ($projekt->p3Datenbankmatrix->isNotEmpty()) {
-            $lines[] = "## Ausgewählte Datenbanken";
-            $lines[] = "";
-            $lines[] = "| Datenbank | Disziplin | Empfohlen |";
-            $lines[] = "|-----------|-----------|-----------|";
+            $lines[] = '## Ausgewählte Datenbanken';
+            $lines[] = '';
+            $lines[] = '| Datenbank | Disziplin | Empfohlen |';
+            $lines[] = '|-----------|-----------|-----------|';
             foreach ($projekt->p3Datenbankmatrix as $db) {
                 $recommended = $db->empfohlen ? 'Ja' : 'Nein';
                 $lines[] = "| {$db->datenbank_name} | {$db->disziplin} | {$recommended} |";
             }
-            $lines[] = "";
+            $lines[] = '';
         }
 
         // Suchstrings nach Datenbank
         if ($projekt->p4Suchstrings->isNotEmpty()) {
-            $lines[] = "## Suchstrings nach Datenbank";
-            $lines[] = "";
+            $lines[] = '## Suchstrings nach Datenbank';
+            $lines[] = '';
 
             $stringsByDb = $projekt->p4Suchstrings->groupBy('datenbank');
             foreach ($stringsByDb as $db => $strings) {
                 $lines[] = "### {$db}";
-                $lines[] = "";
+                $lines[] = '';
                 foreach ($strings as $string) {
-                    $lines[] = "- **{$string->suchstring_typ ?? 'Suchstring'}**: `{$string->suchstring_text}`";
+                    $typ = $string->suchstring_typ ?? 'Suchstring';
+                    $lines[] = "- **{$typ}**: `{$string->suchstring_text}`";
                     if ($string->treffer_anzahl) {
-                        $lines[] = "  - Treffer: " . number_format($string->treffer_anzahl);
+                        $lines[] = '  - Treffer: '.number_format($string->treffer_anzahl);
                     }
                 }
-                $lines[] = "";
+                $lines[] = '';
             }
         }
 
         // Treffer-Übersicht
         $trefferCount = rescue(fn () => $projekt->p5Treffer()->count(), 0);
-        $lines[] = "## Treffer-Übersicht";
-        $lines[] = "";
-        $lines[] = "- **Treffer gesamt:** " . number_format($trefferCount);
-        $lines[] = "- **Datum Export:** " . now()->format('d.m.Y H:i');
-        $lines[] = "";
+        $lines[] = '## Treffer-Übersicht';
+        $lines[] = '';
+        $lines[] = '- **Treffer gesamt:** '.number_format($trefferCount);
+        $lines[] = '- **Datum Export:** '.now()->format('d.m.Y H:i');
+        $lines[] = '';
 
         return implode("\n", $lines);
     }

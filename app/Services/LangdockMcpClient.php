@@ -50,8 +50,8 @@ class LangdockMcpClient
         string $agentId,
         ?callable $onChunk = null,
     ): \Generator {
-        $endpoint   = $this->resolveEndpoint();
-        $apiKey     = config('services.langdock.api_key');
+        $endpoint = $this->resolveEndpoint();
+        $apiKey = config('services.langdock.api_key');
         $logContext = $this->buildLogContext($agentId, $messages);
 
         if (! $apiKey || ! $agentId) {
@@ -62,11 +62,11 @@ class LangdockMcpClient
             throw new LangdockConnectionException('Langdock API-Key oder Agent-ID nicht konfiguriert.');
         }
 
-        $body         = $this->buildRequestBody($agentId, $messages);
-        $startedAt    = microtime(true);
-        $maxRetries   = (int) config('services.langdock.retry_attempts', 3);
+        $body = $this->buildRequestBody($agentId, $messages);
+        $startedAt = microtime(true);
+        $maxRetries = (int) config('services.langdock.retry_attempts', 3);
         $retrySleepMs = (int) config('services.langdock.retry_sleep_ms', 500);
-        $attempt      = 0;
+        $attempt = 0;
 
         Log::info('Langdock MCP streaming request started', $logContext + [
             'endpoint' => $endpoint,
@@ -75,16 +75,16 @@ class LangdockMcpClient
         // Retry-Loop — Wiederholungen nur beim Verbindungsaufbau, nicht mid-stream
         while (true) {
             try {
-                $response   = $this->httpClient->post($endpoint, [
+                $response = $this->httpClient->post($endpoint, [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $apiKey,
-                        'Content-Type'  => 'application/json',
-                        'Accept'        => 'text/event-stream',
+                        'Authorization' => 'Bearer '.$apiKey,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'text/event-stream',
                         'Cache-Control' => 'no-cache',
                     ],
-                    'json'         => $body,
-                    'stream'       => true,
-                    'timeout'      => 0,   // Kein Gesamt-Timeout bei Streaming
+                    'json' => $body,
+                    'stream' => true,
+                    'timeout' => 0,   // Kein Gesamt-Timeout bei Streaming
                     'read_timeout' => 120,
                 ]);
 
@@ -93,21 +93,22 @@ class LangdockMcpClient
                 if ($statusCode >= 500 && $attempt < $maxRetries) {
                     $delayMs = $retrySleepMs * (2 ** $attempt);
                     Log::warning('Langdock MCP server error, retrying', $logContext + [
-                        'attempt'  => $attempt + 1,
-                        'max'      => $maxRetries,
+                        'attempt' => $attempt + 1,
+                        'max' => $maxRetries,
                         'delay_ms' => $delayMs,
-                        'status'   => $statusCode,
+                        'status' => $statusCode,
                     ]);
                     usleep($delayMs * 1000);
                     $attempt++;
+
                     continue;
                 }
 
                 if ($statusCode >= 400) {
                     $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
                     Log::error('Langdock MCP request failed', $logContext + [
-                        'status'           => $statusCode,
-                        'duration_ms'      => $durationMs,
+                        'status' => $statusCode,
+                        'duration_ms' => $durationMs,
                         'response_excerpt' => Str::limit((string) $response->getBody(), 1000),
                     ]);
 
@@ -129,31 +130,31 @@ class LangdockMcpClient
 
             } catch (LangdockConnectionException $e) {
                 throw $e;
-
-            } catch (ConnectException | RequestException $e) {
+            } catch (ConnectException|RequestException $e) {
                 if ($attempt < $maxRetries) {
                     $delayMs = $retrySleepMs * (2 ** $attempt);
                     Log::warning('Langdock MCP connection error, retrying', $logContext + [
-                        'attempt'   => $attempt + 1,
-                        'max'       => $maxRetries,
-                        'delay_ms'  => $delayMs,
+                        'attempt' => $attempt + 1,
+                        'max' => $maxRetries,
+                        'delay_ms' => $delayMs,
                         'exception' => $e::class,
-                        'message'   => $e->getMessage(),
+                        'message' => $e->getMessage(),
                     ]);
                     usleep($delayMs * 1000);
                     $attempt++;
+
                     continue;
                 }
 
                 $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
                 Log::error('Langdock MCP streaming crashed', $logContext + [
                     'duration_ms' => $durationMs,
-                    'exception'   => $e::class,
-                    'message'     => $e->getMessage(),
+                    'exception' => $e::class,
+                    'message' => $e->getMessage(),
                 ]);
 
                 throw new LangdockConnectionException(
-                    'Verbindung zum Langdock MCP-Server fehlgeschlagen: ' . $e->getMessage(),
+                    'Verbindung zum Langdock MCP-Server fehlgeschlagen: '.$e->getMessage(),
                     0,
                     $e,
                 );
@@ -190,8 +191,6 @@ class LangdockMcpClient
      *   data: {"choices":[{"delta":{"content":"..."}}]}\n\n
      *   data: [DONE]\n\n
      *
-     * @param  StreamInterface  $stream
-     * @param  callable|null  $onChunk
      * @return \Generator<int, array{text: string, raw: array}, mixed, void>
      */
     private function parseStream(StreamInterface $stream, ?callable $onChunk): \Generator
@@ -209,7 +208,7 @@ class LangdockMcpClient
 
             // SSE-Events sind durch doppelten Zeilenumbruch getrennt
             while (($pos = strpos($buffer, "\n\n")) !== false) {
-                $event  = substr($buffer, 0, $pos);
+                $event = substr($buffer, 0, $pos);
                 $buffer = substr($buffer, $pos + 2);
 
                 $parsed = $this->parseSseEvent($event);
@@ -250,7 +249,7 @@ class LangdockMcpClient
      * - Message-wrapped:   message.content
      *
      * @param  string  $event  Rohtext eines SSE-Events (ohne abschließende Leerzeilen)
-     * @return array{text: string, raw: array}|null  null bei [DONE] oder nicht-parsebarem Event
+     * @return array{text: string, raw: array}|null null bei [DONE] oder nicht-parsebarem Event
      */
     private function parseSseEvent(string $event): ?array
     {
@@ -283,7 +282,7 @@ class LangdockMcpClient
 
         return [
             'text' => (string) $text,
-            'raw'  => $decoded,
+            'raw' => $decoded,
         ];
     }
 
@@ -293,19 +292,18 @@ class LangdockMcpClient
      * Nutzt dasselbe Message-Format wie LangdockAgentService (parts-Array),
      * ergänzt um stream: true für SSE-Antwort.
      *
-     * @param  string  $agentId
      * @param  array<int, array{role: string, content: string}>  $messages
      */
     private function buildRequestBody(string $agentId, array $messages): array
     {
         return [
-            'agentId'  => $agentId,
+            'agentId' => $agentId,
             'messages' => array_map(fn (array $msg) => [
-                'id'    => (string) Str::uuid(),
-                'role'  => $msg['role'],
+                'id' => (string) Str::uuid(),
+                'role' => $msg['role'],
                 'parts' => [['type' => 'text', 'text' => $msg['content']]],
             ], $messages),
-            'stream'   => true,
+            'stream' => true,
         ];
     }
 
@@ -331,10 +329,10 @@ class LangdockMcpClient
         $lastMessage = $messages === [] ? null : $messages[array_key_last($messages)];
 
         return array_filter([
-            'request_id'           => (string) Str::uuid(),
-            'agent_id'             => $agentId,
-            'message_count'        => count($messages),
-            'last_message_role'    => $lastMessage['role'] ?? null,
+            'request_id' => (string) Str::uuid(),
+            'agent_id' => $agentId,
+            'message_count' => count($messages),
+            'last_message_role' => $lastMessage['role'] ?? null,
             'last_message_preview' => isset($lastMessage['content'])
                 ? Str::limit((string) preg_replace('/\s+/', ' ', $lastMessage['content']), 180)
                 : null,

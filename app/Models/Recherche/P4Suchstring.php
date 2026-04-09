@@ -12,6 +12,7 @@ class P4Suchstring extends Model
     use HasUuids;
 
     protected $table = 'p4_suchstrings';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -11,6 +11,7 @@ class PaperEmbedding extends Model
     use HasUuids;
 
     protected $table = 'paper_embeddings';
+
     public $timestamps = false;
 
     protected $fillable = [

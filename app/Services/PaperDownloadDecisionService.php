@@ -61,7 +61,7 @@ class PaperDownloadDecisionService
 
         // Check each criterion
         foreach ($criteria as $key => $value) {
-            if (!$this->checkCriterion($key, $value, $paper)) {
+            if (! $this->checkCriterion($key, $value, $paper)) {
                 return false;
             }
         }
@@ -76,12 +76,12 @@ class PaperDownloadDecisionService
     {
         return match ($key) {
             'open_access' => $value === true ? ($paper->is_open_access ?? false) : true,
-            'has_doi' => $value === true ? !empty($paper->doi) : true,
+            'has_doi' => $value === true ? ! empty($paper->doi) : true,
             'databases' => is_array($value) ? in_array($paper->source_database, $value) : true,
             'languages' => is_array($value) ? in_array($paper->language, $value) : true,
             'year_min' => isset($paper->published_year) ? $paper->published_year >= $value : true,
             'year_max' => isset($paper->published_year) ? $paper->published_year <= $value : true,
-            'exclude_keywords' => is_array($value) ? !$this->hasKeywords($paper, $value) : true,
+            'exclude_keywords' => is_array($value) ? ! $this->hasKeywords($paper, $value) : true,
             default => true,
         };
     }
@@ -91,7 +91,7 @@ class PaperDownloadDecisionService
      */
     private function hasKeywords(Paper $paper, array $keywords): bool
     {
-        $text = strtolower($paper->titel . ' ' . ($paper->abstract ?? ''));
+        $text = strtolower($paper->titel.' '.($paper->abstract ?? ''));
 
         foreach ($keywords as $keyword) {
             if (str_contains($text, strtolower($keyword))) {

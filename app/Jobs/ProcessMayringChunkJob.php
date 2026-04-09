@@ -10,14 +10,14 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProcessMayringChunkJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 1;
+    public int $tries = 1;
+
     public int $timeout = 180;
 
     public function __construct(
@@ -37,7 +37,7 @@ class ProcessMayringChunkJob implements ShouldQueue
 
         $messages = [
             [
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => <<<PROMPT
 Codiere den folgenden Textabschnitt nach Mayring (qualitative Inhaltsanalyse).
 
@@ -67,8 +67,9 @@ PROMPT,
                 $codierung->markFailed($response['content']);
                 Log::warning('ProcessMayringChunkJob: Agent-Fehler', [
                     'codierung_id' => $this->codierungId,
-                    'error'        => $response['content'],
+                    'error' => $response['content'],
                 ]);
+
                 return;
             }
 
@@ -78,7 +79,7 @@ PROMPT,
             $codierung->markFailed($e->getMessage());
             Log::error('ProcessMayringChunkJob: Exception', [
                 'codierung_id' => $this->codierungId,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -93,18 +94,18 @@ PROMPT,
 
         if (! is_array($data)) {
             return [
-                'paraphrase'      => null,
+                'paraphrase' => null,
                 'generalisierung' => null,
-                'reduktion'       => null,
-                'kategorie'       => $content, // store raw as fallback
+                'reduktion' => null,
+                'kategorie' => $content, // store raw as fallback
             ];
         }
 
         return [
-            'paraphrase'      => $data['paraphrase'] ?? null,
+            'paraphrase' => $data['paraphrase'] ?? null,
             'generalisierung' => $data['generalisierung'] ?? null,
-            'reduktion'       => $data['reduktion'] ?? null,
-            'kategorie'       => $data['kategorie'] ?? null,
+            'reduktion' => $data['reduktion'] ?? null,
+            'kategorie' => $data['kategorie'] ?? null,
         ];
     }
 }

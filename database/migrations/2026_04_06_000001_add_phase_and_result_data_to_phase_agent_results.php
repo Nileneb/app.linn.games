@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::table('phase_agent_results', function (Blueprint $table) {
             // Add phase column if it doesn't exist
-            if (!Schema::hasColumn('phase_agent_results', 'phase')) {
+            if (! Schema::hasColumn('phase_agent_results', 'phase')) {
                 $table->string('phase')->nullable()->after('agent_config_key')->comment('Phase name: recherche, screening, auswertung');
             }
 
             // Add result_data JSON column if it doesn't exist
-            if (!Schema::hasColumn('phase_agent_results', 'result_data')) {
+            if (! Schema::hasColumn('phase_agent_results', 'result_data')) {
                 $table->json('result_data')->nullable()->after('content')->comment('Structured result data');
             }
         });

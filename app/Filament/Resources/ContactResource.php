@@ -4,8 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Models\Contact;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 

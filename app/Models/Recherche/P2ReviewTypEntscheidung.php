@@ -11,6 +11,7 @@ class P2ReviewTypEntscheidung extends Model
     use HasUuids;
 
     protected $table = 'p2_review_typ_entscheidung';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -11,6 +11,7 @@ class P5ScreeningEntscheidung extends Model
     use HasUuids;
 
     protected $table = 'p5_screening_entscheidungen';
+
     public $timestamps = false;
 
     protected $fillable = [

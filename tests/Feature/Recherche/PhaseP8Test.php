@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
+use App\Models\Recherche\P8Limitation;
+use App\Models\Recherche\P8Reproduzierbarkeitspruefung;
+use App\Models\Recherche\P8Suchprotokoll;
+use App\Models\Recherche\P8UpdatePlan;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

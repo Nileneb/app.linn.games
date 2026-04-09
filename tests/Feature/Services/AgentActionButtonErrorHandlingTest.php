@@ -1,22 +1,19 @@
 <?php
 
-use App\Jobs\ProcessPhaseAgentJob;
-use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\LangdockAgentService;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 
 function makeTestProject(): Projekt
 {
     $user = User::factory()->withoutTwoFactor()->create();
     $workspace = Workspace::create(['owner_id' => $user->id, 'name' => 'Test']);
+
     return Projekt::factory()->create([
-        'user_id'        => $user->id,
-        'workspace_id'   => $workspace->id,
+        'user_id' => $user->id,
+        'workspace_id' => $workspace->id,
         'forschungsfrage' => 'Test research question',
     ]);
 }

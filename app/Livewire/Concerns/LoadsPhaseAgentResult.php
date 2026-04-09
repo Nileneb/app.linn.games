@@ -10,10 +10,6 @@ trait LoadsPhaseAgentResult
 {
     /**
      * Loads the latest agent result for a given phase.
-     *
-     * @param int $phaseNr
-     * @param string|null $projektId
-     * @return PhaseAgentResult|null
      */
     public function loadLatestAgentResult(int $phaseNr, ?string $projektId = null): ?PhaseAgentResult
     {

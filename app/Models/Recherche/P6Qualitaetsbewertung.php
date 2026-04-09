@@ -11,6 +11,7 @@ class P6Qualitaetsbewertung extends Model
     use HasUuids;
 
     protected $table = 'p6_qualitaetsbewertung';
+
     public $timestamps = false;
 
     protected $fillable = [

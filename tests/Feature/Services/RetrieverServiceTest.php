@@ -22,17 +22,17 @@ test('retrieve gibt leeres Array zurück wenn EmbeddingService fehlschlägt', fu
         $mock->shouldReceive('generate')->andThrow(new \RuntimeException('Ollama down'));
     });
 
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
 
     DB::table('paper_embeddings')->insert([
-        'id'          => \Illuminate\Support\Str::uuid(),
-        'projekt_id'  => $projekt->id,
-        'source'      => 'test',
-        'paper_id'    => 'paper_1',
-        'title'       => 'Test Paper',
+        'id' => \Illuminate\Support\Str::uuid(),
+        'projekt_id' => $projekt->id,
+        'source' => 'test',
+        'paper_id' => 'paper_1',
+        'title' => 'Test Paper',
         'chunk_index' => 0,
-        'text_chunk'  => 'Beispieltext',
+        'text_chunk' => 'Beispieltext',
         'erstellt_am' => now(),
     ]);
 
@@ -59,11 +59,11 @@ test('formatAsContext formatiert Chunks korrekt', function () {
 
     $chunks = [
         (object) [
-            'paper_id'    => 'p1',
-            'title'       => 'Studie über X',
+            'paper_id' => 'p1',
+            'title' => 'Studie über X',
             'chunk_index' => 2,
-            'text_chunk'  => 'Dieser Abschnitt beschreibt Methodik.',
-            'similarity'  => 0.92,
+            'text_chunk' => 'Dieser Abschnitt beschreibt Methodik.',
+            'similarity' => 0.92,
         ],
     ];
 

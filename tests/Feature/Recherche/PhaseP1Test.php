@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P1Strukturmodellwahl, P1Komponente, P1Kriterium, P1Warnsignal};
+use App\Models\Recherche\P1Komponente;
+use App\Models\Recherche\P1Kriterium;
+use App\Models\Recherche\P1Strukturmodellwahl;
+use App\Models\Recherche\P1Warnsignal;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

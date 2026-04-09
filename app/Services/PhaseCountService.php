@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Recherche\Projekt;
 use App\Models\Recherche\P1Komponente;
 use App\Models\Recherche\P2Cluster;
 use App\Models\Recherche\P2Trefferliste;
@@ -11,6 +10,7 @@ use App\Models\Recherche\P4Suchstring;
 use App\Models\Recherche\P5Treffer;
 use App\Models\Recherche\P6Qualitaetsbewertung;
 use App\Models\Recherche\P7Datenextraktion;
+use App\Models\Recherche\Projekt;
 
 /**
  * PhaseCountService

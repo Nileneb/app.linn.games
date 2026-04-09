@@ -26,6 +26,7 @@ trait HasModelMapping
             $value = $this->{$prop};
             $result[$column] = $value !== '' ? $value : null;
         }
+
         return $result;
     }
 }

@@ -13,9 +13,9 @@ class LangdockAgentsPage extends Page
 
     protected static ?string $navigationLabel = 'Langdock Agenten';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cpu-chip';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cpu-chip';
 
-    protected static string | UnitEnum | null $navigationGroup = 'System';
+    protected static string|UnitEnum|null $navigationGroup = 'System';
 
     protected static ?int $navigationSort = 10;
 
@@ -47,7 +47,7 @@ class LangdockAgentsPage extends Page
         } catch (\Throwable $e) {
             $this->error = $e instanceof LangdockAgentException
                 ? $e->getMessage()
-                : 'Unerwarteter Fehler: ' . $e->getMessage();
+                : 'Unerwarteter Fehler: '.$e->getMessage();
         }
 
         $apiIds = array_column($this->agents, 'id');
@@ -59,5 +59,4 @@ class LangdockAgentsPage extends Page
 
         $this->configKeyMap = array_flip($this->configuredAgents);
     }
-
 }

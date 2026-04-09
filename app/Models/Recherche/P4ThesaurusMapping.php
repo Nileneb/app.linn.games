@@ -11,6 +11,7 @@ class P4ThesaurusMapping extends Model
     use HasUuids;
 
     protected $table = 'p4_thesaurus_mapping';
+
     public $timestamps = false;
 
     protected $fillable = [

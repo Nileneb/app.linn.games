@@ -14,7 +14,7 @@ return new class extends Migration
 
     public function up(): void
     {
-        $role     = $this->roleName;
+        $role = $this->roleName;
         $password = env('LANGDOCK_DB_PASSWORD', '');
         $database = config('database.connections.pgsql.database');
 
@@ -48,7 +48,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $role     = $this->roleName;
+        $role = $this->roleName;
         $database = config('database.connections.pgsql.database');
 
         foreach ($this->projektTables() as $table) {

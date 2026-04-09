@@ -27,7 +27,7 @@ return new class extends Migration
                 $table->text('begruendung')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p2_review_typ_entscheidung ADD COLUMN review_typ review_typ NOT NULL");
+            DB::statement('ALTER TABLE p2_review_typ_entscheidung ADD COLUMN review_typ review_typ NOT NULL');
         }
 
         if (! Schema::hasTable('p2_mapping_suchstring_komponenten')) {
@@ -40,7 +40,7 @@ return new class extends Migration
                 $table->text('anmerkung')->nullable();
                 $table->foreign('projekt_id')->references('id')->on('projekte')->cascadeOnDelete();
             });
-            DB::statement("ALTER TABLE p2_mapping_suchstring_komponenten ADD COLUMN suchbegriffe jsonb");
+            DB::statement('ALTER TABLE p2_mapping_suchstring_komponenten ADD COLUMN suchbegriffe jsonb');
         }
 
         if (! Schema::hasTable('p2_trefferlisten')) {

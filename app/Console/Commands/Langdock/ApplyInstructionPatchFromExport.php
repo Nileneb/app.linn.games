@@ -16,6 +16,7 @@ class ApplyInstructionPatchFromExport extends Command
     protected $description = 'Patches agent instructions based on an export JSON (dry-run by default).';
 
     private const MARKER_BEGIN_V1 = '=== APP.LINN.GAMES — FLEET PATCH v1 (DO NOT REMOVE) ===';
+
     private const MARKER_END_V1 = '=== /APP.LINN.GAMES — FLEET PATCH v1 ===';
 
     private const LEGACY_MARKER_BEGIN = '=== APP: JSON ENVELOPE v1 (DO NOT REMOVE) ===';
@@ -25,11 +26,13 @@ class ApplyInstructionPatchFromExport extends Command
         $exportPath = (string) ($this->option('export') ?? '');
         if ($exportPath === '') {
             $this->error('Missing --export=...');
+
             return self::FAILURE;
         }
 
         if (! is_file($exportPath)) {
             $this->error("Export file not found: {$exportPath}");
+
             return self::FAILURE;
         }
 
@@ -38,12 +41,14 @@ class ApplyInstructionPatchFromExport extends Command
 
         if (! is_array($json)) {
             $this->error('Export file is not valid JSON.');
+
             return self::FAILURE;
         }
 
         $items = $json['items'] ?? null;
         if (! is_array($items)) {
             $this->error('Export JSON missing items[].');
+
             return self::FAILURE;
         }
 
@@ -56,6 +61,7 @@ class ApplyInstructionPatchFromExport extends Command
 
         if (! $apiKey || ! $getUrl || ! $updateUrl) {
             $this->error('Langdock API configuration missing (api_key/get_url/update_url).');
+
             return self::FAILURE;
         }
 
@@ -75,27 +81,31 @@ class ApplyInstructionPatchFromExport extends Command
 
             if ($configKey === '' || $agentId === '' || ! $found) {
                 $skipped++;
+
                 continue;
             }
 
             if ($onlyKeys !== [] && ! in_array($configKey, $onlyKeys, true)) {
                 $skipped++;
+
                 continue;
             }
 
             if (! Str::isUuid($agentId)) {
                 $this->warn("Skip {$configKey}: invalid agent_id");
                 $skipped++;
+
                 continue;
             }
 
             $getResp = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
             ])->timeout(20)->get($getUrl, ['agentId' => $agentId]);
 
             if (! $getResp->successful()) {
                 $this->warn("GET failed for {$configKey} ({$agentId}): HTTP {$getResp->status()}");
                 $failed++;
+
                 continue;
             }
 
@@ -103,6 +113,7 @@ class ApplyInstructionPatchFromExport extends Command
             if (! is_array($agent)) {
                 $this->warn("GET returned unexpected shape for {$configKey} ({$agentId})");
                 $failed++;
+
                 continue;
             }
 
@@ -112,12 +123,14 @@ class ApplyInstructionPatchFromExport extends Command
             if ($patchedInstruction === $currentInstruction) {
                 $this->line("OK (no change): {$configKey} ({$agentId})");
                 $skipped++;
+
                 continue;
             }
 
             if (! $apply) {
                 $this->line("DRY-RUN would patch: {$configKey} ({$agentId})");
                 $patched++;
+
                 continue;
             }
 
@@ -126,6 +139,7 @@ class ApplyInstructionPatchFromExport extends Command
             if ($patchResp === null) {
                 $this->warn("PATCH failed for {$configKey} ({$agentId})");
                 $failed++;
+
                 continue;
             }
 
@@ -135,10 +149,10 @@ class ApplyInstructionPatchFromExport extends Command
 
         $this->newLine();
         $this->line('Summary:');
-        $this->line('  patched: ' . $patched);
-        $this->line('  skipped: ' . $skipped);
-        $this->line('  failed:  ' . $failed);
-        $this->line('  mode:    ' . ($apply ? 'APPLY' : 'DRY-RUN'));
+        $this->line('  patched: '.$patched);
+        $this->line('  skipped: '.$skipped);
+        $this->line('  failed:  '.$failed);
+        $this->line('  mode:    '.($apply ? 'APPLY' : 'DRY-RUN'));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -151,7 +165,7 @@ class ApplyInstructionPatchFromExport extends Command
     private function patchInstructionViaApi(string $apiKey, string $updateUrl, string $agentId, string $instruction): ?\Illuminate\Http\Client\Response
     {
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
+            'Authorization' => 'Bearer '.$apiKey,
             'Content-Type' => 'application/json',
         ];
 
@@ -202,6 +216,6 @@ class ApplyInstructionPatchFromExport extends Command
             self::MARKER_END_V1,
         ]);
 
-        return rtrim($instruction) . "\n" . $block . "\n";
+        return rtrim($instruction)."\n".$block."\n";
     }
 }

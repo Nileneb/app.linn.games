@@ -7,7 +7,6 @@ use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Contracts\Container\Container;
 
 class PhaseChainService
 {
@@ -33,15 +32,16 @@ class PhaseChainService
 
         if (! $lastResult || ! $this->isValidPhaseResult($lastResult)) {
             Log::warning('PhaseChain: skipping auto-dispatch, previous result validation failed', [
-                'projekt_id'      => $projekt->id,
+                'projekt_id' => $projekt->id,
                 'completed_phase' => $completedPhaseNr,
-                'content_length'  => $lastResult ? mb_strlen(trim($lastResult->content ?? '')) : 0,
+                'content_length' => $lastResult ? mb_strlen(trim($lastResult->content ?? '')) : 0,
             ]);
+
             return;
         }
 
         $nextPhase = (int) $chain['next_phase'];
-        $agentKey  = (string) $chain['agent_config_key'];
+        $agentKey = (string) $chain['agent_config_key'];
 
         // Transition Validation: Check phase thresholds before auto-dispatch
         $validator = app(TransitionValidator::class);
@@ -49,39 +49,41 @@ class PhaseChainService
 
         if ($validation['is_blocking']) {
             Log::warning('PhaseChain: transition blocked by threshold validation', [
-                'projekt_id'      => $projekt->id,
+                'projekt_id' => $projekt->id,
                 'completed_phase' => $completedPhaseNr,
-                'next_phase'      => $nextPhase,
-                'warning'         => $validation['warning'],
+                'next_phase' => $nextPhase,
+                'warning' => $validation['warning'],
                 'threshold_details' => $validation['threshold_details'],
             ]);
+
             return; // Manuelle Freigabe erforderlich
         }
 
         if (! $validation['can_transition']) {
             Log::info('PhaseChain: transition has warnings but not blocking', [
-                'projekt_id'      => $projekt->id,
+                'projekt_id' => $projekt->id,
                 'completed_phase' => $completedPhaseNr,
-                'next_phase'      => $nextPhase,
-                'warning'         => $validation['warning'],
+                'next_phase' => $nextPhase,
+                'warning' => $validation['warning'],
             ]);
             // Wir fahren trotzdem fort (non-blocking warning)
         }
 
         if (! config("services.langdock.{$agentKey}")) {
             Log::warning('PhaseChain: next agent not configured, skipping auto-dispatch', [
-                'projekt_id'        => $projekt->id,
-                'completed_phase'   => $completedPhaseNr,
-                'next_phase'        => $nextPhase,
-                'agent_config_key'  => $agentKey,
+                'projekt_id' => $projekt->id,
+                'completed_phase' => $completedPhaseNr,
+                'next_phase' => $nextPhase,
+                'agent_config_key' => $agentKey,
             ]);
+
             return;
         }
 
         Log::info('PhaseChain: dispatching next phase agent', [
-            'projekt_id'       => $projekt->id,
-            'completed_phase'  => $completedPhaseNr,
-            'next_phase'       => $nextPhase,
+            'projekt_id' => $projekt->id,
+            'completed_phase' => $completedPhaseNr,
+            'next_phase' => $nextPhase,
             'agent_config_key' => $agentKey,
         ]);
 
@@ -93,13 +95,13 @@ class PhaseChainService
             $agentKey,
             $messages,
             [
-                'source'       => 'phase_chain_auto',
-                'projekt_id'   => $projekt->id,
+                'source' => 'phase_chain_auto',
+                'projekt_id' => $projekt->id,
                 'workspace_id' => $projekt->workspace_id,
-                'phase_nr'     => $nextPhase,
+                'phase_nr' => $nextPhase,
                 // Aktiver Nutzer wird propagiert; Fallback auf Projekt-Ersteller (Issue #154)
-                'user_id'      => $userId ?? $projekt->user_id,
-                'label'        => $chain['label'] ?? "Phase {$nextPhase}",
+                'user_id' => $userId ?? $projekt->user_id,
+                'label' => $chain['label'] ?? "Phase {$nextPhase}",
             ],
         );
     }
@@ -162,7 +164,7 @@ class PhaseChainService
 
         $lines[] = '';
         $lines[] = "Aktuelle Phase: P{$nextPhaseNr}";
-        $lines[] = "Bitte nutze die oben genannte Projekt-ID für alle DB-Operationen (SET LOCAL app.current_projekt_id).";
+        $lines[] = 'Bitte nutze die oben genannte Projekt-ID für alle DB-Operationen (SET LOCAL app.current_projekt_id).';
         $lines[] = "Diese Phase wurde automatisch nach Abschluss von Phase {$completedPhaseNr} gestartet.";
 
         return [

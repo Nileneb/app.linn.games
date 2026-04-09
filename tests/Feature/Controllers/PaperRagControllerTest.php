@@ -11,7 +11,7 @@ beforeEach(function () {
 
 test('search accepts offset parameter for pagination', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response([
+        config('services.ollama.url').'/api/embeddings' => Http::response([
             'embedding' => array_fill(0, 768, 0.5),
         ]),
     ]);
@@ -19,15 +19,15 @@ test('search accepts offset parameter for pagination', function () {
     // Setup test data
     for ($i = 0; $i < 10; $i++) {
         \DB::table('paper_embeddings')->insert([
-            'id'            => \Illuminate\Support\Str::uuid()->toString(),
-            'projekt_id'    => null,
-            'source'        => 'test',
-            'paper_id'      => "paper-{$i}",
-            'title'         => "Paper {$i}",
-            'chunk_index'   => 0,
-            'text_chunk'    => "Content {$i}",
-            'metadata'      => json_encode([]),
-            'embedding'     => '[' . implode(',', array_fill(0, 768, 0.5)) . ']',
+            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'projekt_id' => null,
+            'source' => 'test',
+            'paper_id' => "paper-{$i}",
+            'title' => "Paper {$i}",
+            'chunk_index' => 0,
+            'text_chunk' => "Content {$i}",
+            'metadata' => json_encode([]),
+            'embedding' => '['.implode(',', array_fill(0, 768, 0.5)).']',
         ]);
     }
 
@@ -46,22 +46,22 @@ test('search accepts offset parameter for pagination', function () {
 
 test('search defaults max_results correctly with parentheses', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response([
+        config('services.ollama.url').'/api/embeddings' => Http::response([
             'embedding' => array_fill(0, 768, 0.5),
         ]),
     ]);
 
     for ($i = 0; $i < 10; $i++) {
         \DB::table('paper_embeddings')->insert([
-            'id'            => \Illuminate\Support\Str::uuid()->toString(),
-            'projekt_id'    => null,
-            'source'        => 'test',
-            'paper_id'      => "paper-{$i}",
-            'title'         => "Paper {$i}",
-            'chunk_index'   => 0,
-            'text_chunk'    => "Content {$i}",
-            'metadata'      => json_encode([]),
-            'embedding'     => '[' . implode(',', array_fill(0, 768, 0.5)) . ']',
+            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'projekt_id' => null,
+            'source' => 'test',
+            'paper_id' => "paper-{$i}",
+            'title' => "Paper {$i}",
+            'chunk_index' => 0,
+            'text_chunk' => "Content {$i}",
+            'metadata' => json_encode([]),
+            'embedding' => '['.implode(',', array_fill(0, 768, 0.5)).']',
         ]);
     }
 
@@ -74,7 +74,7 @@ test('search defaults max_results correctly with parentheses', function () {
 
 test('search returns 503 when ollama service unavailable', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response(null, 503),
+        config('services.ollama.url').'/api/embeddings' => Http::response(null, 503),
     ]);
 
     $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
@@ -87,7 +87,7 @@ test('search returns 503 when ollama service unavailable', function () {
 
 test('search returns 503 when embedding response format is invalid', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response([
+        config('services.ollama.url').'/api/embeddings' => Http::response([
             'embedding' => 'not_array',
         ]),
     ]);
@@ -102,7 +102,7 @@ test('search returns 503 when embedding response format is invalid', function ()
 
 test('search returns 401 without bearer token', function () {
     Http::fake([
-        config('services.ollama.url') . '/api/embeddings' => Http::response([
+        config('services.ollama.url').'/api/embeddings' => Http::response([
             'embedding' => array_fill(0, 768, 0.5),
         ]),
     ]);
@@ -118,9 +118,9 @@ test('ingest queues job successfully', function () {
     $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
         ->postJson('/api/papers/ingest', [
             'paper_id' => 'paper-123',
-            'source'   => 'pubmed',
-            'title'    => 'Test Paper',
-            'text'     => 'Content here',
+            'source' => 'pubmed',
+            'title' => 'Test Paper',
+            'text' => 'Content here',
         ]);
 
     expect($response->status())->toBe(200);
@@ -130,7 +130,7 @@ test('ingest queues job successfully', function () {
 
 test('search rejects query exceeding 2000 characters', function () {
     $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
-        ->getJson('/api/papers/rag-search?q=' . str_repeat('a', 2001));
+        ->getJson('/api/papers/rag-search?q='.str_repeat('a', 2001));
 
     expect($response->status())->toBe(422);
 });
@@ -160,10 +160,10 @@ test('ingest rejects invalid projekt_id', function () {
 
     $response = test()->withHeader('Authorization', 'Bearer test-mcp-token')
         ->postJson('/api/papers/ingest', [
-            'paper_id'   => 'paper-123',
-            'source'     => 'pubmed',
-            'title'      => 'Test',
-            'text'       => 'Content',
+            'paper_id' => 'paper-123',
+            'source' => 'pubmed',
+            'title' => 'Test',
+            'text' => 'Content',
             'projekt_id' => 'not-a-uuid',
         ]);
 

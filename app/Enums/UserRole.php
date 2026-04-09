@@ -11,7 +11,9 @@ namespace App\Enums;
 class UserRole
 {
     const ADMIN = 'admin';
+
     const EDITOR = 'editor';
+
     const MITGLIED = 'mitglied';
 
     /**

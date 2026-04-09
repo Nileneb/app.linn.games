@@ -18,7 +18,7 @@ test('chat: nachricht senden erstellt user-message und setzt loading', function 
 
     $this->assertDatabaseHas('chat_messages', [
         'user_id' => $user->id,
-        'role'    => 'user',
+        'role' => 'user',
         'content' => 'Was ist systematische Literaturrecherche?',
     ]);
 });
@@ -35,7 +35,7 @@ test('chat: validiert nachricht als pflichtfeld', function () {
 });
 
 test('chat: finalizeResponse speichert assistant-nachricht und setzt loading false', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     $this->actingAs($user);
@@ -46,15 +46,15 @@ test('chat: finalizeResponse speichert assistant-nachricht und setzt loading fal
         ->assertSet('loading', false);
 
     $this->assertDatabaseHas('chat_messages', [
-        'user_id'      => $user->id,
+        'user_id' => $user->id,
         'workspace_id' => $workspace->id,
-        'role'         => 'assistant',
-        'content'      => 'Hi! Wie kann ich helfen?',
+        'role' => 'assistant',
+        'content' => 'Hi! Wie kann ich helfen?',
     ]);
 });
 
 test('chat: markStreamError speichert fehlernachricht und setzt loading false', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     $this->actingAs($user);
@@ -66,15 +66,15 @@ test('chat: markStreamError speichert fehlernachricht und setzt loading false', 
 
     $this->assertDatabaseHas('chat_messages', [
         'user_id' => $user->id,
-        'role'    => 'assistant',
+        'role' => 'assistant',
     ]);
 });
 
 test('chat: clearHistory löscht nur eigene nachrichten', function () {
-    $user  = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $other = User::factory()->withoutTwoFactor()->create();
 
-    $workspace      = $user->ensureDefaultWorkspace();
+    $workspace = $user->ensureDefaultWorkspace();
     $otherWorkspace = $other->ensureDefaultWorkspace();
 
     ChatMessage::create(['user_id' => $user->id,  'workspace_id' => $workspace->id,      'role' => 'user', 'content' => 'Meine Frage']);
@@ -89,7 +89,7 @@ test('chat: clearHistory löscht nur eigene nachrichten', function () {
 });
 
 test('chat: getChatMessages gibt nachrichten chronologisch zurück', function () {
-    $user      = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
     ChatMessage::create(['user_id' => $user->id, 'workspace_id' => $workspace->id, 'role' => 'user',      'content' => 'Erste']);

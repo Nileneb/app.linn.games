@@ -21,10 +21,10 @@ class DatabaseSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => $adminEmail],
             [
-                'name'               => 'Admin',
-                'password'           => Str::random(32),
-                'status'             => 'active',
-                'email_verified_at'  => now(),
+                'name' => 'Admin',
+                'password' => Str::random(32),
+                'status' => 'active',
+                'email_verified_at' => now(),
             ]
         );
 

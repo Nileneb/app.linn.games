@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\ChunkCodierung;
-use App\Models\Recherche\Projekt;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,7 +20,8 @@ class ProcessMayringBatchJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 1;
+    public int $tries = 1;
+
     public int $timeout = 60;
 
     public function __construct(public readonly string $projektId) {}
@@ -35,6 +35,7 @@ class ProcessMayringBatchJob implements ShouldQueue
 
         if (empty($embeddings)) {
             Log::info('ProcessMayringBatchJob: keine Embeddings für Projekt', ['projekt_id' => $this->projektId]);
+
             return;
         }
 
@@ -54,7 +55,7 @@ class ProcessMayringBatchJob implements ShouldQueue
                 ['paper_embedding_id' => $embedding->id],
                 [
                     'projekt_id' => $this->projektId,
-                    'status'     => 'pending',
+                    'status' => 'pending',
                 ],
             );
 
@@ -72,17 +73,18 @@ class ProcessMayringBatchJob implements ShouldQueue
 
         if (empty($jobs)) {
             Log::info('ProcessMayringBatchJob: alle Chunks bereits codiert', ['projekt_id' => $this->projektId]);
+
             return;
         }
 
         Bus::batch($jobs)
-            ->name('mayring-codierung:' . $this->projektId)
+            ->name('mayring-codierung:'.$this->projektId)
             ->allowFailures()
             ->dispatch();
 
         Log::info('ProcessMayringBatchJob: Batch gestartet', [
             'projekt_id' => $this->projektId,
-            'chunks'     => count($jobs),
+            'chunks' => count($jobs),
         ]);
     }
 }

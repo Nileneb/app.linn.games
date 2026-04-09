@@ -32,7 +32,7 @@ return new class extends Migration
                 $table->timestampTz('erstellt_am')->default(DB::raw('now()'));
             });
 
-            DB::statement("ALTER TABLE projekte ADD COLUMN review_typ review_typ");
+            DB::statement('ALTER TABLE projekte ADD COLUMN review_typ review_typ');
         }
 
         if (! Schema::hasTable('phasen')) {

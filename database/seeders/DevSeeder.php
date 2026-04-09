@@ -43,7 +43,7 @@ class DevSeeder extends Seeder
             app(\App\Services\CreditService::class)->topUp($workspace, $starterCents, 'Startguthaben (Dev)');
         }
 
-        $this->command?->info("✓ Editor User: editor@test.local / password");
+        $this->command?->info('✓ Editor User: editor@test.local / password');
 
         // 2. Member User
         $member = User::updateOrCreate(
@@ -67,7 +67,7 @@ class DevSeeder extends Seeder
             app(\App\Services\CreditService::class)->topUp($workspace, $starterCents, 'Startguthaben (Dev)');
         }
 
-        $this->command?->info("✓ Member User: member@test.local / password");
+        $this->command?->info('✓ Member User: member@test.local / password');
 
         // 3. Admin User (no Workspace, just testing Admin panel)
         $admin = User::updateOrCreate(
@@ -85,13 +85,13 @@ class DevSeeder extends Seeder
         $admin->syncRoles([UserRole::ADMIN]);
         $admin->ensureDefaultWorkspace();
 
-        $this->command?->info("");
-        $this->command?->info("🎯 Dev Users Created:");
-        $this->command?->info("   - editor@test.local (Editor role) — Recherche Features");
-        $this->command?->info("   - member@test.local (Member role) — Standard Member");
-        $this->command?->info("   - admin-test@test.local (Admin role) — Admin Panel");
-        $this->command?->info("");
-        $this->command?->info("🔑 Password for all: password");
-        $this->command?->info("");
+        $this->command?->info('');
+        $this->command?->info('🎯 Dev Users Created:');
+        $this->command?->info('   - editor@test.local (Editor role) — Recherche Features');
+        $this->command?->info('   - member@test.local (Member role) — Standard Member');
+        $this->command?->info('   - admin-test@test.local (Admin role) — Admin Panel');
+        $this->command?->info('');
+        $this->command?->info('🔑 Password for all: password');
+        $this->command?->info('');
     }
 }

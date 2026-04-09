@@ -67,11 +67,14 @@ class ChatTriggerwordRouter
      * Parses a dashboard chat message for an optional triggerword command.
      *
      * Supported syntax (start of message):
+     *
      *   @<trigger> [<projekt_uuid>] <rest>
      *   #<trigger> [<projekt_uuid>] <rest>
      *
      * Examples:
+     *
      *   @mapping 9d3b...-.... My research question
+     *
      *   @review  9d3b...-.... Screen results
      *
      * @return array{config_key: string, cleaned_message: string, projekt_id: string|null, triggerword: string|null, structured_output: bool}
@@ -81,11 +84,11 @@ class ChatTriggerwordRouter
         $original = $message;
         $trimmed = ltrim($message);
 
-        if ($trimmed === '' || (!str_starts_with($trimmed, '@') && !str_starts_with($trimmed, '#'))) {
+        if ($trimmed === '' || (! str_starts_with($trimmed, '@') && ! str_starts_with($trimmed, '#'))) {
             return $this->fallback($original);
         }
 
-        if (!preg_match('/^[@#](?<trigger>[A-Za-z0-9_-]+)(?:\s+(?<maybe_uuid>[0-9a-fA-F-]{36}))?\s*(?<rest>.*)$/s', $trimmed, $m)) {
+        if (! preg_match('/^[@#](?<trigger>[A-Za-z0-9_-]+)(?:\s+(?<maybe_uuid>[0-9a-fA-F-]{36}))?\s*(?<rest>.*)$/s', $trimmed, $m)) {
             return $this->fallback($original);
         }
 
@@ -98,7 +101,7 @@ class ChatTriggerwordRouter
             $projektId = $maybeUuid;
         } else {
             // If the second token isn't a UUID, treat it as part of the actual message.
-            $rest = trim(($maybeUuid !== '' ? ($maybeUuid . ' ') : '') . $rest);
+            $rest = trim(($maybeUuid !== '' ? ($maybeUuid.' ') : '').$rest);
         }
 
         $configKey = $this->mapTriggerToConfigKey($trigger);

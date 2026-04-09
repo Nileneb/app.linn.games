@@ -40,9 +40,9 @@ return [
     ],
 
     'langdock' => [
-        'base_url'     => env('LANGDOCK_BASE_URL', 'https://api.langdock.com/agent/v1/chat/completions'),
-        'get_url'      => env('LANGDOCK_GET_URL', 'https://api.langdock.com/agent/v1/get'),
-        'update_url'   => env('LANGDOCK_UPDATE_URL', 'https://api.langdock.com/agent/v1/update'),
+        'base_url' => env('LANGDOCK_BASE_URL', 'https://api.langdock.com/agent/v1/chat/completions'),
+        'get_url' => env('LANGDOCK_GET_URL', 'https://api.langdock.com/agent/v1/get'),
+        'update_url' => env('LANGDOCK_UPDATE_URL', 'https://api.langdock.com/agent/v1/update'),
         // MCP-Protokoll-Endpunkt für Chat-Agent-Streaming (LangdockMcpClient)
         'mcp_endpoint' => env('LANGDOCK_MCP_ENDPOINT', 'https://api.langdock.com/mcp/v1'),
         'api_key' => env('LANGDOCK_API_KEY'),
@@ -62,15 +62,15 @@ return [
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
             // Default: 500 Cents = 5 EUR pro Agent/Tag (Schutz vor Token-Explosionen)
-            'agent_id'              => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
+            'agent_id' => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
             'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 500),
-            'search_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
-            'review_agent'          => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 500),
-            'retrieval_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 500),
-            'evaluation_agent'      => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 500),
-            'pico_agent'            => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 500),
-            'synthesis_agent'       => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 500),
-            'mayring_agent'         => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 500),
+            'search_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
+            'review_agent' => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 500),
+            'retrieval_agent' => (int) env('LANGDOCK_DAILY_LIMIT_RETRIEVAL', 500),
+            'evaluation_agent' => (int) env('LANGDOCK_DAILY_LIMIT_EVALUATION', 500),
+            'pico_agent' => (int) env('LANGDOCK_DAILY_LIMIT_PICO', 500),
+            'synthesis_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SYNTHESIS', 500),
+            'mayring_agent' => (int) env('LANGDOCK_DAILY_LIMIT_MAYRING', 500),
         ],
     ],
 

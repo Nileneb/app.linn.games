@@ -31,7 +31,7 @@ test('md viewer enforces projekt policy', function () {
     Storage::disk('local')->makeDirectory("recherche/{$this->projekt->id}/screening", true);
     Storage::disk('local')->put(
         "recherche/{$this->projekt->id}/screening/results.md",
-        "# Screening Results"
+        '# Screening Results'
     );
 
     $response = $this->actingAs($this->nonOwner)
@@ -51,7 +51,7 @@ test('md viewer handles multiple markdown files', function () {
     Storage::disk('local')->makeDirectory("recherche/{$this->projekt->id}/screening", true);
     Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/file1.md", "# File 1\n\nContent 1");
     Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/file2.md", "# File 2\n\nContent 2");
-    Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/data.txt", "Some text file");
+    Storage::disk('local')->put("recherche/{$this->projekt->id}/screening/data.txt", 'Some text file');
 
     $response = $this->actingAs($this->owner)
         ->get("/recherche/{$this->projekt->id}/ergebnisse/screening");

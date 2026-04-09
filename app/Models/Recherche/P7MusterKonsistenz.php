@@ -11,6 +11,7 @@ class P7MusterKonsistenz extends Model
     use HasUuids;
 
     protected $table = 'p7_muster_konsistenz';
+
     public $timestamps = false;
 
     protected $fillable = [

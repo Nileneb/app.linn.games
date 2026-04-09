@@ -24,11 +24,11 @@ class ContextProvider
      * Enthält: Projekt-Metadaten, aktuelle Phase-Info, RAG-Chunks.
      * KEIN DB-Schema, KEIN RLS-Bootstrap.
      *
-     * @param  string  $projektId    UUID des Projekts
+     * @param  string  $projektId  UUID des Projekts
      * @param  string  $workspaceId  UUID des Workspaces (für RAG-Isolation)
-     * @param  string  $userId       ID des Nutzers (für RAG-Isolation)
-     * @param  string  $userQuery    Nutzeranfrage — wird für RAG-Retrieval verwendet
-     * @param  int     $topK         Anzahl der RAG-Chunks (Standard: 10)
+     * @param  string  $userId  ID des Nutzers (für RAG-Isolation)
+     * @param  string  $userQuery  Nutzeranfrage — wird für RAG-Retrieval verwendet
+     * @param  int  $topK  Anzahl der RAG-Chunks (Standard: 10)
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException wenn Projekt nicht existiert
      */
@@ -37,7 +37,7 @@ class ContextProvider
         string $workspaceId,
         string $userId,
         string $userQuery,
-        int    $topK = 10
+        int $topK = 10
     ): string {
         $projekt = Projekt::with('phasen')->findOrFail($projektId);
 
@@ -52,11 +52,8 @@ class ContextProvider
      * Baut das komplette messages-Array für den Agent-Call.
      * Format: [system-message, ...chat-history]
      *
-     * @param  string  $projektId
-     * @param  string  $workspaceId
-     * @param  string  $userId
-     * @param  string  $userQuery     Aktuelle Nutzeranfrage (für RAG-Retrieval)
-     * @param  array   $chatHistory   Bisherige Nachrichten: [['role' => '...', 'content' => '...']]
+     * @param  string  $userQuery  Aktuelle Nutzeranfrage (für RAG-Retrieval)
+     * @param  array  $chatHistory  Bisherige Nachrichten: [['role' => '...', 'content' => '...']]
      * @return array<int, array{role: string, content: string}>
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException wenn Projekt nicht existiert
@@ -66,7 +63,7 @@ class ContextProvider
         string $workspaceId,
         string $userId,
         string $userQuery,
-        array  $chatHistory = []
+        array $chatHistory = []
     ): array {
         $systemMessage = $this->buildSystemMessage(
             $projektId,
@@ -76,7 +73,7 @@ class ContextProvider
         );
 
         $systemEntry = [
-            'role'    => 'system',
+            'role' => 'system',
             'content' => $systemMessage,
         ];
 
@@ -116,7 +113,7 @@ class ContextProvider
         string $projektId,
         string $workspaceId,
         string $userId,
-        int    $topK
+        int $topK
     ): string {
         try {
             $chunks = $this->retrieverService->retrieveWithAgentResults(
@@ -130,10 +127,10 @@ class ContextProvider
             return $this->retrieverService->formatAsContext($chunks);
         } catch (\Throwable $e) {
             Log::warning('ContextProvider: RAG-Retrieval fehlgeschlagen, fahre ohne Chunks fort', [
-                'projekt_id'   => $projektId,
+                'projekt_id' => $projektId,
                 'workspace_id' => $workspaceId,
-                'user_id'      => $userId,
-                'error'        => $e->getMessage(),
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
             ]);
 
             return '';
@@ -146,8 +143,8 @@ class ContextProvider
      */
     private function assembleSystemMessage(
         Projekt $projekt,
-        ?int    $aktuellePhaseNr,
-        string  $ragContext
+        ?int $aktuellePhaseNr,
+        string $ragContext
     ): string {
         $phaseLabel = $aktuellePhaseNr !== null ? "P{$aktuellePhaseNr}" : 'unbekannt';
 
@@ -155,9 +152,9 @@ class ContextProvider
             'Du bist ein Assistent für systematische Literaturrecherche.',
             '',
             '## Aktuelles Projekt',
-            '- Titel: ' . ($projekt->titel ?? '—'),
-            '- Forschungsfrage: ' . ($projekt->forschungsfrage ?? '—'),
-            '- Aktuelle Phase: ' . $phaseLabel,
+            '- Titel: '.($projekt->titel ?? '—'),
+            '- Forschungsfrage: '.($projekt->forschungsfrage ?? '—'),
+            '- Aktuelle Phase: '.$phaseLabel,
         ];
 
         if ($ragContext !== '') {

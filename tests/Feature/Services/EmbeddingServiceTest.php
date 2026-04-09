@@ -71,7 +71,7 @@ test('validate() filters out non-finite values', function () {
     expect($embedding)
         ->toBeArray()
         ->toHaveCount(3);
-    
+
     // Note: array_filter keeps keys, so we need to check values
     $values = array_values($embedding);
     expect($values)->toBe([0.1, 0.2, 0.3]);
@@ -108,7 +108,7 @@ test('toLiteral() handles various float formats', function () {
 
 test('generate() logs ollama errors', function () {
     Log::spy();
-    
+
     Http::fake([
         'http://localhost:11434/api/embeddings' => Http::response(['error' => 'Model not found'], 404),
     ]);

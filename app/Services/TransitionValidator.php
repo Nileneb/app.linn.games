@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Config;
 class TransitionValidator
 {
     private PhaseCountService $countService;
+
     private LangdockAgentService $agentService;
 
     public function __construct(
@@ -145,6 +146,7 @@ class TransitionValidator
     public function canTransition(Projekt $projekt, int $fromPhase, int $toPhase): bool
     {
         $result = $this->validateTransition($projekt, $fromPhase, $toPhase);
+
         return $result['can_transition'];
     }
 
@@ -154,6 +156,7 @@ class TransitionValidator
     public function isBlocking(Projekt $projekt, int $fromPhase, int $toPhase): bool
     {
         $result = $this->validateTransition($projekt, $fromPhase, $toPhase);
+
         return $result['is_blocking'];
     }
 
@@ -163,6 +166,7 @@ class TransitionValidator
     public function getTransitionStatus(Projekt $projekt, int $fromPhase, int $toPhase): TransitionStatus
     {
         $validation = $this->validateTransition($projekt, $fromPhase, $toPhase);
+
         return TransitionStatus::fromValidation($validation);
     }
 }

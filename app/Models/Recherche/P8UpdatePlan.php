@@ -11,6 +11,7 @@ class P8UpdatePlan extends Model
     use HasUuids;
 
     protected $table = 'p8_update_plan';
+
     public $timestamps = false;
 
     protected $fillable = [

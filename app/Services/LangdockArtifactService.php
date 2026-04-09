@@ -67,7 +67,7 @@ class LangdockArtifactService
         if ((bool) $options['always_write_md']) {
             $dir = $this->baseDir($context, $options);
             $base = $options['basename'] ?? 'agent-response';
-            $path = $this->putMarkdown($dir, $base . '.md', $rawContent);
+            $path = $this->putMarkdown($dir, $base.'.md', $rawContent);
             if ($path !== null) {
                 $stored[] = $path;
             }
@@ -90,7 +90,7 @@ class LangdockArtifactService
 
         if (($options['scope'] ?? null) === 'phase' && isset($options['phase_nr'])) {
             $parts[] = 'phasen';
-            $parts[] = 'p' . (int) $options['phase_nr'];
+            $parts[] = 'p'.(int) $options['phase_nr'];
         } elseif (($options['scope'] ?? null) === 'chat') {
             $parts[] = 'chat';
         }
@@ -133,6 +133,7 @@ class LangdockArtifactService
     private function extractSummary(array $envelope): ?string
     {
         $summary = $envelope['result']['summary'] ?? null;
+
         return is_string($summary) ? $summary : null;
     }
 
@@ -177,10 +178,11 @@ class LangdockArtifactService
     {
         $ts = now()->format('Ymd-His');
         $name = $this->sanitizeFilename($baseName) ?: 'structured-output';
-        $path = $dir . '/' . $ts . '-' . $name . '.json';
+        $path = $dir.'/'.$ts.'-'.$name.'.json';
 
         try {
-            Storage::put($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+            Storage::put($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)."\n");
+
             return $path;
         } catch (\Throwable $e) {
             Log::warning('Failed to store structured output JSON artifact', [
@@ -188,6 +190,7 @@ class LangdockArtifactService
                 'exception' => $e::class,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -200,10 +203,11 @@ class LangdockArtifactService
         }
 
         $relativePath = $this->sanitizePath($relativePath);
-        $path = $dir . '/' . $relativePath;
+        $path = $dir.'/'.$relativePath;
 
         try {
-            Storage::put($path, rtrim($content, "\n") . "\n");
+            Storage::put($path, rtrim($content, "\n")."\n");
+
             return $path;
         } catch (\Throwable $e) {
             Log::warning('Failed to store markdown artifact', [
@@ -211,6 +215,7 @@ class LangdockArtifactService
                 'exception' => $e::class,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -220,6 +225,7 @@ class LangdockArtifactService
         $name = trim($name);
         $name = preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?? '';
         $name = trim($name, '-');
+
         return mb_substr($name, 0, 80);
     }
 
@@ -234,6 +240,7 @@ class LangdockArtifactService
         }
 
         $result = implode('/', array_filter($out, static fn ($s) => $s !== ''));
+
         return $result !== '' ? $result : 'artifact.md';
     }
 }

@@ -1,10 +1,12 @@
 <?php
 
 use App\Jobs\DownloadPaperJob;
-use App\Models\Recherche\{Projekt, P5PrismaZahlen, P5ScreeningKriterium, P5ToolEntscheidung, P5Treffer, P5ScreeningEntscheidung};
+use App\Models\Recherche\P5PrismaZahlen;
+use App\Models\Recherche\P5ScreeningKriterium;
+use App\Models\Recherche\P5ToolEntscheidung;
+use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 

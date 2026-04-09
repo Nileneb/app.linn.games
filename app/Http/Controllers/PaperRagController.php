@@ -7,23 +7,23 @@ use App\Services\EmbeddingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 
 class PaperRagController extends Controller
 {
     private const EMBEDDING_RATE_LIMIT_KEY = 'embedding_requests';
+
     private const EMBEDDING_RATE_LIMIT_PER_MINUTE = 30;
 
     public function ingest(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'paper_id'   => ['required', 'string', 'max:255'],
-            'source'     => ['required', 'string', 'max:50'],
-            'title'      => ['required', 'string', 'max:1000'],
-            'text'       => ['required', 'string', 'max:500000'],
+            'paper_id' => ['required', 'string', 'max:255'],
+            'source' => ['required', 'string', 'max:50'],
+            'title' => ['required', 'string', 'max:1000'],
+            'text' => ['required', 'string', 'max:500000'],
             'projekt_id' => ['nullable', 'uuid', 'exists:projekte,id'],
-            'metadata'   => ['nullable', 'array'],
+            'metadata' => ['nullable', 'array'],
         ]);
 
         IngestPaperJob::dispatch(
@@ -41,29 +41,29 @@ class PaperRagController extends Controller
     public function search(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'q'           => ['required', 'string', 'max:2000'],
-            'projekt_id'  => ['nullable', 'uuid'],
+            'q' => ['required', 'string', 'max:2000'],
+            'projekt_id' => ['nullable', 'uuid'],
             'max_results' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'offset'      => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'offset' => ['nullable', 'integer', 'min:0', 'max:10000'],
         ]);
 
         // Rate-limit embedding requests
-        $rateLimitKey = self::EMBEDDING_RATE_LIMIT_KEY . ':' . ($request->user()?->id ?? $request->ip());
+        $rateLimitKey = self::EMBEDDING_RATE_LIMIT_KEY.':'.($request->user()?->id ?? $request->ip());
         if (RateLimiter::tooManyAttempts($rateLimitKey, self::EMBEDDING_RATE_LIMIT_PER_MINUTE)) {
             return response()->json(
-                ['error' => 'Rate limit exceeded. Maximum ' . self::EMBEDDING_RATE_LIMIT_PER_MINUTE . ' requests per minute'],
+                ['error' => 'Rate limit exceeded. Maximum '.self::EMBEDDING_RATE_LIMIT_PER_MINUTE.' requests per minute'],
                 429
             );
         }
         RateLimiter::hit($rateLimitKey, 60);
 
         $maxResults = (int) ($data['max_results'] ?? 5);
-        $offset     = (int) ($data['offset'] ?? 0);
-        $projektId  = $data['projekt_id'] ?? null;
+        $offset = (int) ($data['offset'] ?? 0);
+        $projektId = $data['projekt_id'] ?? null;
 
         try {
             $embeddingService = app(EmbeddingService::class);
-            
+
             try {
                 $embedding = $embeddingService->generate($data['q']);
             } catch (\RuntimeException $e) {
@@ -89,10 +89,11 @@ class PaperRagController extends Controller
         } catch (\Throwable $e) {
             \Log::error('PaperRagController::search error', [
                 'exception' => get_class($e),
-                'message'   => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
-                'query'     => $data['q'],
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'query' => $data['q'],
             ]);
+
             return response()->json([
                 'error' => 'Search failed',
                 'details' => 'An unexpected error occurred',

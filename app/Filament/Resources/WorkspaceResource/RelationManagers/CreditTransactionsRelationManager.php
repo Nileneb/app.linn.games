@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 class CreditTransactionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'creditTransactions';
+
     protected static ?string $title = 'Transaktionen';
 
     public function table(Table $table): Table
@@ -23,7 +24,7 @@ class CreditTransactionsRelationManager extends RelationManager
                     ->formatStateUsing(fn (string $state): string => $state === 'topup' ? 'Aufladung' : 'Verbrauch'),
                 TextColumn::make('amount_cents')
                     ->label('Betrag')
-                    ->formatStateUsing(fn (int $state): string => ($state >= 0 ? '+' : '') . number_format($state / 100, 2, ',', '.') . ' €')
+                    ->formatStateUsing(fn (int $state): string => ($state >= 0 ? '+' : '').number_format($state / 100, 2, ',', '.').' €')
                     ->color(fn (int $state): string => $state >= 0 ? 'success' : 'danger'),
                 TextColumn::make('tokens_used')->label('Tokens')->placeholder('—'),
                 TextColumn::make('agent_config_key')->label('Agent')->placeholder('—'),

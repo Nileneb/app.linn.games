@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\WorkspaceResource\RelationManagers;
 
-use Filament\Forms\Components\Select;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Schema;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -23,7 +23,7 @@ class WorkspaceUsersRelationManager extends RelationManager
             Select::make('role')
                 ->label('Rolle')
                 ->options([
-                    'owner'  => 'Inhaber',
+                    'owner' => 'Inhaber',
                     'editor' => 'Editor',
                     'viewer' => 'Betrachter',
                 ])
@@ -46,16 +46,16 @@ class WorkspaceUsersRelationManager extends RelationManager
                     ->label('Rolle')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'owner'  => 'warning',
+                        'owner' => 'warning',
                         'editor' => 'primary',
                         'viewer' => 'gray',
-                        default  => 'gray',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'owner'  => 'Inhaber',
+                        'owner' => 'Inhaber',
                         'editor' => 'Editor',
                         'viewer' => 'Betrachter',
-                        default  => $state,
+                        default => $state,
                     }),
                 TextColumn::make('created_at')
                     ->label('Hinzugefügt')
@@ -76,7 +76,7 @@ class WorkspaceUsersRelationManager extends RelationManager
                         Select::make('role')
                             ->label('Rolle')
                             ->options([
-                                'owner'  => 'Inhaber',
+                                'owner' => 'Inhaber',
                                 'editor' => 'Editor',
                                 'viewer' => 'Betrachter',
                             ])

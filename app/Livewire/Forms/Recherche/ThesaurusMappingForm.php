@@ -14,9 +14,13 @@ class ThesaurusMappingForm extends Form
     public string $freitextDe = '';
 
     public string $freitextEn = '';
+
     public string $mesh = '';
+
     public string $emtree = '';
+
     public string $psycinfo = '';
+
     public string $anmerkung = '';
 
     protected function fieldMap(): array
@@ -24,10 +28,10 @@ class ThesaurusMappingForm extends Form
         return [
             'freitextDe' => 'freitext_de',
             'freitextEn' => 'freitext_en',
-            'mesh'       => 'mesh_term',
-            'emtree'     => 'emtree_term',
-            'psycinfo'   => 'psycinfo_term',
-            'anmerkung'  => 'anmerkung',
+            'mesh' => 'mesh_term',
+            'emtree' => 'emtree_term',
+            'psycinfo' => 'psycinfo_term',
+            'anmerkung' => 'anmerkung',
         ];
     }
 

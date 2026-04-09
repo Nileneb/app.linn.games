@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P2ReviewTypEntscheidung, P2Cluster, P2MappingSuchstringKomponente, P2Trefferliste};
+use App\Models\Recherche\P2Cluster;
+use App\Models\Recherche\P2MappingSuchstringKomponente;
+use App\Models\Recherche\P2ReviewTypEntscheidung;
+use App\Models\Recherche\P2Trefferliste;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

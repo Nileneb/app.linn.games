@@ -19,16 +19,16 @@ trait TriggersPhaseAgent
     /**
      * Trigger an agent for the given phase.
      *
-     * @param int $phaseNr Phase number (1-7)
-     * @return void
+     * @param  int  $phaseNr  Phase number (1-7)
      */
     public function triggerAgent(int $phaseNr): void
     {
         try {
             // Get agent config key from phase_chain.php
             $config = config('phase_chain');
-            if (!isset($config[$phaseNr])) {
+            if (! isset($config[$phaseNr])) {
                 $this->dispatch('notify', type: 'error', message: 'Phase nicht konfiguriert');
+
                 return;
             }
 
@@ -48,23 +48,24 @@ trait TriggersPhaseAgent
             // Kontext für RLS-Bootstrap aufbauen: projekt_id, workspace_id, user_id, phase_nr
             // user_id = aktuell eingeloggter Nutzer (nicht Projekt-Ersteller) — Issue #154
             $context = [
-                'projekt_id'   => $this->projekt->id,
+                'projekt_id' => $this->projekt->id,
                 'workspace_id' => $this->projekt->workspace_id,
-                'user_id'      => auth()->id(),
-                'phase_nr'     => $phaseNr,
+                'user_id' => auth()->id(),
+                'phase_nr' => $phaseNr,
             ];
 
             // Agent aufrufen mit Kontext, damit LangdockContextInjector SET LOCAL injizieren kann
             $sendAgent = app(SendAgentMessage::class);
             $result = $sendAgent->execute($configKey, $messages, 120, $context);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 Log::warning('Agent execution failed', [
                     'phase_nr' => $phaseNr,
                     'config_key' => $configKey,
                     'content' => $result['content'],
                 ]);
                 $this->dispatch('notify', type: 'warning', message: $result['content']);
+
                 return;
             }
 
@@ -91,7 +92,7 @@ trait TriggersPhaseAgent
                 'exception' => $e::class,
                 'message' => $e->getMessage(),
             ]);
-            $this->dispatch('notify', type: 'error', message: 'Fehler bei Agent-Aufruf: ' . $e->getMessage());
+            $this->dispatch('notify', type: 'error', message: 'Fehler bei Agent-Aufruf: '.$e->getMessage());
         }
     }
 }

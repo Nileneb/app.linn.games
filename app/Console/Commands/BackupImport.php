@@ -19,11 +19,12 @@ class BackupImport extends Command
         $filePath = (string) ($this->option('file') ?? '');
         if ($filePath === '' || ! is_file($filePath)) {
             $this->error('Missing or invalid --file=...');
+
             return self::FAILURE;
         }
 
         $onlyTables = $this->resolveTables();
-        $dryRun     = (bool) $this->option('dry-run');
+        $dryRun = (bool) $this->option('dry-run');
 
         if ($dryRun) {
             $this->warn('DRY-RUN mode — nothing will be written.');
@@ -32,15 +33,16 @@ class BackupImport extends Command
         $handle = fopen($filePath, 'r');
         if ($handle === false) {
             $this->error("Cannot open file: {$filePath}");
+
             return self::FAILURE;
         }
 
-        $currentTable   = null;
+        $currentTable = null;
         $exportedColumns = [];
         $currentColumns = [];   // columns that exist in current DB schema
-        $insertColumns  = [];   // intersection: exported ∩ current
-        $lineNr         = 0;
-        $stats          = [];   // table => ['inserted' => int, 'skipped' => int, 'errors' => int]
+        $insertColumns = [];   // intersection: exported ∩ current
+        $lineNr = 0;
+        $stats = [];   // table => ['inserted' => int, 'skipped' => int, 'errors' => int]
 
         while (($line = fgets($handle)) !== false) {
             $lineNr++;
@@ -52,47 +54,51 @@ class BackupImport extends Command
             $decoded = json_decode($line, true);
             if (! is_array($decoded)) {
                 $this->warn("Line {$lineNr}: invalid JSON, skipping.");
+
                 continue;
             }
 
             // --- Metadata header line ---
             if (isset($decoded['__meta'])) {
                 $meta = $decoded['__meta'];
-                $currentTable    = (string) ($meta['table'] ?? '');
+                $currentTable = (string) ($meta['table'] ?? '');
                 $exportedColumns = (array) ($meta['columns'] ?? []);
 
                 if ($currentTable === '') {
                     $this->warn("Line {$lineNr}: __meta missing 'table', skipping section.");
                     $currentTable = null;
+
                     continue;
                 }
 
                 if ($onlyTables !== [] && ! in_array($currentTable, $onlyTables, true)) {
                     $this->line("  Skipping table '{$currentTable}' (not in --tables filter).");
                     $currentTable = null;
+
                     continue;
                 }
 
                 if (! DB::getSchemaBuilder()->hasTable($currentTable)) {
                     $this->warn("  Table '{$currentTable}' does not exist in current schema — skipping.");
                     $currentTable = null;
+
                     continue;
                 }
 
                 $currentColumns = DB::getSchemaBuilder()->getColumnListing($currentTable);
-                $insertColumns  = array_values(array_intersect($exportedColumns, $currentColumns));
-                $dropped        = array_values(array_diff($exportedColumns, $currentColumns));
-                $added          = array_values(array_diff($currentColumns, $exportedColumns));
+                $insertColumns = array_values(array_intersect($exportedColumns, $currentColumns));
+                $dropped = array_values(array_diff($exportedColumns, $currentColumns));
+                $added = array_values(array_diff($currentColumns, $exportedColumns));
 
                 $stats[$currentTable] = ['inserted' => 0, 'skipped' => 0, 'errors' => 0];
 
                 $this->line("  Table '{$currentTable}':");
-                $this->line("    columns to insert:  " . implode(', ', $insertColumns));
+                $this->line('    columns to insert:  '.implode(', ', $insertColumns));
                 if ($dropped !== []) {
-                    $this->warn("    dropped (not in DB): " . implode(', ', $dropped));
+                    $this->warn('    dropped (not in DB): '.implode(', ', $dropped));
                 }
                 if ($added !== []) {
-                    $this->line("    new in DB (uses default): " . implode(', ', $added));
+                    $this->line('    new in DB (uses default): '.implode(', ', $added));
                 }
 
                 continue;
@@ -105,6 +111,7 @@ class BackupImport extends Command
 
             if ($insertColumns === []) {
                 $stats[$currentTable]['skipped']++;
+
                 continue;
             }
 
@@ -118,6 +125,7 @@ class BackupImport extends Command
 
             if ($dryRun) {
                 $stats[$currentTable]['inserted']++;
+
                 continue;
             }
 
@@ -127,19 +135,20 @@ class BackupImport extends Command
             } catch (\Throwable $e) {
                 $stats[$currentTable]['errors']++;
                 $id = $row['id'] ?? '(no id)';
-                $this->warn("    Error on {$currentTable} id={$id}: " . $e->getMessage());
+                $this->warn("    Error on {$currentTable} id={$id}: ".$e->getMessage());
             }
         }
 
         fclose($handle);
 
         $this->newLine();
-        $this->info('Import summary' . ($dryRun ? ' (DRY-RUN)' : '') . ':');
+        $this->info('Import summary'.($dryRun ? ' (DRY-RUN)' : '').':');
         foreach ($stats as $table => $s) {
             $this->line("  {$table}: {$s['inserted']} inserted, {$s['skipped']} skipped, {$s['errors']} errors");
         }
 
         $totalErrors = array_sum(array_column($stats, 'errors'));
+
         return $totalErrors > 0 ? self::FAILURE : self::SUCCESS;
     }
 
@@ -155,13 +164,13 @@ class BackupImport extends Command
             return;
         }
 
-        $cols        = array_keys($data);
+        $cols = array_keys($data);
         $placeholders = implode(', ', array_fill(0, count($cols), '?'));
-        $colList     = implode(', ', array_map(fn (string $c) => '"' . $c . '"', $cols));
-        $values      = array_values($data);
+        $colList = implode(', ', array_map(fn (string $c) => '"'.$c.'"', $cols));
+        $values = array_values($data);
 
         // Cast UUID columns explicitly to avoid Postgres type errors
-        $quotedTable = '"' . $table . '"';
+        $quotedTable = '"'.$table.'"';
 
         DB::statement(
             "INSERT INTO {$quotedTable} ({$colList}) VALUES ({$placeholders}) ON CONFLICT (id) DO NOTHING",

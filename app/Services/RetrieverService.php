@@ -40,7 +40,7 @@ class RetrieverService
         }
 
         try {
-            $embedding     = $this->embeddingService->generate($query);
+            $embedding = $this->embeddingService->generate($query);
             $vectorLiteral = $this->embeddingService->toLiteral($embedding);
 
             return DB::select(
@@ -55,7 +55,7 @@ class RetrieverService
         } catch (\Throwable $e) {
             Log::warning('RetrieverService: Abruf fehlgeschlagen, fahre ohne Retriever fort', [
                 'projekt_id' => $projektId,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return [];
@@ -89,7 +89,7 @@ class RetrieverService
         string $userId,
         int $topK = 10
     ): array {
-        $cacheKey = 'rag_cache:' . $projektId . ':' . $userId . ':' . md5($query);
+        $cacheKey = 'rag_cache:'.$projektId.':'.$userId.':'.md5($query);
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
@@ -99,7 +99,7 @@ class RetrieverService
         }
 
         try {
-            $embedding     = $this->embeddingService->generate($query);
+            $embedding = $this->embeddingService->generate($query);
             $vectorLiteral = $this->embeddingService->toLiteral($embedding);
 
             // Suche in paper_embeddings (kein User-Filter, da Papers workspace-weit geteilt werden)
@@ -144,19 +144,19 @@ class RetrieverService
             Cache::put($cacheKey, $result, now()->addMinutes(30));
 
             Log::debug('RetrieverService: Cache-Miss, Ergebnis gespeichert', [
-                'cache_key'    => $cacheKey,
-                'paper_hits'   => count($paperChunks),
-                'agent_hits'   => count($agentChunks),
+                'cache_key' => $cacheKey,
+                'paper_hits' => count($paperChunks),
+                'agent_hits' => count($agentChunks),
                 'combined_top' => count($result),
             ]);
 
             return $result;
         } catch (\Throwable $e) {
             Log::warning('RetrieverService: retrieveWithAgentResults fehlgeschlagen, fahre ohne Retriever fort', [
-                'projekt_id'   => $projektId,
+                'projekt_id' => $projektId,
                 'workspace_id' => $workspaceId,
-                'user_id'      => $userId,
-                'error'        => $e->getMessage(),
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
             ]);
 
             return [];
@@ -184,8 +184,8 @@ class RetrieverService
             $similarity = number_format((float) ($chunk->similarity ?? 0), 2);
 
             // Unterstützt beide Spaltenbezeichnungen (text_chunk legacy, chunk_text neu)
-            $text   = $chunk->chunk_text ?? $chunk->text_chunk ?? '';
-            $title  = $chunk->title ?? 'Unbekannte Quelle';
+            $text = $chunk->chunk_text ?? $chunk->text_chunk ?? '';
+            $title = $chunk->title ?? 'Unbekannte Quelle';
             $source = $chunk->source ?? 'paper';
 
             if ($source === 'agent_result') {

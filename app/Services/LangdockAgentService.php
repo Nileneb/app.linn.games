@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Workspace;
-use App\Services\CreditService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -30,7 +29,7 @@ class LangdockAgentService
      */
     public function call(string $agentId, array $messages, int $timeout = 120, array $context = []): array
     {
-        $apiKey  = config('services.langdock.api_key');
+        $apiKey = config('services.langdock.api_key');
         $baseUrl = config('services.langdock.base_url');
         $logContext = $this->buildLogContext($agentId, $messages, $timeout, $context);
 
@@ -43,8 +42,8 @@ class LangdockAgentService
         }
 
         $transformedMessages = array_map(fn (array $msg) => [
-            'id'    => (string) Str::uuid(),
-            'role'  => $msg['role'],
+            'id' => (string) Str::uuid(),
+            'role' => $msg['role'],
             'parts' => [['type' => 'text', 'text' => $msg['content']]],
         ], $messages);
 
@@ -52,7 +51,7 @@ class LangdockAgentService
 
         $metadata = array_filter([
             'projekt_id' => $context['projekt_id'] ?? null,
-            'user_id'    => $context['user_id'] ?? null,
+            'user_id' => $context['user_id'] ?? null,
         ]);
 
         $workspace = $this->resolveWorkspace($context);
@@ -72,7 +71,7 @@ class LangdockAgentService
         $response = $this->callWithRetry($body, $apiKey, $baseUrl, $timeout, $logContext, $startedAt);
 
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-        $raw     = $response->json() ?? [];
+        $raw = $response->json() ?? [];
         $content = $raw['messages'][0]['content']
             ?? $raw['result'][0]['content'][0]['text']
             ?? $response->body();
@@ -83,14 +82,14 @@ class LangdockAgentService
         }
 
         Log::info('Langdock agent request succeeded', $logContext + [
-            'status'          => $response->status(),
-            'duration_ms'     => $durationMs,
+            'status' => $response->status(),
+            'duration_ms' => $durationMs,
             'response_length' => mb_strlen((string) $content),
         ]);
 
         return [
             'content' => (string) $content,
-            'raw'     => $raw,
+            'raw' => $raw,
         ];
     }
 
@@ -129,7 +128,7 @@ class LangdockAgentService
         array $logContext,
         float $startedAt,
     ): \Illuminate\Http\Client\Response {
-        $maxRetries  = (int) config('services.langdock.retry_attempts', 3);
+        $maxRetries = (int) config('services.langdock.retry_attempts', 3);
         $retrySleepMs = (int) config('services.langdock.retry_sleep_ms', 500);
 
         $attempt = 0;
@@ -137,28 +136,29 @@ class LangdockAgentService
         while (true) {
             try {
                 $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type'  => 'application/json',
+                    'Authorization' => 'Bearer '.$apiKey,
+                    'Content-Type' => 'application/json',
                 ])->timeout($timeout)->post($baseUrl, $body);
 
                 if ($response->serverError() && $attempt < $maxRetries) {
                     $delayMs = $retrySleepMs * (2 ** $attempt);
                     Log::warning('Langdock server error, retrying', $logContext + [
-                        'attempt'  => $attempt + 1,
-                        'max'      => $maxRetries,
+                        'attempt' => $attempt + 1,
+                        'max' => $maxRetries,
                         'delay_ms' => $delayMs,
-                        'status'   => $response->status(),
+                        'status' => $response->status(),
                     ]);
                     usleep($delayMs * 1000);
                     $attempt++;
+
                     continue;
                 }
 
                 if ($response->failed()) {
                     $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
                     Log::error('Langdock agent request failed', $logContext + [
-                        'status'           => $response->status(),
-                        'duration_ms'      => $durationMs,
+                        'status' => $response->status(),
+                        'duration_ms' => $durationMs,
                         'response_excerpt' => Str::limit($response->body(), 1000),
                     ]);
 
@@ -183,26 +183,27 @@ class LangdockAgentService
                 if ($attempt < $maxRetries) {
                     $delayMs = $retrySleepMs * (2 ** $attempt);
                     Log::warning('Langdock connection error, retrying', $logContext + [
-                        'attempt'   => $attempt + 1,
-                        'max'       => $maxRetries,
-                        'delay_ms'  => $delayMs,
+                        'attempt' => $attempt + 1,
+                        'max' => $maxRetries,
+                        'delay_ms' => $delayMs,
                         'exception' => $e::class,
-                        'message'   => $e->getMessage(),
+                        'message' => $e->getMessage(),
                     ]);
                     usleep($delayMs * 1000);
                     $attempt++;
+
                     continue;
                 }
 
                 $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
                 Log::error('Langdock agent request crashed', $logContext + [
                     'duration_ms' => $durationMs,
-                    'exception'   => $e::class,
-                    'message'     => $e->getMessage(),
+                    'exception' => $e::class,
+                    'message' => $e->getMessage(),
                 ]);
 
                 throw new LangdockAgentException(
-                    'Verbindung zu Langdock fehlgeschlagen: ' . $e->getMessage(),
+                    'Verbindung zu Langdock fehlgeschlagen: '.$e->getMessage(),
                     0,
                     $e,
                 );
@@ -235,18 +236,18 @@ class LangdockAgentService
             $errors = [];
 
             Log::info('Langdock agent details requested', [
-                'url'   => $getUrl,
+                'url' => $getUrl,
                 'count' => count($configured),
             ]);
 
             foreach ($configured as $configKey => $agentId) {
                 try {
                     $response = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $apiKey,
+                        'Authorization' => 'Bearer '.$apiKey,
                     ])->timeout(10)->get($getUrl, ['agentId' => $agentId]);
 
                     if ($response->successful()) {
-                        $raw   = $response->json() ?? [];
+                        $raw = $response->json() ?? [];
                         $agent = $raw['agent'] ?? null;
 
                         if (is_array($agent) && isset($agent['id'])) {
@@ -254,16 +255,16 @@ class LangdockAgentService
                         } else {
                             Log::warning('Langdock agent get: unexpected response shape', [
                                 'config_key' => $configKey,
-                                'agent_id'   => $agentId,
-                                'raw'        => $raw,
+                                'agent_id' => $agentId,
+                                'raw' => $raw,
                             ]);
                         }
                     } else {
                         $errors[] = "{$configKey} ({$agentId}): HTTP {$response->status()}";
                         Log::warning('Langdock agent get failed', [
-                            'config_key'       => $configKey,
-                            'agent_id'         => $agentId,
-                            'status'           => $response->status(),
+                            'config_key' => $configKey,
+                            'agent_id' => $agentId,
+                            'status' => $response->status(),
                             'response_excerpt' => Str::limit($response->body(), 300),
                         ]);
                     }
@@ -271,21 +272,21 @@ class LangdockAgentService
                     $errors[] = "{$configKey} ({$agentId}): {$e->getMessage()}";
                     Log::warning('Langdock agent get crashed', [
                         'config_key' => $configKey,
-                        'agent_id'   => $agentId,
-                        'exception'  => $e::class,
-                        'message'    => $e->getMessage(),
+                        'agent_id' => $agentId,
+                        'exception' => $e::class,
+                        'message' => $e->getMessage(),
                     ]);
                 }
             }
 
             Log::info('Langdock agent details fetched', [
-                'found'  => count($agents),
+                'found' => count($agents),
                 'errors' => count($errors),
             ]);
 
             if ($agents === [] && $errors !== []) {
                 throw new LangdockAgentException(
-                    'Kein Agent konnte abgerufen werden: ' . implode('; ', array_slice($errors, 0, 3)),
+                    'Kein Agent konnte abgerufen werden: '.implode('; ', array_slice($errors, 0, 3)),
                 );
             }
 
@@ -297,7 +298,7 @@ class LangdockAgentService
      * Gibt die lokal in config/services.php konfigurierten Agent-Keys und ihre UUIDs zurück.
      * Schließt Nicht-Agent-Keys aus.
      *
-     * @return array<string, string>  Key => UUID
+     * @return array<string, string> Key => UUID
      */
     public function configuredAgents(): array
     {
@@ -312,6 +313,7 @@ class LangdockAgentService
     private function resolveWorkspace(array $context): ?Workspace
     {
         $id = $context['workspace_id'] ?? null;
+
         return $id ? Workspace::find($id) : null;
     }
 
@@ -329,7 +331,7 @@ class LangdockAgentService
         foreach ($messages as $m) {
             $text = $m['parts'][0]['text'] ?? '';
             $nonAsciiCount = (int) preg_match_all('/[^\x00-\x7F]/u', $text);
-            $asciiCount    = mb_strlen($text) - $nonAsciiCount;
+            $asciiCount = mb_strlen($text) - $nonAsciiCount;
             $total += (int) ceil($asciiCount / 4) + (int) ceil($nonAsciiCount / 2);
         }
 
@@ -344,15 +346,14 @@ class LangdockAgentService
         $lastMessage = $messages === [] ? null : $messages[array_key_last($messages)];
 
         return array_filter($context + [
-            'request_id'           => (string) Str::uuid(),
-            'agent_id'             => $agentId,
-            'message_count'        => count($messages),
-            'timeout_seconds'      => $timeout,
-            'last_message_role'    => $lastMessage['role'] ?? null,
+            'request_id' => (string) Str::uuid(),
+            'agent_id' => $agentId,
+            'message_count' => count($messages),
+            'timeout_seconds' => $timeout,
+            'last_message_role' => $lastMessage['role'] ?? null,
             'last_message_preview' => isset($lastMessage['content'])
                 ? Str::limit((string) preg_replace('/\s+/', ' ', $lastMessage['content']), 180)
                 : null,
         ], static fn ($value) => $value !== null && $value !== '');
     }
 }
-

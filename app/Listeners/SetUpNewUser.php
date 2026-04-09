@@ -22,7 +22,7 @@ class SetUpNewUser
         } catch (\Throwable $e) {
             Log::error('User-Initialisierung fehlgeschlagen', [
                 'user_id' => $user->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }

@@ -11,6 +11,7 @@ class P1Warnsignal extends Model
     use HasUuids;
 
     protected $table = 'p1_warnsignale';
+
     public $timestamps = false;
 
     protected $fillable = [

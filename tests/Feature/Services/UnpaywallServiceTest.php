@@ -45,7 +45,7 @@ test('resolveOaUrl returns null when no URL found', function () {
 
 test('resolveOaUrl handles API failures gracefully', function () {
     Log::spy();
-    
+
     Http::fake([
         'https://api.unpaywall.org/v2/*' => Http::response([], 503),
     ]);
@@ -63,7 +63,7 @@ test('resolveOaUrl handles API failures gracefully', function () {
 
 test('resolveOaUrl handles network errors', function () {
     Log::spy();
-    
+
     Http::fake([
         'https://api.unpaywall.org/v2/*' => fn () => throw new \Exception('Network error'),
     ]);

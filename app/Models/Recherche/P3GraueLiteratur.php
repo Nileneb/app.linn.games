@@ -11,6 +11,7 @@ class P3GraueLiteratur extends Model
     use HasUuids;
 
     protected $table = 'p3_graue_literatur';
+
     public $timestamps = false;
 
     protected $fillable = [

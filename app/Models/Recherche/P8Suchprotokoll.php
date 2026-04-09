@@ -11,6 +11,7 @@ class P8Suchprotokoll extends Model
     use HasUuids;
 
     protected $table = 'p8_suchprotokoll';
+
     public $timestamps = false;
 
     protected $fillable = [

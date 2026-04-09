@@ -19,8 +19,10 @@ class DownloadPaperJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $timeout = 60;
+
     public int $backoff = 30;
 
     public function __construct(private readonly string $trefferId) {}
@@ -38,8 +40,8 @@ class DownloadPaperJob implements ShouldQueue
 
         if ($pdfUrl === null) {
             $treffer->update([
-                'retrieval_status'        => 'nicht_verfuegbar',
-                'retrieval_checked_at'    => now(),
+                'retrieval_status' => 'nicht_verfuegbar',
+                'retrieval_checked_at' => now(),
                 'retrieval_last_response' => 'Kein Open-Access-Volltext gefunden (Unpaywall).',
             ]);
 
@@ -50,23 +52,23 @@ class DownloadPaperJob implements ShouldQueue
 
         if ($response->failed()) {
             $treffer->update([
-                'retrieval_status'        => 'fehler',
-                'retrieval_checked_at'    => now(),
+                'retrieval_status' => 'fehler',
+                'retrieval_checked_at' => now(),
                 'retrieval_last_response' => "HTTP {$response->status()} beim Download von {$pdfUrl}.",
             ]);
 
             return;
         }
 
-        $path = 'papers/' . $treffer->projekt_id . '/' . Str::slug($treffer->record_id) . '.pdf';
+        $path = 'papers/'.$treffer->projekt_id.'/'.Str::slug($treffer->record_id).'.pdf';
         Storage::put($path, $response->body());
 
         $treffer->update([
-            'retrieval_downloaded'    => true,
-            'retrieval_source_url'    => $pdfUrl,
-            'retrieval_storage_path'  => $path,
-            'retrieval_status'        => 'heruntergeladen',
-            'retrieval_checked_at'    => now(),
+            'retrieval_downloaded' => true,
+            'retrieval_source_url' => $pdfUrl,
+            'retrieval_storage_path' => $path,
+            'retrieval_status' => 'heruntergeladen',
+            'retrieval_checked_at' => now(),
             'retrieval_last_response' => null,
         ]);
 
@@ -77,12 +79,12 @@ class DownloadPaperJob implements ShouldQueue
         if (blank($text)) {
             Log::warning('PDF text extraction returned empty', [
                 'treffer_id' => $this->trefferId,
-                'path'       => $path,
-                'doi'        => $treffer->doi,
+                'path' => $path,
+                'doi' => $treffer->doi,
             ]);
 
             $treffer->update([
-                'retrieval_status'        => 'text_extraktion_fehlgeschlagen',
+                'retrieval_status' => 'text_extraktion_fehlgeschlagen',
                 'retrieval_last_response' => 'PDF heruntergeladen, aber Textextraktion lieferte kein Ergebnis.',
             ]);
 
@@ -90,12 +92,12 @@ class DownloadPaperJob implements ShouldQueue
         }
 
         IngestPaperJob::dispatch(
-            paperId:   $treffer->record_id,
-            source:    $treffer->datenbank_quelle ?? 'retrieval',
-            title:     $treffer->titel ?? '',
-            text:      $text,
+            paperId: $treffer->record_id,
+            source: $treffer->datenbank_quelle ?? 'retrieval',
+            title: $treffer->titel ?? '',
+            text: $text,
             projektId: $treffer->projekt_id,
-            metadata:  ['doi' => $treffer->doi, 'treffer_id' => $treffer->id],
+            metadata: ['doi' => $treffer->doi, 'treffer_id' => $treffer->id],
         );
     }
 }

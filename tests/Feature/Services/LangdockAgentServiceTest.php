@@ -21,7 +21,7 @@ beforeEach(function () {
 
 function makeLangdockService(): LangdockAgentService
 {
-    return new LangdockAgentService(new LangdockContextInjector());
+    return new LangdockAgentService(new LangdockContextInjector);
 }
 
 test('call sends request to langdock api and returns content', function () {
@@ -120,20 +120,20 @@ test('call injects context message and metadata when projekt_id and user_id are 
     ]);
 
     $projektId = '11111111-1111-1111-1111-111111111111';
-    $userId    = '22222222-2222-2222-2222-222222222222';
+    $userId = '22222222-2222-2222-2222-222222222222';
 
     $service = makeLangdockService();
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Analysiere.'],
     ], 120, ['projekt_id' => $projektId, 'user_id' => $userId]);
 
-    Http::assertSent(function ($request) use ($projektId, $userId) {
+    Http::assertSent(function ($request) use ($projektId) {
         $messages = $request['messages'];
 
         // First message must be the injected context with RLS instruction and JSON context
         $contextText = $messages[0]['parts'][0]['text'] ?? '';
         $hasSetLocal = str_contains($contextText, "SET LOCAL app.current_projekt_id = '{$projektId}'");
-        $hasKontext  = str_contains($contextText, '"projekt_id":"' . $projektId . '"');
+        $hasKontext = str_contains($contextText, '"projekt_id":"'.$projektId.'"');
 
         // Second message is the actual user input
         $hasUserMessage = ($messages[1]['parts'][0]['text'] ?? '') === 'Analysiere.';
@@ -177,7 +177,7 @@ test('call retries on 5xx and succeeds on second attempt', function () {
             ->push(['messages' => [['id' => 'r-ok', 'role' => 'assistant', 'content' => 'Retry erfolgreich.']]], 200),
     ]);
 
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
     $result = $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -191,7 +191,7 @@ test('call throws after exhausting all retries on persistent 5xx', function () {
         '*' => Http::response('Service Unavailable', 503),
     ]);
 
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
     $service->call('test-agent-uuid', [
         ['role' => 'user', 'content' => 'Test'],
     ]);
@@ -202,7 +202,7 @@ test('call does not retry on 4xx client errors', function () {
         '*' => Http::response('Unauthorized', 401),
     ]);
 
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
 
     try {
         $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
@@ -221,7 +221,7 @@ test('retry_attempts config controls number of retries', function () {
         '*' => Http::response('Server Error', 500),
     ]);
 
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
 
     try {
         $service->call('test-agent-uuid', [['role' => 'user', 'content' => 'Test']]);
@@ -238,26 +238,26 @@ test('retry_attempts config controls number of retries', function () {
 // ---------------------------------------------------------------------------
 
 test('estimateTokens accounts for non-ascii characters', function () {
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
     $reflection = new \ReflectionMethod($service, 'estimateTokens');
     $reflection->setAccessible(true);
 
     $asciiOnly = [['parts' => [['text' => str_repeat('a', 200)]]]]; // 200 ASCII chars
-    $withCjk   = [['parts' => [['text' => str_repeat('字', 200)]]]]; // 200 CJK chars
+    $withCjk = [['parts' => [['text' => str_repeat('字', 200)]]]]; // 200 CJK chars
 
     $asciiTokens = $reflection->invoke($service, $asciiOnly);
-    $cjkTokens   = $reflection->invoke($service, $withCjk);
+    $cjkTokens = $reflection->invoke($service, $withCjk);
 
     // CJK sollte mehr Token schätzen als gleich viele ASCII-Zeichen
     expect($cjkTokens)->toBeGreaterThan($asciiTokens);
 });
 
 test('estimateTokens adds per-message overhead', function () {
-    $service = new LangdockAgentService(new LangdockContextInjector());
+    $service = new LangdockAgentService(new LangdockContextInjector);
     $reflection = new \ReflectionMethod($service, 'estimateTokens');
     $reflection->setAccessible(true);
 
-    $oneMsg  = [['parts' => [['text' => 'Hello']]]];
+    $oneMsg = [['parts' => [['text' => 'Hello']]]];
     $twoMsgs = [['parts' => [['text' => 'Hello']]], ['parts' => [['text' => 'Hello']]]];
 
     $one = $reflection->invoke($service, $oneMsg);

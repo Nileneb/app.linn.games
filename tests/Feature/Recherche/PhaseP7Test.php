@@ -1,6 +1,11 @@
 <?php
 
-use App\Models\Recherche\{Projekt, P5Treffer, P7SyntheseMethode, P7Datenextraktion, P7MusterKonsistenz, P7GradeEinschaetzung};
+use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\P7Datenextraktion;
+use App\Models\Recherche\P7GradeEinschaetzung;
+use App\Models\Recherche\P7MusterKonsistenz;
+use App\Models\Recherche\P7SyntheseMethode;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use Livewire\Volt\Volt;
 

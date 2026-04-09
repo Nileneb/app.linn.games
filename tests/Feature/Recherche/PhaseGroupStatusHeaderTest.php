@@ -1,8 +1,9 @@
 <?php
 
 use App\Jobs\ProcessPhaseAgentJob;
-use App\Models\Recherche\{Projekt, Phase};
 use App\Models\PhaseAgentResult;
+use App\Models\Recherche\Phase;
+use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Queue;
@@ -15,7 +16,7 @@ beforeEach(function () {
         'user_id' => $this->user->id,
         'workspace_id' => $this->workspace->id,
     ]);
-    
+
     // Create all 8 phases
     foreach (range(1, 8) as $phaseNr) {
         Phase::factory()->create([
@@ -54,7 +55,7 @@ test('header displays all 8 phases with status icons', function () {
 test('phase status icons display correctly', function () {
     // Set P1 to completed
     $this->projekt->phasen()->where('phase_nr', 1)->update(['status' => 'abgeschlossen']);
-    
+
     // Set P2 to in_bearbeitung
     $this->projekt->phasen()->where('phase_nr', 2)->update(['status' => 'in_bearbeitung']);
 

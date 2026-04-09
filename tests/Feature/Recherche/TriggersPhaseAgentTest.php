@@ -30,6 +30,7 @@ test('triggerAgent übergibt projekt_id, user_id, workspace_id und phase_nr an S
             ->andReturnUsing(function () use (&$capturedContext) {
                 $args = func_get_args();
                 $capturedContext = $args[3] ?? null;
+
                 return ['success' => false, 'content' => 'test-mocked'];
             });
     });
@@ -56,8 +57,8 @@ test('triggerAgent verwendet auth()->id() als user_id, nicht den Projekt-Erstell
     // Workspace-Zugang für aktiven Nutzer via Factory gewähren (workspace_users hat UUID-id)
     WorkspaceUser::factory()->create([
         'workspace_id' => $projekt->workspace_id,
-        'user_id'      => $aktuellerUser->id,
-        'role'         => 'editor',
+        'user_id' => $aktuellerUser->id,
+        'role' => 'editor',
     ]);
 
     $this->actingAs($aktuellerUser);
@@ -75,6 +76,7 @@ test('triggerAgent verwendet auth()->id() als user_id, nicht den Projekt-Erstell
                 $args = func_get_args();
                 $context = $args[3] ?? [];
                 $capturedUserId = $context['user_id'] ?? null;
+
                 return ['success' => false, 'content' => 'test-mocked'];
             });
     });
