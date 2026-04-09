@@ -20,8 +20,8 @@ class CreditOverviewWidget extends BaseWidget
             ->where('created_at', '>=', now()->subDays(30))
             ->sum('amount_cents');
 
-        // Aktive Nutzer (letzte 7 Tage)
-        $activeUsers = User::where('last_login_at', '>=', now()->subDays(7))->count();
+        // Aktive Nutzer (Status aktiv)
+        $activeUsers = User::where('status', 'active')->count();
 
         // Laufende Recherchen (nicht abgeschlossen)
         $runningResearch = Projekt::where('status', '!=', 'completed')->count();
@@ -36,7 +36,7 @@ class CreditOverviewWidget extends BaseWidget
                 ->color('warning')
                 ->icon('heroicon-o-arrow-trending-up'),
             Stat::make('Aktive Nutzer', $activeUsers)
-                ->description('Letzte 7 Tage aktiv')
+                ->description('Status: aktiv')
                 ->color('info')
                 ->icon('heroicon-o-users'),
             Stat::make('Laufende Recherchen', $runningResearch)
