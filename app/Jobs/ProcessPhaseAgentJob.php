@@ -45,15 +45,21 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
             $messages = $this->prependRetrieverContext($projekt, $this->messages);
 
-            // Create pending result record
-            $result = PhaseAgentResult::create([
-                'projekt_id' => $this->projektId,
-                // Aktiver Nutzer aus Kontext; Fallback auf Projekt-Ersteller (Issue #154)
-                'user_id' => $this->context['user_id'] ?? $projekt->user_id,
-                'phase_nr' => $this->phaseNr,
-                'agent_config_key' => $this->agentConfigKey,
-                'status' => 'pending',
-            ]);
+            // Find the pending record created by the Livewire component before dispatch;
+            // fall back to creating one here for backward compatibility (e.g. direct job dispatch).
+            $result = PhaseAgentResult::where('projekt_id', $this->projektId)
+                ->where('phase_nr', $this->phaseNr)
+                ->where('agent_config_key', $this->agentConfigKey)
+                ->where('status', 'pending')
+                ->orderByDesc('created_at')
+                ->first()
+                ?? PhaseAgentResult::create([
+                    'projekt_id'       => $this->projektId,
+                    'user_id'          => $this->context['user_id'] ?? $projekt->user_id,
+                    'phase_nr'         => $this->phaseNr,
+                    'agent_config_key' => $this->agentConfigKey,
+                    'status'           => 'pending',
+                ]);
 
             $response = app(SendAgentMessage::class)->execute(
                 $this->agentConfigKey,
