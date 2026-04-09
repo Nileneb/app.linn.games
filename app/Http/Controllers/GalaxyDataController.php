@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Recherche\Projekt;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class GalaxyDataController extends Controller
 {
-    public function show(Request $request, Projekt $projekt): JsonResponse
+    public function show(Projekt $projekt): JsonResponse
     {
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $projekt->id)) {
+            abort(400);
+        }
+
         $path = public_path("galaxy-data/{$projekt->id}.json");
 
         if (! file_exists($path)) {
@@ -18,7 +21,14 @@ class GalaxyDataController extends Controller
             ], 404);
         }
 
-        $data = json_decode(file_get_contents($path), true);
+        $contents = file_get_contents($path);
+        $data = json_decode($contents, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return response()->json([
+                'error' => 'Galaxy-Datei ist beschädigt oder unvollständig.',
+            ], 500);
+        }
 
         return response()->json($data);
     }
