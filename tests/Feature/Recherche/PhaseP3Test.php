@@ -313,9 +313,9 @@ test('P3: cancel setzt form zurück', function () {
 
     Volt::test('recherche.phase-p3', ['projekt' => $projekt])
         ->call('newDb')
-        ->assertSet('showDbForm', true)
+        ->assertSet('editingDbId', 'new')
         ->set('dbDatenbank', 'Test')
         ->call('cancelDb')
-        ->assertSet('showDbForm', false)
+        ->assertSet('editingDbId', null)
         ->assertSet('dbDatenbank', '');
 });

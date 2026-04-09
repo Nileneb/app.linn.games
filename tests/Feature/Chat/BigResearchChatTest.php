@@ -2,33 +2,19 @@
 
 use App\Models\ChatMessage;
 use App\Models\User;
-use App\Services\LangdockAgentService;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 
-beforeEach(function () {
-    Config::set('services.langdock.api_key', 'test-api-key');
-    Config::set('services.langdock.agent_id', 'test-agent-id');
-});
-
-test('chat: nachricht senden erstellt user-message und dispatcht job', function () {
+test('chat: nachricht senden erstellt user-message und setzt loading', function () {
     $user = User::factory()->withoutTwoFactor()->create();
     $user->ensureDefaultWorkspace();
 
     $this->actingAs($user);
 
-    // Mock LangdockAgentService so no real API call is made
-    $this->mock(LangdockAgentService::class, function ($mock) {
-        $mock->shouldReceive('call')
-            ->once()
-            ->andReturn(['content' => 'Mocked AI response']);
-    });
-
     Volt::test('chat.big-research-chat')
         ->set('message', 'Was ist systematische Literaturrecherche?')
         ->call('sendMessage')
-        ->assertSet('message', '');
+        ->assertSet('message', '')
+        ->assertSet('loading', true);
 
     $this->assertDatabaseHas('chat_messages', [
         'user_id' => $user->id,
@@ -48,53 +34,40 @@ test('chat: validiert nachricht als pflichtfeld', function () {
         ->assertHasErrors(['message']);
 });
 
-test('chat: checkForResponse erkennt antwort und setzt loading false', function () {
+test('chat: finalizeResponse speichert assistant-nachricht und setzt loading false', function () {
     $user      = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
-    $userMsg = ChatMessage::create([
-        'user_id'      => $user->id,
-        'workspace_id' => $workspace->id,
-        'role'         => 'user',
-        'content'      => 'Hallo',
-    ]);
+    $this->actingAs($user);
 
-    // Simulate job writing assistant response
-    ChatMessage::create([
+    Volt::test('chat.big-research-chat')
+        ->set('loading', true)
+        ->call('finalizeResponse', 'Hi! Wie kann ich helfen?')
+        ->assertSet('loading', false);
+
+    $this->assertDatabaseHas('chat_messages', [
         'user_id'      => $user->id,
         'workspace_id' => $workspace->id,
         'role'         => 'assistant',
         'content'      => 'Hi! Wie kann ich helfen?',
     ]);
-
-    $this->actingAs($user);
-
-    Volt::test('chat.big-research-chat')
-        ->set('loading', true)
-        ->set('pendingUserMsgId', $userMsg->id)
-        ->call('checkForResponse')
-        ->assertSet('loading', false)
-        ->assertSet('pendingUserMsgId', null);
 });
 
-test('chat: checkForResponse tut nichts wenn noch keine antwort', function () {
+test('chat: markStreamError speichert fehlernachricht und setzt loading false', function () {
     $user      = User::factory()->withoutTwoFactor()->create();
     $workspace = $user->ensureDefaultWorkspace();
 
-    $userMsg = ChatMessage::create([
-        'user_id'      => $user->id,
-        'workspace_id' => $workspace->id,
-        'role'         => 'user',
-        'content'      => 'Noch keine Antwort',
-    ]);
-
     $this->actingAs($user);
 
     Volt::test('chat.big-research-chat')
         ->set('loading', true)
-        ->set('pendingUserMsgId', $userMsg->id)
-        ->call('checkForResponse')
-        ->assertSet('loading', true);
+        ->call('markStreamError', 'Verbindung unterbrochen')
+        ->assertSet('loading', false);
+
+    $this->assertDatabaseHas('chat_messages', [
+        'user_id' => $user->id,
+        'role'    => 'assistant',
+    ]);
 });
 
 test('chat: clearHistory löscht nur eigene nachrichten', function () {

@@ -20,7 +20,6 @@ class IngestAgentResultJob implements ShouldQueue
     public int $tries = 3;
     public int $backoff = 30;
     public int $timeout = 120;
-    public string $queue = 'default';
 
     private const CHUNK_SIZE = 500;
     private const CHUNK_OVERLAP = 100;
