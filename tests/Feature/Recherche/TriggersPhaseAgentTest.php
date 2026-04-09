@@ -9,13 +9,13 @@ use App\Services\AgentPromptBuilder;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 
-// Stellt sicher, dass triggerAgent() einen Job dispatched und einen pending PhaseAgentResult-Record anlegt.
-// Die alten Tests prüften SendAgentMessage (synchron); der neue Flow nutzt ProcessPhaseAgentJob (Queue).
+// Pipeline-Trigger lebt jetzt in phase-group-status-header::startPipeline(int $fromPhase).
+// P1-Trigger → PhaseChainService übernimmt auto-chain P1→P2→P3→P4.
 
-test('triggerAgent übergibt projekt_id, user_id, workspace_id und phase_nr an ProcessPhaseAgentJob', function () {
+test('startPipeline übergibt projekt_id, user_id und phase_nr an ProcessPhaseAgentJob', function () {
     Queue::fake();
 
-    $user = User::factory()->withoutTwoFactor()->create();
+    $user    = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user);
@@ -25,9 +25,8 @@ test('triggerAgent übergibt projekt_id, user_id, workspace_id und phase_nr an P
         $mock->shouldReceive('buildUserPrompt')->andReturn('User Prompt');
     });
 
-    Volt::test('recherche.phase-p1', ['projekt' => $projekt])
-        ->call('triggerAgent', 1)
-        ->assertSet('agentDispatched', true);
+    Volt::test('recherche.phase-group-status-header', ['projekt' => $projekt])
+        ->call('startPipeline', 1);
 
     Queue::assertPushed(ProcessPhaseAgentJob::class, function ($job) use ($projekt) {
         return $job->projektId === $projekt->id && $job->phaseNr === 1;
@@ -41,7 +40,7 @@ test('triggerAgent übergibt projekt_id, user_id, workspace_id und phase_nr an P
     ]);
 });
 
-test('triggerAgent verwendet auth()->id() als user_id, nicht den Projekt-Ersteller', function () {
+test('startPipeline verwendet auth()->id() als user_id, nicht den Projekt-Ersteller', function () {
     Queue::fake();
 
     $projektOwner  = User::factory()->withoutTwoFactor()->create();
@@ -49,7 +48,6 @@ test('triggerAgent verwendet auth()->id() als user_id, nicht den Projekt-Erstell
 
     $projekt = Projekt::factory()->create(['user_id' => $projektOwner->id]);
 
-    // Workspace-Zugang für aktiven Nutzer
     WorkspaceUser::factory()->create([
         'workspace_id' => $projekt->workspace_id,
         'user_id'      => $aktuellerUser->id,
@@ -63,11 +61,9 @@ test('triggerAgent verwendet auth()->id() als user_id, nicht den Projekt-Erstell
         $mock->shouldReceive('buildUserPrompt')->andReturn('User Prompt');
     });
 
-    Volt::test('recherche.phase-p1', ['projekt' => $projekt])
-        ->call('triggerAgent', 1)
-        ->assertSet('agentDispatched', true);
+    Volt::test('recherche.phase-group-status-header', ['projekt' => $projekt])
+        ->call('startPipeline', 1);
 
-    // PhaseAgentResult muss user_id des aktiven Nutzers haben, nicht des Projekt-Erstellers
     $this->assertDatabaseHas('phase_agent_results', [
         'projekt_id' => $projekt->id,
         'user_id'    => $aktuellerUser->id,
