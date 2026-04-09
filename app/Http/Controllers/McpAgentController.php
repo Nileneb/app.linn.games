@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\AgentResultStorageService;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
+use App\Services\ClaudeAgentException;
+use App\Services\ClaudeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -23,10 +23,9 @@ class McpAgentController extends Controller
         ]);
 
         try {
-            $response = app(LangdockAgentService::class)->call(
+            $response = app(ClaudeService::class)->callByConfigKey(
                 $validated['agent_id'],
                 $validated['messages'],
-                $validated['timeout'] ?? 120,
                 $validated['context'] ?? [],
             );
 
@@ -51,7 +50,7 @@ class McpAgentController extends Controller
                 'raw' => $response['raw'],
                 'stored_at' => $filePath,
             ]);
-        } catch (LangdockAgentException $e) {
+        } catch (ClaudeAgentException $e) {
             Log::error('MCP agent call failed', [
                 'agent_id' => $validated['agent_id'],
                 'message' => $e->getMessage(),

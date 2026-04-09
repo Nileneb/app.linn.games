@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Wird via MCP_RESTRICT_TO_INTERNAL=true aktiviert (Standard in Production).
  * Erlaubt: localhost (127.0.0.1, ::1) sowie private Subnets (RFC 1918 / RFC 4193).
- * Externe Langdock-Cloud-Agents werden mit 403 Forbidden abgewiesen.
+ * Externe Aufrufe werden mit 403 Forbidden abgewiesen.
  */
 class AllowInternalMcpOnly
 {

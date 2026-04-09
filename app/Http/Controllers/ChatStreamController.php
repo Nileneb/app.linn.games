@@ -21,8 +21,8 @@ class ChatStreamController extends Controller
             'message' => ['required', 'string', 'max:10000'],
         ]);
 
-        $agentId = config('services.langdock.dashboard_agent_id')
-            ?? config('services.langdock.agent_id');
+        $agentId = config('services.anthropic.agents.dashboard_agent_id')
+            ?? config('services.anthropic.agents.agent_id');
 
         abort_if(! $agentId, 503, 'Agent nicht konfiguriert.');
 

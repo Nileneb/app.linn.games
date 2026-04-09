@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 class ChatTriggerwordRouter
 {
     /**
-     * Triggerword → services.langdock.* config key mapping.
+     * Triggerword → services.anthropic.agents.* config key mapping.
      *
      * Keep this as the single source of truth so routing and docs/tools stay in sync.
      *

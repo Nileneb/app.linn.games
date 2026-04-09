@@ -69,7 +69,7 @@ class PhaseChainService
             // Wir fahren trotzdem fort (non-blocking warning)
         }
 
-        if (! config("services.langdock.{$agentKey}")) {
+        if (! config("services.anthropic.agents.{$agentKey}")) {
             Log::warning('PhaseChain: next agent not configured, skipping auto-dispatch', [
                 'projekt_id' => $projekt->id,
                 'completed_phase' => $completedPhaseNr,
