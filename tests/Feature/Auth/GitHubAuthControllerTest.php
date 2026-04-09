@@ -15,6 +15,7 @@ test('callback creates new waitlisted user and redirects to pending-approval', f
     $socialiteUser->allows('getEmail')->andReturn('newoauth@example.com');
     $socialiteUser->allows('getName')->andReturn('OAuth User');
     $socialiteUser->allows('getNickname')->andReturn('oauthuser');
+    $socialiteUser->allows('getRaw')->andReturn([]);
 
     Socialite::shouldReceive('driver->user')->andReturn($socialiteUser);
 
@@ -39,6 +40,7 @@ test('callback logs in existing active user by provider_id', function () {
     $socialiteUser = Mockery::mock(\Laravel\Socialite\Two\User::class);
     $socialiteUser->allows('getId')->andReturn('github-456');
     $socialiteUser->allows('getEmail')->andReturn($user->email);
+    $socialiteUser->allows('getRaw')->andReturn([]);
 
     Socialite::shouldReceive('driver->user')->andReturn($socialiteUser);
 
@@ -55,6 +57,7 @@ test('callback links github to existing user found by email', function () {
     $socialiteUser->allows('getId')->andReturn('github-789');
     $socialiteUser->allows('getEmail')->andReturn($user->email);
     $socialiteUser->allows('getName')->andReturn($user->name);
+    $socialiteUser->allows('getRaw')->andReturn(['email_verified' => true]);
 
     Socialite::shouldReceive('driver->user')->andReturn($socialiteUser);
 
