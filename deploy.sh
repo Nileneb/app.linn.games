@@ -42,7 +42,7 @@ if [ ! -f .env ]; then
 fi
 
 echo "==> Pulling latest images..."
-"${DC[@]}" pull postgres redis postgres-mcp
+"${DC[@]}" pull postgres redis
 
 # ── Frontend: Vite build ────────────────────────
 echo "==> Installing npm dependencies..."
@@ -183,4 +183,3 @@ echo "==> Running post-deploy (admin user + password reset)..."
 echo ""
 echo "==> Deployment complete."
 echo "    App:          http://localhost:6479"
-echo "    Postgres MCP: http://localhost:8200/sse"
