@@ -57,7 +57,7 @@ class ClaudeService
         $startedAt = microtime(true);
 
         // Mayring-Agent erhält Tool-Use-Zugriff auf MayringCoder-MCP
-        if ($promptFile === 'mayring-agent') {
+        if ($configKey === 'mayring_agent') {
             return $this->callWithToolUse($apiKey, $model, $systemPrompt, $messages, $maxTok, $configKey, $workspace);
         }
 
@@ -218,6 +218,7 @@ class ClaudeService
                 'tools' => $tools,
             ];
 
+            // Kein Retry hier — Tool-Use-Loop ist stateful; Transient-Error wirft ClaudeAgentException
             $response = Http::withHeaders([
                 'x-api-key' => $apiKey,
                 'anthropic-version' => '2023-06-01',
@@ -282,7 +283,11 @@ class ClaudeService
 
             $currentMessages[] = ['role' => 'user', 'content' => $toolResults];
             $iteration++;
-        } while ($iteration < $maxIterations);
+
+            if ($iteration >= $maxIterations) {
+                throw new ClaudeAgentException("Mayring Tool-Use Loop nach {$maxIterations} Iterationen abgebrochen — kein end_turn erreicht.");
+            }
+        } while (true);
 
         $tokensUsed = $totalInputTokens + $totalOutputTokens;
         $textContent = collect($contentBlocks)->firstWhere('type', 'text')['text'] ?? '';
@@ -290,6 +295,13 @@ class ClaudeService
         if ($workspace !== null && $tokensUsed > 0) {
             $this->creditService->deduct($workspace, $totalInputTokens, $configKey, $totalOutputTokens);
         }
+
+        Log::info('Claude mayring agent request succeeded', [
+            'config_key' => $configKey,
+            'model' => $model,
+            'iterations' => $iteration,
+            'tokens_used' => $tokensUsed,
+        ]);
 
         return [
             'content' => $textContent,
