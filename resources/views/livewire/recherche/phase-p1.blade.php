@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\Recherche\{P1Strukturmodellwahl, P1Komponente, P1Kriterium, P1Warnsignal};
 use App\Services\TransitionValidator;
 use Livewire\Attributes\On;
@@ -8,7 +8,7 @@ use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Log;
 
 new class extends Component {
-    use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Phase Transition ---
     public bool $showOverrideForm = false;
@@ -343,9 +343,6 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    {{-- KI-Agent Button --}}
-    <x-phase-agent-trigger :phase-nr="1" :dispatched="$agentDispatched" />
-
     {{-- ═══ Strukturmodellwahl ═══ --}}
     <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">
         <x-crud.form :visible="$showSmwForm" save-action="saveSmw" cancel-action="cancelSmw">

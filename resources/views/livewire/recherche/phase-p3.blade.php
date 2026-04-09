@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent};
+use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P3Datenbankmatrix, P3Disziplin, P3GeografischerFilter, P3GraueLiteratur};
 use Livewire\Volt\Component;
@@ -9,7 +9,7 @@ use App\Services\PhaseTemplateService;
 use Illuminate\Support\Facades\Log;
 
 new class extends Component {
-    use HasProjektContext, LoadsPhaseAgentResult, TriggersPhaseAgent;
+    use HasProjektContext, LoadsPhaseAgentResult;
 
     // --- Phase Transition ---
     public bool $showOverrideForm = false;
@@ -302,8 +302,6 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    <x-phase-agent-trigger :phase-nr="3" :dispatched="$agentDispatched" />
-
     {{-- ═══ Template ═══ --}}
     <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
         <div class="flex items-center justify-between border-b border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950">
