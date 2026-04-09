@@ -25,11 +25,8 @@ class CreditService
             return;
         }
 
-        $this->assertAgentDailyLimit($workspace, $agentKey, $cents);
-
         DB::transaction(function () use ($workspace, $cents, $tokensUsed, $agentKey): void {
-            // Lock workspace for atomic check + deduct operation
-            // FOR UPDATE prevents race conditions in concurrent agent calls
+            // Lock workspace row first — prevents concurrent deduct race conditions
             $lockedWorkspace = DB::table('workspaces')
                 ->where('id', $workspace->id)
                 ->lockForUpdate()
@@ -40,6 +37,9 @@ class CreditService
                     'Guthaben aufgebraucht. Bitte den Admin kontaktieren.'
                 );
             }
+
+            // Daily limit check inside the lock — prevents concurrent calls both passing the check
+            $this->assertAgentDailyLimit($workspace, $agentKey, $cents);
 
             $workspace->decrement('credits_balance_cents', $cents);
             CreditTransaction::create([
