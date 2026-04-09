@@ -14,7 +14,13 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    File::deleteDirectory(resource_path('prompts'));
+    // Nur die von diesen Tests erzeugten temporären Dateien löschen.
+    // NICHT das gesamte prompts/-Verzeichnis löschen — das würde echte Prompt-Dateien vernichten
+    // und nachfolgende Tests (z. B. ClaudeServiceTest) korrumpieren.
+    foreach (['test-agent', 'skill-a', 'skill-b'] as $name) {
+        File::delete(resource_path("prompts/agents/{$name}.md"));
+        File::delete(resource_path("prompts/skills/{$name}.md"));
+    }
 });
 
 test('buildSystemPrompt lädt agent ohne skills', function () {
