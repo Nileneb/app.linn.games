@@ -96,7 +96,7 @@ return [
         'price_per_1k_input_tokens_cents' => (int) env('CLAUDE_INPUT_PRICE_CENTS', 1),
         'price_per_1k_output_tokens_cents' => (int) env('CLAUDE_OUTPUT_PRICE_CENTS', 4),
 
-        'low_balance_threshold_percent' => (int) env('LANGDOCK_LOW_BALANCE_THRESHOLD_PERCENT', 10),
+        'low_balance_threshold_percent' => (int) env('CLAUDE_LOW_BALANCE_THRESHOLD_PERCENT', 10),
 
         'agent_daily_limits' => [
             'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
