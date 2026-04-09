@@ -99,3 +99,17 @@ test('callByConfigKey wirft exception bei 401', function () {
         ['role' => 'user', 'content' => 'test'],
     ]))->toThrow(ClaudeAgentException::class);
 });
+
+test('callByConfigKey wirft exception bei 401 und zieht keine credits ab', function () {
+    $this->claudeStatus = 401;
+    $balanceBefore = $this->workspace->credits_balance_cents;
+
+    expect(fn () => app(ClaudeService::class)->callByConfigKey('agent_id', [
+        ['role' => 'user', 'content' => 'test'],
+    ], [
+        'workspace_id' => $this->workspace->id,
+        'user_id' => $this->userId,
+    ]))->toThrow(ClaudeAgentException::class);
+
+    expect($this->workspace->fresh()->credits_balance_cents)->toBe($balanceBefore);
+});

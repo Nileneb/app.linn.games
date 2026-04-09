@@ -84,7 +84,7 @@ class CreditService
      */
     public function checkLowBalance(Workspace $workspace): bool
     {
-        $thresholdPercent = (int) config('services.langdock.low_balance_threshold_percent', 10);
+        $thresholdPercent = (int) config('services.anthropic.low_balance_threshold_percent', 10);
 
         $totalTopUps = CreditTransaction::where('workspace_id', $workspace->id)
             ->where('type', 'topup')

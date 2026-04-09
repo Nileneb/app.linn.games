@@ -40,7 +40,7 @@ class ClaudeService
         }
 
         $systemPrompt = $this->promptLoader->buildSystemPrompt($promptFile);
-        $contextBlock = $this->contextBuilder->build($context + ['config_key' => $configKey]);
+        $contextBlock = $this->contextBuilder->build(array_merge(['config_key' => $configKey], $context));
 
         if ($contextBlock !== '') {
             $systemPrompt .= "\n\n".$contextBlock;
@@ -59,7 +59,6 @@ class ClaudeService
         $response = $this->callWithRetry($apiKey, $model, $systemPrompt, $messages, $maxTok, $configKey);
 
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
-        $raw = $response->json() ?? [];
 
         if ($response->failed()) {
             Log::error('Claude API Fehler', [
@@ -71,6 +70,7 @@ class ClaudeService
             throw new ClaudeAgentException("Claude API Fehler {$response->status()}: ".$response->body());
         }
 
+        $raw = $response->json() ?? [];
         $content = $raw['content'][0]['text'] ?? '';
         $inputTokens = (int) ($raw['usage']['input_tokens'] ?? 0);
         $outputTokens = (int) ($raw['usage']['output_tokens'] ?? 0);
