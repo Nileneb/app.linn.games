@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Builds the system message and messages array for the Chat-Agent.
  *
- * Replaces LangdockContextInjector for chat-agent use cases.
+ * Replaces the former LangdockContextInjector for chat-agent use cases.
  * Provides semantic context only: project metadata, current phase, RAG chunks.
  *
  * Deliberately omits:

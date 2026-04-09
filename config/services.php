@@ -74,6 +74,47 @@ return [
         ],
     ],
 
+    'anthropic' => [
+        'api_key' => env('CLAUDE_API_KEY'),
+        'model' => env('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'),
+        'max_tokens' => (int) env('CLAUDE_MAX_TOKENS', 8192),
+        'retry_attempts' => (int) env('CLAUDE_RETRY_ATTEMPTS', 3),
+        'retry_sleep_ms' => (int) env('CLAUDE_RETRY_SLEEP_MS', 500),
+
+        // Config-Key → Prompt-Datei Mapping
+        'agents' => [
+            'scoping_mapping_agent' => 'mapping-agent',
+            'search_agent' => 'pico-agent',
+            'review_agent' => 'screening-agent',
+            'evaluation_agent' => 'quality-agent',
+            'synthesis_agent' => 'synthesis-agent',
+            'mayring_agent' => 'mayring-agent',
+            'agent_id' => 'chat-agent',
+        ],
+
+        // Pricing: Haiku 4.5 — $0.80/$4.00 per M tokens
+        'price_per_1k_input_tokens_cents' => (int) env('CLAUDE_INPUT_PRICE_CENTS', 1),
+        'price_per_1k_output_tokens_cents' => (int) env('CLAUDE_OUTPUT_PRICE_CENTS', 4),
+
+        'low_balance_threshold_percent' => (int) env('CLAUDE_LOW_BALANCE_THRESHOLD_PERCENT', 10),
+
+        'agent_daily_limits' => [
+            'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
+            'scoping_mapping_agent' => (int) env('CLAUDE_DAILY_LIMIT_SCOPING', 500),
+            'search_agent' => (int) env('CLAUDE_DAILY_LIMIT_SEARCH', 500),
+            'review_agent' => (int) env('CLAUDE_DAILY_LIMIT_REVIEW', 500),
+            'evaluation_agent' => (int) env('CLAUDE_DAILY_LIMIT_EVALUATION', 500),
+            'synthesis_agent' => (int) env('CLAUDE_DAILY_LIMIT_SYNTHESIS', 500),
+            'mayring_agent' => (int) env('CLAUDE_DAILY_LIMIT_MAYRING', 1000),
+        ],
+    ],
+
+    'mayring_mcp' => [
+        'endpoint' => env('MAYRING_MCP_ENDPOINT', 'http://localhost:8090'),
+        'auth_token' => env('MAYRING_MCP_AUTH_TOKEN'),
+        'timeout' => (int) env('MAYRING_MCP_TIMEOUT', 60),
+    ],
+
     'mcp' => [
         'auth_token' => env('MCP_AUTH_TOKEN'),
         'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),

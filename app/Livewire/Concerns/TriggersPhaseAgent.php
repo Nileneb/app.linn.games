@@ -54,7 +54,7 @@ trait TriggersPhaseAgent
                 'phase_nr' => $phaseNr,
             ];
 
-            // Agent aufrufen mit Kontext, damit LangdockContextInjector SET LOCAL injizieren kann
+            // Agent aufrufen mit Kontext, damit ClaudeContextBuilder den Kontext injizieren kann
             $sendAgent = app(SendAgentMessage::class);
             $result = $sendAgent->execute($configKey, $messages, 120, $context);
 
