@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DsgvoController;
+use App\Http\Controllers\GitHubAuthController;
 use App\Http\Controllers\ProjektExportController;
 use App\Models\Recherche\Projekt;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,9 @@ use Livewire\Volt\Volt;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+Route::get('/auth/github', [GitHubAuthController::class, 'redirect'])->name('auth.github');
+Route::get('/api/auth/callback/github', [GitHubAuthController::class, 'callback'])->name('auth.github.callback');
 
 Route::view('/pending-approval', 'livewire.auth.pending-approval')->name('pending-approval');
 
