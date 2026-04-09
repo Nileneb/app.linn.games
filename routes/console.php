@@ -5,11 +5,13 @@ use App\Services\CreditService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schedule;
 use Spatie\Permission\Models\Role;
 
 Artisan::addCommands([
     \App\Console\Commands\BackupExport::class,
     \App\Console\Commands\BackupImport::class,
+    \App\Console\Commands\CleanupExpiredInvitations::class,
     \App\Console\Commands\Langdock\ApplyInstructionPatchFromExport::class,
     \App\Console\Commands\Langdock\GenerateFleetMapFromExport::class,
 ]);
@@ -17,6 +19,10 @@ Artisan::addCommands([
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// ── Geplante Tasks ────────────────────────────────────────────────
+
+Schedule::command('invitations:cleanup')->daily();
 
 // ── Deploy Sub-Commands ──────────────────────────────────────────
 

@@ -33,6 +33,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'forschungsfrage',
         'forschungsbereich',
         'erfahrung',
+        'invitation_token',
+        'invitation_expires_at',
     ];
 
     /**
@@ -56,6 +58,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'invitation_expires_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'string',
         ];
@@ -93,6 +96,18 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function isWaitlisted(): bool
     {
         return $this->status === 'waitlisted';
+    }
+
+    public function isInvited(): bool
+    {
+        return $this->status === 'invited';
+    }
+
+    public function hasValidInvitation(): bool
+    {
+        return $this->invitation_token !== null
+            && $this->invitation_expires_at !== null
+            && $this->invitation_expires_at->isFuture();
     }
 
     public function canAccessPanel(Panel $panel): bool
