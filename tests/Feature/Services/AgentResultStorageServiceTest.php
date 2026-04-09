@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services;
 
 use App\Services\AgentResultStorageService;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -13,6 +14,7 @@ class AgentResultStorageServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Queue::fake(); // IngestAgentResultJob requires Ollama — test only covers file operations
         $this->service = app(AgentResultStorageService::class);
         Storage::fake('local');
     }
