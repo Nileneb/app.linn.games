@@ -1,0 +1,117 @@
+<h2>Cluster Explorer — Welcher Look?</h2>
+<p class="subtitle">Die Cluster aus Phase P2 (cluster_label, relevanz, treffer_schaetzung) werden als interaktive Visualisierung dargestellt. Welcher Stil passt?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="galaxy" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a1a;height:160px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-radius:8px 8px 0 0;">
+      <!-- Stars background -->
+      <div style="position:absolute;inset:0;">
+        <div style="position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;top:15%;left:20%;opacity:.6"></div>
+        <div style="position:absolute;width:1px;height:1px;background:#fff;border-radius:50%;top:30%;left:70%;opacity:.4"></div>
+        <div style="position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;top:60%;left:85%;opacity:.7"></div>
+        <div style="position:absolute;width:1px;height:1px;background:#fff;border-radius:50%;top:80%;left:40%;opacity:.5"></div>
+        <div style="position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;top:10%;left:55%;opacity:.3"></div>
+        <div style="position:absolute;width:1px;height:1px;background:#fff;border-radius:50%;top:45%;left:10%;opacity:.6"></div>
+      </div>
+      <!-- Cluster nodes -->
+      <svg width="260" height="140" viewBox="0 0 260 140">
+        <!-- Connections -->
+        <line x1="80" y1="70" x2="140" y2="45" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+        <line x1="80" y1="70" x2="130" y2="100" stroke="#8b5cf6" stroke-width="0.8" opacity="0.4"/>
+        <line x1="140" y1="45" x2="200" y2="60" stroke="#6366f1" stroke-width="0.8" opacity="0.3"/>
+        <line x1="130" y1="100" x2="200" y2="60" stroke="#8b5cf6" stroke-width="0.8" opacity="0.4"/>
+        <line x1="200" y1="60" x2="230" y2="25" stroke="#06b6d4" stroke-width="0.8" opacity="0.3"/>
+        <!-- Glow halos -->
+        <circle cx="80" cy="70" r="22" fill="#6366f1" opacity="0.08"/>
+        <circle cx="140" cy="45" r="16" fill="#8b5cf6" opacity="0.08"/>
+        <circle cx="200" cy="60" r="18" fill="#06b6d4" opacity="0.08"/>
+        <circle cx="130" cy="100" r="13" fill="#6366f1" opacity="0.08"/>
+        <circle cx="230" cy="25" r="10" fill="#f59e0b" opacity="0.08"/>
+        <!-- Planets -->
+        <circle cx="80" cy="70" r="18" fill="#6366f1" opacity="0.9"/>
+        <circle cx="140" cy="45" r="12" fill="#8b5cf6" opacity="0.9"/>
+        <circle cx="200" cy="60" r="15" fill="#06b6d4" opacity="0.9"/>
+        <circle cx="130" cy="100" r="9" fill="#6366f1" opacity="0.7"/>
+        <circle cx="230" cy="25" r="7" fill="#f59e0b" opacity="0.8"/>
+        <!-- Highlights -->
+        <circle cx="76" cy="66" r="4" fill="white" opacity="0.25"/>
+        <circle cx="137" cy="42" r="3" fill="white" opacity="0.25"/>
+        <circle cx="196" cy="57" r="3" fill="white" opacity="0.25"/>
+        <!-- Labels -->
+        <text x="80" y="98" text-anchor="middle" fill="#a5b4fc" font-size="7" font-family="monospace">Intervention</text>
+        <text x="140" y="28" text-anchor="middle" fill="#c4b5fd" font-size="7" font-family="monospace">Population</text>
+        <text x="200" y="85" text-anchor="middle" fill="#67e8f9" font-size="7" font-family="monospace">Outcome</text>
+        <text x="230" y="40" text-anchor="middle" fill="#fcd34d" font-size="7" font-family="monospace">Design</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>🌌 Galaxy (3D / WebGL)</h3>
+      <p>Dunkler Space-Hintergrund, Cluster als Planeten. Größe = Trefferanzahl, Farbe = Relevanz, Abstand = semantische Distanz (aus pgvector-Embeddings via UMAP). Three.js im Browser, Python berechnet die 3D-Positionen.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="network" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8fafc;height:160px;display:flex;align-items:center;justify-content:center;border-radius:8px 8px 0 0;">
+      <svg width="260" height="140" viewBox="0 0 260 140">
+        <!-- Edges -->
+        <line x1="130" y1="70" x2="60" y2="35" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
+        <line x1="130" y1="70" x2="200" y2="35" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
+        <line x1="130" y1="70" x2="70" y2="110" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
+        <line x1="130" y1="70" x2="200" y2="110" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
+        <line x1="60" y1="35" x2="200" y2="35" stroke="#cbd5e1" stroke-width="1.5" opacity="0.4"/>
+        <line x1="70" y1="110" x2="200" y2="110" stroke="#cbd5e1" stroke-width="1.5" opacity="0.4"/>
+        <line x1="200" y1="35" x2="200" y2="110" stroke="#cbd5e1" stroke-width="1.5" opacity="0.3"/>
+        <!-- Nodes -->
+        <circle cx="130" cy="70" r="22" fill="#3b82f6" opacity="0.9"/>
+        <circle cx="60" cy="35" r="14" fill="#10b981" opacity="0.85"/>
+        <circle cx="200" cy="35" r="16" fill="#f59e0b" opacity="0.85"/>
+        <circle cx="70" cy="110" r="10" fill="#ef4444" opacity="0.8"/>
+        <circle cx="200" cy="110" r="12" fill="#8b5cf6" opacity="0.8"/>
+        <!-- Labels -->
+        <text x="130" y="74" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="sans-serif">Intervention</text>
+        <text x="60" y="55" text-anchor="middle" fill="#1e293b" font-size="7" font-family="sans-serif">Population</text>
+        <text x="200" y="55" text-anchor="middle" fill="#1e293b" font-size="7" font-family="sans-serif">Outcome</text>
+        <text x="70" y="128" text-anchor="middle" fill="#1e293b" font-size="7" font-family="sans-serif">Setting</text>
+        <text x="200" y="128" text-anchor="middle" fill="#1e293b" font-size="7" font-family="sans-serif">Design</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>🕸 Force-Graph (2D interaktiv)</h3>
+      <p>Heller, klarer Hintergrund. Knoten ziehen sich physikalisch an und ab. Klick auf Cluster zeigt Details. Kanten = semantische Ähnlichkeit. D3.js oder Sigma.js, kein WebGL nötig. Leichter zu embedden.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="bubble" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:linear-gradient(135deg,#faf5ff,#eff6ff);height:160px;display:flex;align-items:center;justify-content:center;border-radius:8px 8px 0 0;">
+      <svg width="260" height="140" viewBox="0 0 260 140">
+        <!-- Bubbles — size = treffer_schaetzung -->
+        <circle cx="90" cy="70" r="40" fill="#6366f1" opacity="0.15"/>
+        <circle cx="90" cy="70" r="38" fill="none" stroke="#6366f1" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="90" cy="70" r="38" fill="#6366f1" opacity="0.08"/>
+        <text x="90" y="66" text-anchor="middle" fill="#4338ca" font-size="9" font-weight="bold" font-family="sans-serif">Intervention</text>
+        <text x="90" y="80" text-anchor="middle" fill="#6366f1" font-size="8" font-family="sans-serif">142 Treffer</text>
+
+        <circle cx="185" cy="55" r="28" fill="#10b981" opacity="0.12"/>
+        <circle cx="185" cy="55" r="26" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+        <text x="185" y="51" text-anchor="middle" fill="#065f46" font-size="8" font-weight="bold" font-family="sans-serif">Outcome</text>
+        <text x="185" y="64" text-anchor="middle" fill="#10b981" font-size="7" font-family="sans-serif">89 Treffer</text>
+
+        <circle cx="195" cy="108" r="18" fill="#f59e0b" opacity="0.15"/>
+        <circle cx="195" cy="108" r="16" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+        <text x="195" y="112" text-anchor="middle" fill="#92400e" font-size="7" font-family="sans-serif">Design</text>
+
+        <circle cx="50" cy="105" r="14" fill="#ef4444" opacity="0.12"/>
+        <circle cx="50" cy="105" r="12" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.4"/>
+        <text x="50" y="108" text-anchor="middle" fill="#991b1b" font-size="7" font-family="sans-serif">Setting</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>🫧 Bubble Chart (2D elegant)</h3>
+      <p>Keine Kanten, nur Blasen. Größe = Trefferanzahl, Farbe = Relevanz-Kategorie. Hover zeigt Beschreibung, Click öffnet Detail. Python (Matplotlib/Plotly) exportiert die Positionen, Blade rendert via Chart.js. Am einfachsten zu bauen.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Klick auf einen Stil um ihn zu wählen — oder sag mir im Terminal was du denkst.</p>
