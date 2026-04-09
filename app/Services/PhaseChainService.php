@@ -15,7 +15,7 @@ class PhaseChainService
      * Dispatches the next phase agent job if the phase chain config defines a successor.
      * Called after a phase agent job completes successfully.
      */
-    public function maybeDispatchNext(Projekt $projekt, int $completedPhaseNr): void
+    public function maybeDispatchNext(Projekt $projekt, int $completedPhaseNr, int|string|null $userId = null): void
     {
         $chain = config("phase_chain.{$completedPhaseNr}");
 
@@ -97,7 +97,8 @@ class PhaseChainService
                 'projekt_id'   => $projekt->id,
                 'workspace_id' => $projekt->workspace_id,
                 'phase_nr'     => $nextPhase,
-                'user_id'      => $projekt->user_id,
+                // Aktiver Nutzer wird propagiert; Fallback auf Projekt-Ersteller (Issue #154)
+                'user_id'      => $userId ?? $projekt->user_id,
                 'label'        => $chain['label'] ?? "Phase {$nextPhase}",
             ],
         );
