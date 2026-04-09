@@ -17,15 +17,15 @@ class CreditService
         }
     }
 
-    public function deduct(Workspace $workspace, int $tokensUsed, string $agentKey): void
+    public function deduct(Workspace $workspace, int $inputTokens, string $agentKey, int $outputTokens = 0): void
     {
-        $cents = $this->toCents($tokensUsed);
+        $cents = $this->toCents($inputTokens, $outputTokens);
 
         if ($cents <= 0) {
             return;
         }
 
-        DB::transaction(function () use ($workspace, $cents, $tokensUsed, $agentKey): void {
+        DB::transaction(function () use ($workspace, $cents, $inputTokens, $outputTokens, $agentKey): void {
             // Lock workspace row first — prevents concurrent deduct race conditions
             $lockedWorkspace = DB::table('workspaces')
                 ->where('id', $workspace->id)
@@ -46,7 +46,7 @@ class CreditService
                 'workspace_id' => $workspace->id,
                 'type' => 'usage',
                 'amount_cents' => -$cents,
-                'tokens_used' => $tokensUsed,
+                'tokens_used' => $inputTokens + $outputTokens,
                 'agent_config_key' => $agentKey,
             ]);
         });
@@ -67,11 +67,15 @@ class CreditService
         });
     }
 
-    public function toCents(int $tokens): int
+    public function toCents(int $inputTokens, int $outputTokens = 0): int
     {
-        $pricePerK = (int) config('services.langdock.price_per_1k_tokens_cents', 2);
+        $inputPrice = (int) config('services.anthropic.price_per_1k_input_tokens_cents', 1);
+        $outputPrice = (int) config('services.anthropic.price_per_1k_output_tokens_cents', 4);
 
-        return (int) ceil($tokens * $pricePerK / 1000);
+        $inputCents = $inputTokens > 0 ? (int) ceil($inputTokens * $inputPrice / 1000) : 0;
+        $outputCents = $outputTokens > 0 ? (int) ceil($outputTokens * $outputPrice / 1000) : 0;
+
+        return $inputCents + $outputCents;
     }
 
     /**
@@ -114,7 +118,7 @@ class CreditService
      */
     public function assertAgentDailyLimit(Workspace $workspace, string $agentKey, int $cents): void
     {
-        $dailyLimitCents = (int) config("services.langdock.agent_daily_limits.{$agentKey}", 0);
+        $dailyLimitCents = (int) config("services.anthropic.agent_daily_limits.{$agentKey}", 0);
 
         if ($dailyLimitCents <= 0) {
             return;
