@@ -3,21 +3,20 @@
 namespace App\Actions;
 
 use App\Services\AgentDailyLimitExceededException;
+use App\Services\ClaudeAgentException;
+use App\Services\ClaudeService;
 use App\Services\InsufficientCreditsException;
-use App\Services\LangdockAgentException;
-use App\Services\LangdockAgentService;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Sends a message to a configured Langdock agent.
+ * Sends a message to a configured Claude agent.
  *
  * Wird von ProcessPhaseAgentJob für synchrone Worker-Agent-Aufrufe verwendet.
- * Chat-Requests laufen seit der Migration über ChatStreamController → StreamingAgentService (MCP-Streaming).
  */
 class SendAgentMessage
 {
     public function __construct(
-        private readonly LangdockAgentService $agent,
+        private readonly ClaudeService $agent,
     ) {}
 
     /**
@@ -27,7 +26,7 @@ class SendAgentMessage
     public function execute(string $configKey, array $messages, int $timeout = 120, array $context = []): array
     {
         try {
-            $response = $this->agent->callByConfigKey($configKey, $messages, $timeout, $context);
+            $response = $this->agent->callByConfigKey($configKey, $messages, $context);
 
             return [
                 'success' => true,
@@ -40,8 +39,8 @@ class SendAgentMessage
             Log::warning('Agent daily limit exceeded', ['key' => $configKey, 'message' => $e->getMessage()]);
 
             return ['success' => false, 'content' => __('Tageslimit für diesen Agenten erreicht. Bitte morgen erneut versuchen.')];
-        } catch (LangdockAgentException $e) {
-            Log::error('Langdock config key error', ['key' => $configKey, 'error' => $e->getMessage()]);
+        } catch (ClaudeAgentException $e) {
+            Log::error('Claude agent config error', ['key' => $configKey, 'error' => $e->getMessage()]);
 
             return ['success' => false, 'content' => __('Fehler bei der Verarbeitung. Bitte versuche es erneut.')];
         } catch (\Throwable $e) {
