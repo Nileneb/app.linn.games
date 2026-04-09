@@ -2,6 +2,7 @@
 
 use App\Services\PromptLoaderService;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 uses(Tests\TestCase::class);
 
@@ -35,7 +36,8 @@ test('buildSystemPrompt konkateniert skills aus frontmatter', function () {
     expect($result)
         ->toContain('Agent-Body.')
         ->toContain('Skill-A-Content.')
-        ->toContain('Skill-B-Content.');
+        ->toContain('Skill-B-Content.')
+        ->toContain("\n\n---\n\n");
 });
 
 test('buildSystemPrompt wirft exception bei fehlendem agent', function () {
@@ -46,10 +48,12 @@ test('buildSystemPrompt wirft exception bei fehlendem agent', function () {
 test('buildSystemPrompt ignoriert fehlende skill-datei mit warnung', function () {
     File::put(resource_path('prompts/agents/test-agent.md'), "---\nskills: [existiert-nicht]\n---\nBody.\n");
 
+    Log::spy();
+
     $result = app(PromptLoaderService::class)->buildSystemPrompt('test-agent');
 
     expect($result)->toContain('Body.');
-    // Kein Exception — fehlende Skills werden geloggt, nicht geworfen
+    Log::shouldHaveReceived('warning')->once();
 });
 
 test('frontmatter wird aus body entfernt', function () {
