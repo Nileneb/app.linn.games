@@ -32,6 +32,49 @@
                 @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
+            <!-- Forschungsfrage -->
+            <div>
+                <label for="forschungsfrage" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Forschungsfrage <span class="text-red-500">*</span></label>
+                <textarea id="forschungsfrage" name="forschungsfrage" required rows="3" placeholder="Welche Forschungsfrage möchtest du untersuchen?" class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500">{{ old('forschungsfrage') }}</textarea>
+                @error('forschungsfrage') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <!-- Forschungsbereich -->
+            <div>
+                <label for="forschungsbereich" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Forschungsbereich <span class="text-red-500">*</span></label>
+                <select id="forschungsbereich" name="forschungsbereich" required class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                    <option value="" disabled {{ old('forschungsbereich') ? '' : 'selected' }}>Bitte wählen …</option>
+                    @foreach ([
+                        'Gesundheit & Medizin',
+                        'Psychologie & Sozialwissenschaften',
+                        'Bildung & Pädagogik',
+                        'Informatik & Technologie',
+                        'Wirtschaft & Management',
+                        'Umwelt & Nachhaltigkeit',
+                        'Sonstiges',
+                    ] as $bereich)
+                        <option value="{{ $bereich }}" {{ old('forschungsbereich') === $bereich ? 'selected' : '' }}>{{ $bereich }}</option>
+                    @endforeach
+                </select>
+                @error('forschungsbereich') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <!-- Erfahrung mit Literaturrecherchen -->
+            <div>
+                <label for="erfahrung" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Erfahrung mit Literaturrecherchen <span class="text-red-500">*</span></label>
+                <select id="erfahrung" name="erfahrung" required class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                    <option value="" disabled {{ old('erfahrung') ? '' : 'selected' }}>Bitte wählen …</option>
+                    @foreach ([
+                        'Nein, das wäre mein erstes Mal',
+                        'Ja, 1–2 Mal',
+                        'Ja, regelmäßig',
+                    ] as $option)
+                        <option value="{{ $option }}" {{ old('erfahrung') === $option ? 'selected' : '' }}>{{ $option }}</option>
+                    @endforeach
+                </select>
+                @error('erfahrung') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
             <!-- Password -->
             <div>
                 <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('Password') }}</label>

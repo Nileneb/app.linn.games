@@ -12,6 +12,9 @@ test('new users can register', function () {
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'forschungsfrage' => 'Welche Auswirkungen hat KI auf den Bildungsbereich?',
+        'forschungsbereich' => 'Bildung & Pädagogik',
+        'erfahrung' => 'Ja, 1–2 Mal',
     ]);
 
     $response->assertSessionHasNoErrors()
