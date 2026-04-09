@@ -139,7 +139,7 @@ class PhaseChainService
             $lines[] = '=== ERGEBNISSE VORHERIGER PHASEN ===';
             foreach ($previousResults as $result) {
                 $lines[] = "--- Phase {$result->phase_nr} ---";
-                $lines[] = mb_substr((string) $result->content, 0, 800);
+                $lines[] = mb_substr((string) $result->content, 0, 4000);
             }
         }
 
