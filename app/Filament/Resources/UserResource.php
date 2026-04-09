@@ -3,13 +3,14 @@
 namespace App\Filament\Resources;
 
 use App\Models\User;
+use App\Notifications\InvitationNotification;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class UserResource extends Resource
 {
@@ -40,13 +41,14 @@ class UserResource extends Resource
             Forms\Components\Select::make('status')
                 ->required()
                 ->options([
+                    'invited' => 'Eingeladen',
                     'waitlisted' => 'Warteliste',
                     'trial' => 'Trial',
                     'active' => 'Aktiv',
                     'suspended' => 'Gesperrt',
                     'cancelled' => 'Gekündigt',
                 ])
-                ->default('trial'),
+                ->default('invited'),
             Forms\Components\Textarea::make('forschungsfrage')
                 ->label('Forschungsfrage')
                 ->rows(3)
@@ -84,6 +86,7 @@ class UserResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
+                        'invited' => 'secondary',
                         'waitlisted' => 'info',
                         'trial' => 'warning',
                         'active' => 'success',
@@ -112,6 +115,7 @@ class UserResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
+                        'invited' => 'Eingeladen',
                         'waitlisted' => 'Warteliste',
                         'trial' => 'Trial',
                         'active' => 'Aktiv',
@@ -148,21 +152,20 @@ class UserResource extends Resource
                     ->modalDescription(fn (User $record) => 'Einen neuen Einladungslink an '.$record->email.' senden?')
                     ->modalSubmitActionLabel('Senden')
                     ->action(function (User $record) {
-                        $status = Password::broker()->sendResetLink(['email' => $record->email]);
+                        $token = Str::random(64);
+                        $record->update([
+                            'invitation_token' => $token,
+                            'invitation_expires_at' => now()->addDays(28),
+                            'status' => 'invited',
+                        ]);
+                        $inviteUrl = route('invitation.accept', ['token' => $token]);
+                        $record->notify(new InvitationNotification($inviteUrl));
 
-                        if ($status === Password::RESET_LINK_SENT) {
-                            Notification::make()
-                                ->title('Einladung gesendet')
-                                ->body('Ein neuer Einladungslink wurde an '.$record->email.' verschickt.')
-                                ->success()
-                                ->send();
-                        } else {
-                            Notification::make()
-                                ->title('Fehler')
-                                ->body('Die E-Mail konnte nicht gesendet werden.')
-                                ->danger()
-                                ->send();
-                        }
+                        Notification::make()
+                            ->title('Einladung gesendet')
+                            ->body('Ein neuer Einladungslink wurde an '.$record->email.' verschickt.')
+                            ->success()
+                            ->send();
                     }),
                 \Filament\Actions\DeleteAction::make()
                     ->hidden(fn (User $record) => $record->id === auth()->id())

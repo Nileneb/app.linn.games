@@ -14,6 +14,10 @@ Route::get('/', function () {
 
 Route::view('/pending-approval', 'livewire.auth.pending-approval')->name('pending-approval');
 
+Route::get('/accept-invitation/{token}', \App\Livewire\Auth\AcceptInvitation::class)
+    ->name('invitation.accept')
+    ->middleware('guest');
+
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 Route::view('Impressum.html', 'legal.impressum')->name('impressum');
