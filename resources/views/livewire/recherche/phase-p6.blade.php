@@ -192,7 +192,6 @@ new class extends Component {
                 report: true,
             ),
             'robVerteilung' => $bewertungen->groupBy('gesamturteil')->map->count(),
-            'latestAgentResult' => $this->loadLatestAgentResult(6),
             'transitionStatus' => $validator->getTransitionStatus($this->projekt, 6, 7),
         ];
     }
@@ -201,16 +200,6 @@ new class extends Component {
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Trigger --}}
     <x-phase-agent-trigger :phase-nr="6" />
-
-    {{-- Agent Result Display --}}
-    @if ($latestAgentResult)
-        <x-agent-suggestion :result="$latestAgentResult" />
-    @endif
-
-
-    {{-- KI-Agent Button --}}
-    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
-
 
     {{-- ═══ Qualitätsbewertung (Risk of Bias) ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">

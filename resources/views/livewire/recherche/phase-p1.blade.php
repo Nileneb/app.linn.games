@@ -337,7 +337,6 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => $this->loadLatestAgentResult(1),
             'transitionStatus' => $validator->getTransitionStatus($this->projekt, 1, 2),
         ];
     }
@@ -346,12 +345,6 @@ new class extends Component {
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Button --}}
     <x-phase-agent-trigger :phase-nr="1" />
-
-    {{-- Agent Result Display --}}
-    @if ($latestAgentResult)
-        <x-agent-suggestion :result="$latestAgentResult" />
-    @endif
-
 
     {{-- ═══ Strukturmodellwahl ═══ --}}
     <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">

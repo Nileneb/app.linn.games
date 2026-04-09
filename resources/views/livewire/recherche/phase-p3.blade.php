@@ -296,20 +296,13 @@ new class extends Component {
                 collect(),
                 report: true,
             ),
-            'latestAgentResult' => $this->loadLatestAgentResult(3),
             'transitionStatus' => $validator->getTransitionStatus($this->projekt, 3, 4),
         ];
     }
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    {{-- KI-Vorschlag --}}
     <x-phase-agent-trigger :phase-nr="3" />
-
-    {{-- Agent Result Display --}}
-    @if ($latestAgentResult)
-        <x-agent-suggestion :result="$latestAgentResult" />
-    @endif
 
     {{-- ═══ Template ═══ --}}
     <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">

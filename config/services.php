@@ -95,6 +95,7 @@ return [
             'evaluation_agent' => 'quality-agent',
             'synthesis_agent' => 'synthesis-agent',
             'mayring_agent' => 'mayring-agent',
+            'chat-agent' => 'chat-agent',
             'agent_id' => 'chat-agent',
         ],
 
@@ -106,6 +107,7 @@ return [
 
         'agent_daily_limits' => [
             'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
+            'chat-agent' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
             'scoping_mapping_agent' => (int) env('CLAUDE_DAILY_LIMIT_SCOPING', 500),
             'search_agent' => (int) env('CLAUDE_DAILY_LIMIT_SEARCH', 500),
             'review_agent' => (int) env('CLAUDE_DAILY_LIMIT_REVIEW', 500),

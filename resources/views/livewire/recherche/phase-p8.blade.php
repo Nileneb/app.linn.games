@@ -288,14 +288,11 @@ new class extends Component {
                 report: true,
             ),
             'suchstrings' => $suchstrings,
-            'latestAgentResult' => $this->loadLatestAgentResult(8),
         ];
     }
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-
-    {{-- KI-Vorschlag (letztes Agent-Ergebnis) --}}
 
     {{-- ═══ Template ═══ --}}
     <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">

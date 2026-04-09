@@ -142,7 +142,7 @@ services:
     networks:
       - linn-network
     healthcheck:
-      test: ["CMD", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -157,21 +157,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  postgres-mcp:
-    image: crystaldba/postgres-mcp
-    restart: unless-stopped
-    command: ["--access-mode=unrestricted", "--transport=sse"]
-    environment:
-      - DATABASE_URI=postgresql://${LANGDOCK_DB_USERNAME:-mcp_agent}:${LANGDOCK_DB_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
-    ports:
-      - "8200:8000"
-    networks:
-      - linn-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-
 
   mcp-paper-search:
     build:
