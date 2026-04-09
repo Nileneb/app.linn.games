@@ -51,6 +51,29 @@ test('deduct zieht guthaben ab und erstellt transaktion', function () {
     expect($tx->agent_config_key)->toBe('search_agent');
 });
 
+test('deduct zieht input und output tokens separat ab', function () {
+    config([
+        'services.anthropic.price_per_1k_input_tokens_cents' => 1,
+        'services.anthropic.price_per_1k_output_tokens_cents' => 4,
+    ]);
+
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::create(['owner_id' => $user->id, 'name' => 'Test']);
+    \App\Models\WorkspaceUser::create(['workspace_id' => $workspace->id, 'user_id' => $user->id, 'role' => 'owner']);
+    app(CreditService::class)->topUp($workspace, 10000);
+    $workspace = $workspace->fresh();
+
+    app(CreditService::class)->deduct($workspace, 1000, 'search_agent', 1000);
+
+    $tx = CreditTransaction::where('workspace_id', $workspace->id)
+        ->where('type', 'usage')
+        ->first();
+
+    // 1000 input = 1 Cent, 1000 output = 4 Cent → 5 Cent total
+    expect($tx->amount_cents)->toBe(-5);
+    expect($tx->tokens_used)->toBe(2000); // 1000 + 1000
+});
+
 test('assertHasBalance wirft exception wenn guthaben leer', function () {
     $workspace = makeWorkspace();
 
@@ -99,7 +122,7 @@ test('deduct mit 0 tokens erstellt keine transaktion', function () {
 
 test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', function () {
     config([
-        'services.langdock.low_balance_threshold_percent' => 10,
+        'services.anthropic.low_balance_threshold_percent' => 10,
         'services.anthropic.price_per_1k_input_tokens_cents' => 2,
     ]);
     $workspace = makeWorkspace(1000);
@@ -113,7 +136,7 @@ test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', func
 
 test('checkLowBalance gibt false zurück wenn guthaben über schwellenwert', function () {
     config([
-        'services.langdock.low_balance_threshold_percent' => 10,
+        'services.anthropic.low_balance_threshold_percent' => 10,
         'services.anthropic.price_per_1k_input_tokens_cents' => 2,
     ]);
     $workspace = makeWorkspace(1000);
