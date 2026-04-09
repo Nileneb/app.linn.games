@@ -35,6 +35,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'erfahrung',
         'invitation_token',
         'invitation_expires_at',
+        'provider',
+        'provider_id',
     ];
 
     /**
