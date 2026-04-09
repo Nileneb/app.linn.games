@@ -20,6 +20,13 @@ trait HasProjektContext
     {
         $this->authorize('view', $projekt);
         $this->projekt = $projekt;
+
+        // Initialize agent dispatched state from pending records (survives page reload)
+        if (property_exists($this, 'agentDispatched')) {
+            $this->agentDispatched = \App\Models\PhaseAgentResult::where('projekt_id', $projekt->id)
+                ->where('status', 'pending')
+                ->exists();
+        }
     }
 
     #[On('agent-result-accepted')]

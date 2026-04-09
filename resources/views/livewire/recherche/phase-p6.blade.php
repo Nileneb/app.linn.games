@@ -199,7 +199,7 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Trigger --}}
-    <x-phase-agent-trigger :phase-nr="6" />
+    <x-phase-agent-trigger :phase-nr="6" :dispatched="$agentDispatched" />
 
     {{-- ═══ Qualitätsbewertung (Risk of Bias) ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">

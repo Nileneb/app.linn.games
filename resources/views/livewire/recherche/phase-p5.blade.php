@@ -373,7 +373,7 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- KI-Agent Trigger --}}
-    <x-phase-agent-trigger :phase-nr="5" />
+    <x-phase-agent-trigger :phase-nr="5" :dispatched="$agentDispatched" />
 
     {{-- ═══ Template ═══ --}}
     <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">

@@ -302,7 +302,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    <x-phase-agent-trigger :phase-nr="3" />
+    <x-phase-agent-trigger :phase-nr="3" :dispatched="$agentDispatched" />
 
     {{-- ═══ Template ═══ --}}
     <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
