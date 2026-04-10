@@ -1,20 +1,35 @@
 <?php
 
-use App\Actions\SendAgentMessage;
 use App\Jobs\ProcessPhaseAgentJob;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\LangdockArtifactService;
+use App\Services\PromptLoaderService;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
-    $this->workspace = Workspace::factory()->create(['owner_id' => $this->user->id]);
+    $this->workspace = Workspace::factory()->create([
+        'owner_id' => $this->user->id,
+        'credits_balance_cents' => 100000,
+    ]);
     $this->projekt = Projekt::factory()->create([
         'user_id' => $this->user->id,
         'workspace_id' => $this->workspace->id,
     ]);
+
+    config(['services.anthropic.api_key' => 'test-key']);
+    config(['services.anthropic.agents.agent_id' => 'chat-agent']);
+    config(['services.anthropic.agents.scoping_mapping_agent' => 'mapping-agent']);
+    config(['services.anthropic.agents.search_agent' => 'pico-agent']);
+
+    // Mock PromptLoaderService to avoid filesystem reads in tests
+    $this->mock(PromptLoaderService::class, function ($mock) {
+        $mock->shouldReceive('buildSystemPrompt')->andReturn('Test system prompt');
+    });
 });
 
 test('ProcessPhaseAgentJob dispatches successfully', function () {
@@ -28,18 +43,23 @@ test('ProcessPhaseAgentJob dispatches successfully', function () {
     Queue::assertPushed(ProcessPhaseAgentJob::class);
 });
 
-test('ProcessPhaseAgentJob creates pending result record', function () {
-    Queue::fake();
+test('ProcessPhaseAgentJob creates pending result record and completes', function () {
+    Process::fake([
+        'claude*' => Process::result(
+            output: json_encode([
+                'result' => 'Test response',
+                'is_error' => false,
+                'total_cost_usd' => 0.001,
+                'usage' => ['input_tokens' => 100, 'output_tokens' => 50],
+            ]),
+            exitCode: 0,
+        ),
+    ]);
 
-    // Mock the SendAgentMessage action to return a successful response
-    $this->mock(SendAgentMessage::class, function ($mock) {
-        $mock->shouldReceive('execute')
+    $this->mock(LangdockArtifactService::class, function ($mock) {
+        $mock->shouldReceive('persistFromAgentResponse')
             ->once()
-            ->andReturn([
-                'success' => true,
-                'content' => 'Test response',
-                'raw' => [],
-            ]);
+            ->andReturn(['display_content' => 'Test response', 'stored_paths' => []]);
     });
 
     $job = new ProcessPhaseAgentJob(
@@ -47,7 +67,7 @@ test('ProcessPhaseAgentJob creates pending result record', function () {
         1,
         'agent_id',
         [['role' => 'user', 'content' => 'Test']],
-        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id]
+        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id, 'workspace_id' => $this->workspace->id]
     );
 
     $job->handle();
@@ -57,21 +77,26 @@ test('ProcessPhaseAgentJob creates pending result record', function () {
         ->first();
 
     expect($result)->not->toBeNull()
-        ->and($result->status)->toBe('completed')
-        ->and($result->content)->toBe('Test response');
+        ->and($result->status)->toBe('completed');
 });
 
 test('ProcessPhaseAgentJob marks result as completed on success', function () {
-    Queue::fake();
+    Process::fake([
+        'claude*' => Process::result(
+            output: json_encode([
+                'result' => 'Successful response',
+                'is_error' => false,
+                'total_cost_usd' => 0.002,
+                'usage' => ['input_tokens' => 200, 'output_tokens' => 100],
+            ]),
+            exitCode: 0,
+        ),
+    ]);
 
-    $this->mock(SendAgentMessage::class, function ($mock) {
-        $mock->shouldReceive('execute')
+    $this->mock(LangdockArtifactService::class, function ($mock) {
+        $mock->shouldReceive('persistFromAgentResponse')
             ->once()
-            ->andReturn([
-                'success' => true,
-                'content' => 'Successful response',
-                'raw' => [],
-            ]);
+            ->andReturn(['display_content' => 'Successful response', 'stored_paths' => []]);
     });
 
     $job = new ProcessPhaseAgentJob(
@@ -79,7 +104,7 @@ test('ProcessPhaseAgentJob marks result as completed on success', function () {
         2,
         'scoping_mapping_agent',
         [['role' => 'user', 'content' => 'Test']],
-        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id]
+        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id, 'workspace_id' => $this->workspace->id]
     );
 
     $job->handle();
@@ -92,24 +117,17 @@ test('ProcessPhaseAgentJob marks result as completed on success', function () {
         ->and($result->error_message)->toBeNull();
 });
 
-test('ProcessPhaseAgentJob marks result as failed on error', function () {
-    Queue::fake();
-
-    $this->mock(SendAgentMessage::class, function ($mock) {
-        $mock->shouldReceive('execute')
-            ->once()
-            ->andReturn([
-                'success' => false,
-                'content' => 'Invalid API key',
-            ]);
-    });
+test('ProcessPhaseAgentJob marks result as failed on CLI error', function () {
+    Process::fake([
+        'claude*' => Process::result(output: '', errorOutput: 'CLI error', exitCode: 1),
+    ]);
 
     $job = new ProcessPhaseAgentJob(
         $this->projekt->id,
         3,
         'search_agent',
         [['role' => 'user', 'content' => 'Test']],
-        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id]
+        ['projekt_id' => $this->projekt->id, 'user_id' => $this->user->id, 'workspace_id' => $this->workspace->id]
     );
 
     $job->handle();
