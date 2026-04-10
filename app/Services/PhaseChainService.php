@@ -202,4 +202,17 @@ class PhaseChainService
 
         return true;
     }
+
+    /**
+     * Prüft ob eine Phase stuck ist (3+ failed PhaseAgentResults).
+     */
+    public function detectStuck(Projekt $projekt, int $phaseNr): bool
+    {
+        $failedCount = PhaseAgentResult::where('projekt_id', $projekt->id)
+            ->where('phase_nr', $phaseNr)
+            ->where('status', 'failed')
+            ->count();
+
+        return $failedCount >= 3;
+    }
 }
