@@ -55,3 +55,50 @@ test('call() sendet --output-format json und --print Flags', function () {
         str_contains($process->command, '--print')
     );
 });
+
+test('callForPhase() verwendet --model Flag und gibt Token-Info zurück', function () {
+    config(['services.anthropic.agent_models.search_agent' => 'claude-haiku-4-5-20251001']);
+    config(['services.anthropic.agents.search_agent' => 'pico-agent']);
+    config(['services.anthropic.api_key' => 'test-key']);
+
+    Process::fake([
+        'claude*' => Process::result(
+            output: json_encode([
+                'result' => 'Search result',
+                'is_error' => false,
+                'total_cost_usd' => 0.002,
+                'usage' => ['input_tokens' => 500, 'output_tokens' => 200],
+            ]),
+            exitCode: 0,
+        ),
+    ]);
+
+    $service = app(ClaudeCliService::class);
+    $result = $service->callForPhase(
+        'search_agent',
+        [['role' => 'user', 'content' => 'Suche starten']],
+    );
+
+    expect($result['content'])->toBe('Search result');
+    expect($result['cost_usd'])->toBe(0.002);
+    expect($result['input_tokens'])->toBe(500);
+    expect($result['output_tokens'])->toBe(200);
+
+    Process::assertRan(fn ($process) => str_contains($process->command, '--model') &&
+        str_contains($process->command, 'claude-haiku')
+    );
+});
+
+test('callForPhase() wirft Exception bei CLI-Fehler', function () {
+    config(['services.anthropic.agents.search_agent' => 'pico-agent']);
+    config(['services.anthropic.api_key' => 'test-key']);
+
+    Process::fake([
+        'claude*' => Process::result(output: '', errorOutput: 'Error', exitCode: 1),
+    ]);
+
+    $service = app(ClaudeCliService::class);
+
+    expect(fn () => $service->callForPhase('search_agent', [['role' => 'user', 'content' => 'test']]))
+        ->toThrow(\App\Services\ClaudeCliException::class);
+});
