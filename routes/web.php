@@ -87,4 +87,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('recherche/{projekt}/galaxy-data', [\App\Http\Controllers\GalaxyDataController::class, 'show'])
         ->middleware('can:view,projekt')
         ->name('recherche.galaxy-data');
+
+    Route::post('/game/sessions', [\App\Http\Controllers\GameSessionController::class, 'create'])
+        ->name('game.sessions.create');
+    Route::post('/game/sessions/{code}/join', [\App\Http\Controllers\GameSessionController::class, 'join'])
+        ->name('game.sessions.join');
+    Route::get('/game/sessions/{code}', [\App\Http\Controllers\GameSessionController::class, 'show'])
+        ->name('game.sessions.show');
 });
