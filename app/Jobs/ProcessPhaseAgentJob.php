@@ -2,10 +2,13 @@
 
 namespace App\Jobs;
 
-use App\Actions\SendAgentMessage;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
+use App\Models\Workspace;
 use App\Services\AgentPayloadService;
+use App\Services\AgentResponseParser;
+use App\Services\ClaudeCliService;
+use App\Services\CreditService;
 use App\Services\LangdockArtifactService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
@@ -61,76 +64,81 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'status' => 'pending',
                 ]);
 
-            $response = app(SendAgentMessage::class)->execute(
+            // Agent via Claude CLI subprocess aufrufen
+            $cliResult = app(ClaudeCliService::class)->callForPhase(
                 $this->agentConfigKey,
                 $messages,
-                120, // HTTP timeout for the LLM call
-                $this->context
+                $this->context,
             );
 
-            if ($response['success']) {
-                // Parse agent response for db_payload processing
-                $parsed = $this->parseStructuredResponse((string) $response['content']);
+            $rawContent = $cliResult['content'];
 
-                // Persist db_payload to database if present
-                if ($parsed !== null) {
-                    $payloadResult = app(AgentPayloadService::class)->persistPayload(
-                        $parsed,
-                        $this->projektId
+            // Token-Tracking via CreditService
+            $workspaceId = $this->context['workspace_id'] ?? $projekt->workspace_id;
+            if ($workspaceId && ($cliResult['input_tokens'] > 0 || $cliResult['output_tokens'] > 0)) {
+                $workspace = Workspace::find($workspaceId);
+                if ($workspace) {
+                    app(CreditService::class)->deduct(
+                        $workspace,
+                        $cliResult['input_tokens'],
+                        $this->agentConfigKey,
+                        $cliResult['output_tokens'],
                     );
-
-                    Log::info('Phase agent job: db_payload processed', [
-                        'projekt_id' => $this->projektId,
-                        'phase_nr' => $this->phaseNr,
-                        'tables_written' => $payloadResult['tables_written'],
-                        'rows_written' => $payloadResult['rows_written'],
-                    ]);
                 }
+            }
 
-                // Enhance agent response with synthesis markdown if chunks were retrieved
-                $enhancedContent = $this->enrichResponseWithSynthesis(
-                    (string) $response['content'],
-                    $this->retrievedChunks ?? []
+            // Dedizierter Parser statt inline Logik
+            $parsed = app(AgentResponseParser::class)->parse($rawContent);
+
+            // DB-Payload persistieren
+            if ($parsed['db_payload'] !== null) {
+                $payloadResult = app(AgentPayloadService::class)->persistPayload(
+                    ['db_payload' => $parsed['db_payload']],
+                    $this->projektId
                 );
 
-                $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
-                    $enhancedContent,
-                    $this->context,
-                    [
-                        'scope' => 'phase',
-                        'phase_nr' => $this->phaseNr,
-                        'config_key' => $this->agentConfigKey,
-                        'basename' => "p{$this->phaseNr}-{$this->agentConfigKey}",
-                        // "Am Ende" immer als Markdown-Artefakt persistieren.
-                        'always_write_md' => $this->phaseNr === 8,
-                    ],
-                );
-
-                $result->markCompleted($artifact['display_content']);
-                Log::info('Phase agent job completed', [
+                Log::info('Phase agent job: db_payload processed', [
                     'projekt_id' => $this->projektId,
                     'phase_nr' => $this->phaseNr,
-                    'agent_config_key' => $this->agentConfigKey,
-                    'chunks_used' => count($this->retrievedChunks ?? []),
-                    'artifacts_stored' => count($artifact['stored_paths'] ?? []),
-                ]);
-
-                // Aktiven Nutzer aus dem Kontext propagieren, damit die Phasenkette
-                // den richtigen user_id erhält statt immer den Projekt-Ersteller (Issue #154)
-                app(PhaseChainService::class)->maybeDispatchNext(
-                    $projekt,
-                    $this->phaseNr,
-                    $this->context['user_id'] ?? null,
-                );
-            } else {
-                $result->markFailed($response['content']);
-                Log::warning('Phase agent job failed', [
-                    'projekt_id' => $this->projektId,
-                    'phase_nr' => $this->phaseNr,
-                    'agent_config_key' => $this->agentConfigKey,
-                    'error' => $response['content'],
+                    'tables_written' => $payloadResult['tables_written'],
+                    'rows_written' => $payloadResult['rows_written'],
                 ]);
             }
+
+            // Synthesis-Markdown anreichern
+            $enhancedContent = $this->enrichResponseWithSynthesis(
+                $rawContent,
+                $this->retrievedChunks ?? []
+            );
+
+            $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+                $enhancedContent,
+                $this->context,
+                [
+                    'scope' => 'phase',
+                    'phase_nr' => $this->phaseNr,
+                    'config_key' => $this->agentConfigKey,
+                    'basename' => "p{$this->phaseNr}-{$this->agentConfigKey}",
+                    'always_write_md' => $this->phaseNr === 8,
+                ],
+            );
+
+            $result->markCompleted($artifact['display_content']);
+            Log::info('Phase agent job completed', [
+                'projekt_id' => $this->projektId,
+                'phase_nr' => $this->phaseNr,
+                'agent_config_key' => $this->agentConfigKey,
+                'chunks_used' => count($this->retrievedChunks ?? []),
+                'artifacts_stored' => count($artifact['stored_paths'] ?? []),
+                'cost_usd' => $cliResult['cost_usd'],
+            ]);
+
+            // Auto-Chain: nächste Phase dispatchen
+            app(PhaseChainService::class)->maybeDispatchNext(
+                $projekt,
+                $this->phaseNr,
+                $this->context['user_id'] ?? null,
+            );
         } catch (\Throwable $e) {
             if ($result !== null) {
                 $result->markFailed(__('Verarbeitung fehlgeschlagen: ').$e->getMessage());
@@ -195,11 +203,24 @@ class ProcessPhaseAgentJob implements ShouldQueue
      */
     private function enrichResponseWithSynthesis(string $rawContent, array $retrievedChunks): string
     {
-        // Try to parse structured JSON response
-        $parsed = $this->parseStructuredResponse($rawContent);
+        if (empty($retrievedChunks)) {
+            return $rawContent;
+        }
 
-        if ($parsed === null || empty($retrievedChunks)) {
-            return $rawContent; // Return unchanged if no structure or no chunks
+        // Versuche JSON-Envelope zu parsen (für md_files Injection)
+        $trimmed = trim($rawContent);
+        if ($trimmed === '' || ! str_starts_with($trimmed, '{')) {
+            return $rawContent;
+        }
+
+        try {
+            $parsed = json_decode($trimmed, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return $rawContent;
+        }
+
+        if (! is_array($parsed)) {
+            return $rawContent;
         }
 
         try {
@@ -250,42 +271,6 @@ class ProcessPhaseAgentJob implements ShouldQueue
             ]);
 
             return $rawContent; // Fall back to original response
-        }
-    }
-
-    /**
-     * Try to parse structured JSON response envelope.
-     *
-     * @return array{meta?: array, result?: array, data?: array}|null
-     */
-    private function parseStructuredResponse(string $rawContent): ?array
-    {
-        $trimmed = trim($rawContent);
-
-        if ($trimmed === '' || ! str_starts_with($trimmed, '{')) {
-            return null;
-        }
-
-        try {
-            $decoded = json_decode($trimmed, true, flags: JSON_THROW_ON_ERROR);
-
-            if (! is_array($decoded)) {
-                return null;
-            }
-
-            // Look for either meta/result structure or flat data structure
-            if (isset($decoded['meta'], $decoded['result'])) {
-                return $decoded;
-            }
-
-            // Also accept flat structure with data key
-            if (isset($decoded['data'])) {
-                return ['data' => $decoded['data']];
-            }
-
-            return null;
-        } catch (\Throwable) {
-            return null;
         }
     }
 }
