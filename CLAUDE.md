@@ -16,7 +16,7 @@ CLI immer via `php-cli`, nie `php-fpm`.
 
 ## Stack
 
-Laravel 12 · PHP 8.4 · PostgreSQL 16 (pgvector, native Enums) · Redis · Livewire 3 + Volt · Tailwind 4 · Vite · Filament 4.9 · Fortify 1.30 · Spatie Permission · Langdock Agent API · Ollama (nomic-embed-text) · Laravel Reverb (WebSockets)
+Laravel 12 · PHP 8.4 · PostgreSQL 16 (pgvector, native Enums) · Redis · Livewire 3 + Volt · Tailwind 4 · Vite · Filament 4.9 · Fortify 1.30 · Spatie Permission · Claude CLI (Anthropic) · Ollama (nomic-embed-text) · Laravel Reverb (WebSockets)
 
 ## Architektur (Kurzform)
 
@@ -27,17 +27,24 @@ Laravel 12 · PHP 8.4 · PostgreSQL 16 (pgvector, native Enums) · Redis · Live
 - P4→P5: KEIN Auto-Chain (manueller Paper-Import nötig)
 - P5–P8: Screening → Qualitätsbewertung → Synthese → Abschluss (auto-chain)
 
-**KI-Agent Flow:**
+**KI-Agent Flow (4-Agent Architektur):**
 ```
-UI (Volt/Livewire) → TriggersPhaseAgent trait ODER agent-action-button.blade.php
-  → SendAgentMessage → LangdockAgentService::callByConfigKey()
-  → LangdockContextInjector::inject() (RLS-Bootstrap: SET LOCAL app.current_projekt_id)
-  → POST api.langdock.com/agent/v1/chat/completions
-  → Response → AgentPayloadService::persistPayload() (JSON→DB)
+Main Agent (Chat): StreamingAgentService → ClaudeCliService
+  → claude --print --output-format json --append-system-prompt "..."
+  → SSE-Chunks an Browser → AgentResultStorageService (Markdown)
+
+Phasen-Agents (P1–P8): ProcessPhaseAgentJob (Queue)
+  → SendAgentMessage → ClaudeService::callByConfigKey()
+  → POST api.anthropic.com/v1/messages
+  → AgentPayloadService::persistPayload() (JSON→DB, RLS-geschützt)
   → LangdockArtifactService::persistFromAgentResponse()
   → PhaseAgentResult gespeichert
   → PhaseChainService::maybeDispatchNext() (auto-chain)
 ```
+
+**Agents haben KEINEN DB-Zugriff.** Alle DB-Writes gehen durch Laravel-Middleware (AgentPayloadService mit RLS + Whitelist).
+
+**Worker-Agents** (`.claude/agents/worker-{1,2,3}-*.md`): Haiku 4.5, read-only, kein Bash/FS/DB.
 
 **Async:** ProcessPhaseAgentJob (Queue) für alle Phasen-Agents.
 
@@ -53,12 +60,13 @@ DownloadPaperJob → PdfParserService → IngestPaperJob → EmbeddingService (O
 
 | Bereich | Dateien |
 |---------|---------|
-| Agent-Aufruf | `app/Services/LangdockAgentService.php`, `app/Actions/SendAgentMessage.php` |
-| Context/RLS | `app/Services/LangdockContextInjector.php` |
+| Agent-Aufruf | `app/Services/ClaudeCliService.php`, `app/Services/ClaudeService.php`, `app/Actions/SendAgentMessage.php` |
+| Agent-Definitionen | `.claude/agents/worker-{1,2,3}-*.md`, `resources/prompts/agents/*.md` |
+| Context/RLS | `app/Services/ClaudeContextBuilder.php` |
 | Phasen-Job | `app/Jobs/ProcessPhaseAgentJob.php` |
 | Phasen-Chain | `app/Services/PhaseChainService.php`, `config/phase_chain.php` |
 | Agent-Trigger (UI) | `app/Livewire/Concerns/TriggersPhaseAgent.php`, `resources/views/livewire/recherche/agent-action-button.blade.php` |
-| Agent-Config | `config/services.php` (langdock section) |
+| Agent-Config | `config/services.php` (anthropic section) |
 | Payload→DB | `app/Services/AgentPayloadService.php` |
 | Artefakte | `app/Services/LangdockArtifactService.php` |
 | Credits | `app/Services/CreditService.php` |
@@ -80,13 +88,17 @@ POST /api/mcp/agent-call/stream   → StreamingMcpController (SSE)
 
 ```
 
-## Langdock Agents
+## Agents
 
-| Config-Key | Phasen |
-|------------|--------|
-| scoping_mapping_agent | P1, P2 |
-| search_agent | P3, P4 |
-| review_agent | P5, P6, P7 |
+| Config-Key | Phasen | Worker |
+|------------|--------|--------|
+| scoping_mapping_agent | P1, P2 | Worker 1 (Haiku) |
+| search_agent | P3, P4 | Worker 2 (Haiku) |
+| review_agent | P5, P6, P7 | Worker 3 (Haiku) |
+| evaluation_agent | P6 | Worker 3 |
+| synthesis_agent | P7 | Worker 3 |
+| mayring_agent | P7 (Tool-Use) | Worker 3 |
+| chat-agent | Chat/Orchestrator | Main Agent (Sonnet) |
 
 ## Model-Konventionen
 
@@ -114,10 +126,39 @@ POST /api/mcp/agent-call/stream   → StreamingMcpController (SSE)
 - `docker-compose.dev.yml` — Manuell (`-f`), Port 6480 statt 6481
 - Production: `docker compose -f docker-compose.yml up -d` (kein Override)
 
-## MCP Server (Langdock)
+## MCP Memory Server
 
-Lokales Setup: `langdock-mcp` Repo klonen, `LANGDOCK_API_KEY` setzen, `python server.py`. In `~/.claude/settings.json` registrieren. Ermöglicht Agent-Management direkt aus Claude Code.
+Persistenter, semantisch durchsuchbarer Memory-Store. **Immer nutzen** für Kontext aus vorherigen Sessions.
+
+```
+mcp__memory__search_memory  — Semantische Suche über alle Memories (query, top_k, tags)
+mcp__memory__put            — Neue Memory speichern (source, content, tags, scope)
+mcp__memory__get            — Chunk by ID abrufen
+mcp__memory__list_by_source — Alle Chunks einer Source listen
+mcp__memory__invalidate     — Veraltete Memory invalidieren
+```
+
+**Wann nutzen:**
+- **Session-Start:** `search_memory` mit dem aktuellen Task als Query — holt relevanten Kontext aus vorherigen Sessions
+- **Nach Task-Abschluss:** Erkenntnisse, Entscheidungen, Fehler via `put` speichern
+- **Source-IDs:** `session-memory:{topic}` für Session-Wissen, `repo:{path}` für Code-Kontext
+
+**Bekannte Source-IDs:**
+- `session-memory:agent-architecture` — 4-Agent Design
+- `session-memory:docker-setup` — Docker Config & Troubleshooting
+- `session-memory:phase-chain-system` — 8 Phasen, Quality Gates
+- `session-memory:cli-flags-fix` — Claude CLI Flags
+- `session-memory:user-preferences` — User Preferences
+- `session-memory:pending-work` — Offene Arbeit & Prioritäten
+
+## Wichtige Skripte — nach Task-Abschluss aktuell halten
+
+- `CLAUDE.md` — Diese Datei. Nach jedem größeren Task aktualisieren.
+- `.claude/ARCHITECTURE.md` — Architektur-Übersicht. Bei Strukturänderungen updaten.
+- MCP Memory — Erkenntnisse via `mcp__memory__put` persistieren.
 
 ## Bekannte Lücken
 
 - Admin-Panel Tests fehlen
+- ProcessPhaseAgentJob nutzt noch direkte API statt ClaudeCliService (Migration ausstehend)
+- AgentResponseParser noch nicht extrahiert (Parsing 3x dupliziert)
