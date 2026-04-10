@@ -105,6 +105,17 @@ return [
 
         'low_balance_threshold_percent' => (int) env('CLAUDE_LOW_BALANCE_THRESHOLD_PERCENT', 10),
 
+        // Modell pro Agent-Typ (CLI --model Flag)
+        'agent_models' => [
+            'scoping_mapping_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'search_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'review_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'evaluation_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'synthesis_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'mayring_agent' => env('CLAUDE_WORKER_MODEL', 'claude-haiku-4-5-20251001'),
+            'chat-agent' => env('CLAUDE_MODEL', 'claude-sonnet-4-6'),
+        ],
+
         'agent_daily_limits' => [
             'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
             'chat-agent' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
