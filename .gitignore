@@ -27,7 +27,7 @@ yarn-error.log
 .claude/settings.local.json
 .claude/agent-memory/
 docker-compose.override.yml
-**/paper-search-mcp
+# paper-search-mcp ist jetzt Teil des Repos (MCP-Server für Literatursuche)
 *.sql
 /database/exports/.worktrees/
 .superpowers/brainstorm/1618060-1775711632/state/server.pid
