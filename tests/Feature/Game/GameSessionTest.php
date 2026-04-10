@@ -62,3 +62,64 @@ test('session rejects more than 10 players', function () {
 test('guest cannot create session', function () {
     $this->postJson('/game/sessions')->assertUnauthorized();
 });
+
+test('player can save their score', function () {
+    $host = User::factory()->withoutTwoFactor()->create();
+    $session = GameSession::create([
+        'code' => 'SCR001',
+        'host_user_id' => $host->id,
+        'status' => 'active',
+    ]);
+    DB::table('game_session_players')->insert([
+        'session_id' => $session->id,
+        'user_id' => $host->id,
+        'joined_at' => now(),
+    ]);
+
+    $this->actingAs($host);
+    $this->patchJson('/game/sessions/SCR001/score', ['score' => 4200, 'kills' => 17, 'wave' => 3])
+        ->assertOk()
+        ->assertJson(['ok' => true]);
+
+    $this->assertDatabaseHas('game_session_players', [
+        'session_id' => $session->id,
+        'user_id' => $host->id,
+        'score' => 4200,
+        'kills' => 17,
+    ]);
+});
+
+test('host can end session', function () {
+    $host = User::factory()->withoutTwoFactor()->create();
+    $session = GameSession::create([
+        'code' => 'END001',
+        'host_user_id' => $host->id,
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($host);
+    $this->patchJson('/game/sessions/END001/end')->assertOk();
+
+    $this->assertDatabaseHas('game_sessions', [
+        'code' => 'END001',
+        'status' => 'ended',
+    ]);
+});
+
+test('non-host cannot end session', function () {
+    $host = User::factory()->withoutTwoFactor()->create();
+    $other = User::factory()->withoutTwoFactor()->create();
+    $session = GameSession::create([
+        'code' => 'END002',
+        'host_user_id' => $host->id,
+        'status' => 'active',
+    ]);
+    DB::table('game_session_players')->insert([
+        'session_id' => $session->id,
+        'user_id' => $other->id,
+        'joined_at' => now(),
+    ]);
+
+    $this->actingAs($other);
+    $this->patchJson('/game/sessions/END002/end')->assertForbidden();
+});
