@@ -34,3 +34,4 @@ docker-compose.override.yml
 .superpowers/brainstorm/1618060-1775711632/state/server.log
 .gitignore
 .gitignore
+.claude
