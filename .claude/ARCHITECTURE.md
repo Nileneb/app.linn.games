@@ -1,7 +1,7 @@
 # Architecture — app.linn.games (IST-Zustand)
 
-> Stand: April 2026. Claude API (Anthropic) ersetzt Langdock vollständig.
-> Zielarchitektur / Migrationspfad: `.claude/TARGET_ARCHITECTURE.md`
+> Stand: 10. April 2026. Claude CLI + Claude API (Anthropic) im Einsatz.
+> **Nach jedem abgeschlossenen Task diese Datei aktuell halten.**
 
 ---
 
@@ -14,11 +14,12 @@ app.linn.games ist eine Research-Management-Plattform für KI-gestützte systema
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  MAIN AGENT — Orchestrator + Chat                        │
-│  (claude-haiku-4-5 | PromptLoaderService + Skills)      │
-│  · User-Chat via SSE-Streaming                           │
+│  (Sonnet 4.6 | ClaudeCliService → claude --print)       │
+│  · User-Chat via SSE-Streaming (StreamingAgentService)   │
 │  · Dispatcht W1 / W2 / W3 als Subagents (Queue)         │
-│  · Clont Worker wenn stuck (userTier → max N Clones)    │
+│  · Clont Worker wenn stuck (WorkerCloneService)          │
 │  · RAG-Zugriff (RetrieverService)                        │
+│  · KEIN DB-Zugriff, KEIN Tool-Use                        │
 └───────────────┬──────────────┬──────────────────────────┘
                 │              │                   │
                 ▼              ▼                   ▼
@@ -131,19 +132,18 @@ Baut einen Markdown-Kontext-Block aus DB-Daten der dem System-Prompt angehängt 
    → ContextProvider::buildMessages()
        - Projekt-Metadaten, Phase, User-Info aus DB
        - RetrieverService::retrieve() → RAG-Chunks (dual-source, Redis-Cache)
-       - System-Message via PromptLoaderService (chat-agent.md + Skills)
 
-3. ClaudeService::callByConfigKey('chat-agent', messages, context)
-   → POST api.anthropic.com/v1/messages (claude-haiku-4-5)
-   → Synchroner Response
+3. ClaudeCliService::call(userMessage, context)
+   → claude --print --output-format json --append-system-prompt "..."
+   → ANTHROPIC_API_KEY aus config('services.anthropic.api_key')
+   → Synchroner JSON-Response {result, is_error, total_cost_usd, usage}
 
-4. StreamingAgentService streamt Response als SSE (aktuell: 100-Zeichen-Chunks simuliert)
+4. StreamingAgentService streamt Response als SSE (100-Zeichen-Chunks simuliert)
    [⚠ SCHULD: Fake-Streaming — echtes stream:true fehlt noch]
 
 5. Nach Abschluss:
    → AgentResultStorageService::storeChat() → MD-File
    → IngestAgentResultJob::dispatch() (async, Redis Queue)
-   → chat_messages in DB aktualisieren
 ```
 
 ---
@@ -179,24 +179,24 @@ Baut einen Markdown-Kontext-Block aus DB-Daten der dem System-Prompt angehängt 
 
 ---
 
-## Worker-Clone-Mechanismus (SOLL — noch nicht implementiert)
+## Worker-Clone-Mechanismus (implementiert)
 
-Wenn ein Worker stuck ist (Timeout, Quality Gate wiederholt Failed, Fehler):
+`WorkerCloneService` (`app/Services/WorkerCloneService.php`):
 
 ```
-Main Agent / PhaseChainService
-  → detectStuck(phaseAgentResult)
-      - Timeout: Job läuft > N Minuten ohne PhaseAgentResult
-      - Quality Gate: isValidPhaseResult() 3x fehlgeschlagen
-      - Exception: ClaudeAgentException nach allen Retries
-  → userTier prüfen: max N gleichzeitige Clones
-      - Free: max 1 Clone
-      - Pro: max 3 Clones
+PhaseChainService::detectStuck(projekt, phaseNr)
+  → 3+ failed PhaseAgentResults → stuck
+
+WorkerCloneService::shouldClone(result, projekt) → bool
+WorkerCloneService::clone(result, projekt, strategy)
+  → CreditService::checkCloneLimit(workspace)
+      - Free: max 1 pending Clone
+      - Pro: max 3 pending Clones
       - Enterprise: unbegrenzt
-  → ProcessPhaseAgentJob::dispatch(..., clone_strategy: 'retry'|'rephrase')
-      - retry:   gleiche Messages, neuer Attempt
-      - rephrase: ClaudeContextBuilder fügt Rephrase-Hint ein
+  → ProcessPhaseAgentJob::dispatch(..., clone_strategy)
 ```
+
+**Tier-Spalte:** `workspaces.tier` (enum: free/pro/enterprise, default: free)
 
 ---
 
@@ -304,10 +304,12 @@ storage/app/agent-results/
 
 | Datei | Rolle |
 |-------|-------|
-| `app/Services/ClaudeService.php` | Anthropic API Client (alle Agents) |
+| `app/Services/ClaudeCliService.php` | Claude CLI Subprocess (Main Agent Chat) |
+| `app/Services/ClaudeService.php` | Anthropic API Client (Phasen-Agents) |
 | `app/Services/PromptLoaderService.php` | Skills-System + Prompt-Loader |
 | `app/Services/ClaudeContextBuilder.php` | DB-Kontext → System-Prompt |
-| `app/Services/StreamingAgentService.php` | Chat-Turn-Orchestrierung + SSE (⚠ Fake) |
+| `app/Services/StreamingAgentService.php` | Chat-Turn-Orchestrierung + SSE (⚠ Fake-Streaming) |
+| `app/Services/WorkerCloneService.php` | Stuck-Detection + Clone-Dispatch mit Tier-Limit |
 | `app/Services/ContextProvider.php` | Messages-Builder für Chat-Agent |
 | `app/Services/MayringMcpClient.php` | Tool-Use-Client für MayringCoder (:8090) |
 | `app/Services/PhaseChainService.php` | Auto-Chain + Quality Gate |
@@ -332,12 +334,11 @@ storage/app/agent-results/
 
 | # | Problem | Priorität |
 |---|---------|-----------|
-| 1 | **Fake-Streaming** in `StreamingAgentService` — 100-Zeichen-Chunks statt echtem `stream:true` | Hoch |
-| 2 | **`LangdockArtifactService`** noch in `ProcessPhaseAgentJob` referenziert — sollte zu `AgentArtifactService` umbenannt / ersetzt werden | Mittel |
-| 3 | **Worker-Clone-Mechanismus** fehlt noch komplett | Mittel |
-| 4 | **Quality Gate** nur bei Auto-Chain, nicht bei manuellem Trigger | Mittel |
+| 1 | **AgentResponseParser** extrahieren — Parsing 3x dupliziert (ProcessPhaseAgentJob, LangdockArtifactService, enrichResponseWithSynthesis) | Hoch |
+| 2 | **ProcessPhaseAgentJob → ClaudeCliService** — Phase-Jobs sollen über CLI laufen statt direkte API | Hoch |
+| 3 | **Fake-Streaming** in `StreamingAgentService` — 100-Zeichen-Chunks statt echtem `stream:true` | Mittel |
+| 4 | **`LangdockArtifactService`** umbenennen zu `AgentArtifactService` | Niedrig |
 | 5 | **Admin-Panel Tests** fehlen (Filament-Ressourcen) | Niedrig |
-| 6 | **`user_id` in PhaseChain** = Projekt-Ersteller statt aktiver User | Niedrig |
 
 ---
 
