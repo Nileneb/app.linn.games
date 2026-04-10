@@ -22,7 +22,7 @@ test('free tier: wirft Exception bei 1 pending PhaseAgentResult', function () {
 
     PhaseAgentResult::factory()->create([
         'projekt_id' => $projekt->id,
-        'status'     => 'pending',
+        'status' => 'pending',
     ]);
 
     expect(fn () => app(CreditService::class)->checkCloneLimit($workspace))
@@ -36,7 +36,7 @@ test('pro tier: erlaubt bis zu 3 pending', function () {
 
     PhaseAgentResult::factory()->count(3)->create([
         'projekt_id' => $projekt->id,
-        'status'     => 'pending',
+        'status' => 'pending',
     ]);
 
     expect(fn () => app(CreditService::class)->checkCloneLimit($workspace))
@@ -50,7 +50,7 @@ test('enterprise tier: kein Limit', function () {
 
     PhaseAgentResult::factory()->count(20)->create([
         'projekt_id' => $projekt->id,
-        'status'     => 'pending',
+        'status' => 'pending',
     ]);
 
     app(CreditService::class)->checkCloneLimit($workspace);

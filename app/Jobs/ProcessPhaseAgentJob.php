@@ -54,11 +54,11 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 ->orderByDesc('created_at')
                 ->first()
                 ?? PhaseAgentResult::create([
-                    'projekt_id'       => $this->projektId,
-                    'user_id'          => $this->context['user_id'] ?? $projekt->user_id,
-                    'phase_nr'         => $this->phaseNr,
+                    'projekt_id' => $this->projektId,
+                    'user_id' => $this->context['user_id'] ?? $projekt->user_id,
+                    'phase_nr' => $this->phaseNr,
                     'agent_config_key' => $this->agentConfigKey,
-                    'status'           => 'pending',
+                    'status' => 'pending',
                 ]);
 
             $response = app(SendAgentMessage::class)->execute(

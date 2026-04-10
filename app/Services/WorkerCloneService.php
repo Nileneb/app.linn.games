@@ -52,23 +52,23 @@ class WorkerCloneService
 
         $messages = [
             [
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => "Retry strategy: {$strategy}. Please re-run phase {$result->phase_nr} analysis.",
             ],
         ];
 
         $context = [
-            'user_id'    => $result->user_id ?? $projekt->user_id,
+            'user_id' => $result->user_id ?? $projekt->user_id,
             'projekt_id' => $projekt->id,
-            'strategy'   => $strategy,
-            'clone'      => true,
+            'strategy' => $strategy,
+            'clone' => true,
         ];
 
         Log::info('WorkerCloneService: dispatching clone', [
-            'projekt_id'       => $projekt->id,
-            'phase_nr'         => $result->phase_nr,
+            'projekt_id' => $projekt->id,
+            'phase_nr' => $result->phase_nr,
             'agent_config_key' => $agentConfigKey,
-            'strategy'         => $strategy,
+            'strategy' => $strategy,
         ]);
 
         ProcessPhaseAgentJob::dispatch(

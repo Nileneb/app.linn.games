@@ -189,9 +189,9 @@ class CreditService
         $tier = $workspace->tier ?? 'free';
 
         $maxPending = match ($tier) {
-            'pro'        => 3,
+            'pro' => 3,
             'enterprise' => PHP_INT_MAX,
-            default      => 1,  // free
+            default => 1,  // free
         };
 
         if ($maxPending === PHP_INT_MAX) {

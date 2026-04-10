@@ -35,8 +35,8 @@ class ClaudeCliService
         if (! $result->successful()) {
             Log::error('Claude CLI subprocess fehlgeschlagen', [
                 'exit_code' => $result->exitCode(),
-                'stderr'    => $result->errorOutput(),
-                'context'   => $context,
+                'stderr' => $result->errorOutput(),
+                'context' => $context,
             ]);
 
             throw new ClaudeCliException(

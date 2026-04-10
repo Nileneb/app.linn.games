@@ -1,7 +1,6 @@
 <?php
 
 use App\Jobs\ProcessPhaseAgentJob;
-use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\WorkspaceUser;
@@ -15,7 +14,7 @@ use Livewire\Volt\Volt;
 test('startPipeline übergibt projekt_id, user_id und phase_nr an ProcessPhaseAgentJob', function () {
     Queue::fake();
 
-    $user    = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create();
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user);
@@ -34,24 +33,24 @@ test('startPipeline übergibt projekt_id, user_id und phase_nr an ProcessPhaseAg
 
     $this->assertDatabaseHas('phase_agent_results', [
         'projekt_id' => $projekt->id,
-        'user_id'    => $user->id,
-        'phase_nr'   => 1,
-        'status'     => 'pending',
+        'user_id' => $user->id,
+        'phase_nr' => 1,
+        'status' => 'pending',
     ]);
 });
 
 test('startPipeline verwendet auth()->id() als user_id, nicht den Projekt-Ersteller', function () {
     Queue::fake();
 
-    $projektOwner  = User::factory()->withoutTwoFactor()->create();
+    $projektOwner = User::factory()->withoutTwoFactor()->create();
     $aktuellerUser = User::factory()->withoutTwoFactor()->create();
 
     $projekt = Projekt::factory()->create(['user_id' => $projektOwner->id]);
 
     WorkspaceUser::factory()->create([
         'workspace_id' => $projekt->workspace_id,
-        'user_id'      => $aktuellerUser->id,
-        'role'         => 'editor',
+        'user_id' => $aktuellerUser->id,
+        'role' => 'editor',
     ]);
 
     $this->actingAs($aktuellerUser);
@@ -66,8 +65,8 @@ test('startPipeline verwendet auth()->id() als user_id, nicht den Projekt-Erstel
 
     $this->assertDatabaseHas('phase_agent_results', [
         'projekt_id' => $projekt->id,
-        'user_id'    => $aktuellerUser->id,
-        'status'     => 'pending',
+        'user_id' => $aktuellerUser->id,
+        'status' => 'pending',
     ]);
 
     $this->assertDatabaseMissing('phase_agent_results', [

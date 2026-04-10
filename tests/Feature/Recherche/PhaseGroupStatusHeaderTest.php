@@ -11,18 +11,18 @@ use Illuminate\Support\Facades\Queue;
 use Livewire\Volt\Volt;
 
 beforeEach(function () {
-    $this->user      = User::factory()->withoutTwoFactor()->create();
+    $this->user = User::factory()->withoutTwoFactor()->create();
     $this->workspace = Workspace::factory()->create(['owner_id' => $this->user->id]);
-    $this->projekt   = Projekt::factory()->create([
-        'user_id'      => $this->user->id,
+    $this->projekt = Projekt::factory()->create([
+        'user_id' => $this->user->id,
         'workspace_id' => $this->workspace->id,
     ]);
 
     foreach (range(1, 8) as $phaseNr) {
         Phase::factory()->create([
             'projekt_id' => $this->projekt->id,
-            'phase_nr'   => $phaseNr,
-            'status'     => 'offen',
+            'phase_nr' => $phaseNr,
+            'status' => 'offen',
         ]);
     }
 
@@ -57,8 +57,8 @@ test('phase status icons display correctly for completed agent result', function
     // P1 agent result = completed → green bar
     PhaseAgentResult::factory()->create([
         'projekt_id' => $this->projekt->id,
-        'phase_nr'   => 1,
-        'status'     => 'completed',
+        'phase_nr' => 1,
+        'status' => 'completed',
     ]);
 
     $response = Volt::test('recherche.phase-group-status-header', [
@@ -71,8 +71,8 @@ test('phase status icons display correctly for completed agent result', function
 test('pending agent result shows spinner', function () {
     PhaseAgentResult::factory()->create([
         'projekt_id' => $this->projekt->id,
-        'phase_nr'   => 1,
-        'status'     => 'pending',
+        'phase_nr' => 1,
+        'status' => 'pending',
     ]);
 
     $response = Volt::test('recherche.phase-group-status-header', [
@@ -108,17 +108,17 @@ test('startPipeline(1) creates pending PhaseAgentResult', function () {
 
     $this->assertDatabaseHas('phase_agent_results', [
         'projekt_id' => $this->projekt->id,
-        'user_id'    => $this->user->id,
-        'phase_nr'   => 1,
-        'status'     => 'pending',
+        'user_id' => $this->user->id,
+        'phase_nr' => 1,
+        'status' => 'pending',
     ]);
 });
 
 test('P5 start button appears after P4 agent completes', function () {
     PhaseAgentResult::factory()->create([
         'projekt_id' => $this->projekt->id,
-        'phase_nr'   => 4,
-        'status'     => 'completed',
+        'phase_nr' => 4,
+        'status' => 'completed',
     ]);
 
     $response = Volt::test('recherche.phase-group-status-header', [
