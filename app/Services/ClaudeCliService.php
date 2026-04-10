@@ -23,7 +23,7 @@ class ClaudeCliService
             'claude',
             '--print',
             '--output-format', 'json',
-            $systemSuffix !== '' ? '--system' : null,
+            $systemSuffix !== '' ? '--append-system-prompt' : null,
             $systemSuffix !== '' ? escapeshellarg($systemSuffix) : null,
             escapeshellarg($userMessage),
         ]);
