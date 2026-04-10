@@ -15,10 +15,6 @@ class ClaudeCliService
      */
     private function productionChatFlags(): array
     {
-        if (app()->environment('local', 'testing')) {
-            return [];
-        }
-
         $mcpConfig = base_path('.claude/mcp-production.json');
 
         return array_filter([
@@ -44,10 +40,6 @@ class ClaudeCliService
      */
     private function productionWorkerFlags(): array
     {
-        if (app()->environment('local', 'testing')) {
-            return [];
-        }
-
         // Paper-Search Tools: Suche + Read + Ingest. Kein Download (macht DownloadPaperJob).
         $paperSearchTools = [
             // Search
