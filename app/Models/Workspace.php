@@ -17,10 +17,12 @@ class Workspace extends Model
         'name',
         'owner_id',
         'credits_balance_cents',
+        'tier',
     ];
 
     protected $casts = [
         'credits_balance_cents' => 'integer',
+        'tier' => 'string',
     ];
 
     public function owner(): BelongsTo
