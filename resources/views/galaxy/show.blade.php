@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Cluster Explorer</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -29,6 +30,8 @@ canvas{display:block;}
 #health-fill{height:6px;width:200px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);border-radius:3px;overflow:hidden;}
 #health-inner{height:100%;background:#ef4444;width:100%;transition:width .3s;box-shadow:0 0 8px #ef4444;}
 #flash{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .08s;}
+.lb-row{display:flex;justify-content:space-between;gap:12px;padding:2px 0;border-bottom:1px solid rgba(99,102,241,.15);}
+.lb-name{color:#818cf8;}.lb-score{color:#f59e0b;font-weight:bold;}
 #boss-alert{position:fixed;top:28%;left:50%;transform:translateX(-50%);color:#ef4444;font-size:18px;font-weight:bold;letter-spacing:4px;text-shadow:0 0 20px #ef4444;pointer-events:none;opacity:0;transition:opacity .3s;}
 #mute-btn{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,.7);border:1px solid #6366f1;color:#a5b4fc;font-size:10px;padding:4px 12px;border-radius:4px;cursor:pointer;letter-spacing:2px;transition:background .2s;}
 #mute-btn:hover{background:rgba(99,102,241,.3);}
@@ -47,6 +50,24 @@ canvas{display:block;}
 <canvas id="c"></canvas>
 
 <a id="back-btn" href="{{ route('recherche.projekt', $projektId) }}">← ZURÜCK</a>
+
+<div id="lobbyScreen" style="position:fixed;inset:0;background:rgba(0,0,10,.95);color:#a5b4fc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:150;font-family:'Courier New',monospace;">
+  <h1 style="font-size:28px;letter-spacing:6px;color:#e0e7ff;text-shadow:0 0 20px #6366f1;margin-bottom:12px;">CLUSTER EXPLORER</h1>
+  <p style="font-size:12px;color:#818cf8;margin-bottom:8px;">Multiplayer Co-Op</p>
+  <button id="btnSolo" style="background:rgba(99,102,241,.2);border:1px solid #6366f1;color:#a5b4fc;font-size:13px;letter-spacing:3px;padding:10px 28px;border-radius:6px;cursor:pointer;font-family:inherit;">SOLO SPIELEN</button>
+  <button id="btnCreate" style="background:rgba(16,185,129,.2);border:1px solid #10b981;color:#6ee7b7;font-size:13px;letter-spacing:3px;padding:10px 28px;border-radius:6px;cursor:pointer;font-family:inherit;">SESSION ERSTELLEN</button>
+  <div style="display:flex;gap:.5rem;align-items:center;">
+    <input id="joinCodeInput" maxlength="6" placeholder="CODE" style="text-transform:uppercase;background:rgba(0,0,0,.5);border:1px solid #6366f1;color:#e0e7ff;padding:10px 14px;border-radius:6px;font-family:inherit;font-size:13px;letter-spacing:3px;width:120px;text-align:center;">
+    <button id="btnJoin" style="background:rgba(6,182,212,.2);border:1px solid #06b6d4;color:#67e8f9;font-size:13px;letter-spacing:3px;padding:10px 20px;border-radius:6px;cursor:pointer;font-family:inherit;">JOINEN</button>
+  </div>
+  <div id="lobbyInfo" style="display:none;text-align:center;margin-top:1rem;">
+    <p style="font-size:14px;">Session-Code: <strong id="sessionCode" style="color:#f59e0b;font-size:18px;letter-spacing:4px;"></strong></p>
+    <p style="font-size:11px;color:#818cf8;margin-top:4px;">Teile diesen Code mit Mitspielern</p>
+    <ul id="playerList" style="list-style:none;padding:0;margin:12px 0;font-size:12px;color:#6ee7b7;"></ul>
+    <button id="btnStart" style="background:rgba(245,158,11,.2);border:1px solid #f59e0b;color:#fcd34d;font-size:13px;letter-spacing:3px;padding:10px 28px;border-radius:6px;cursor:pointer;font-family:inherit;">STARTEN</button>
+  </div>
+  <div id="lobbyError" style="display:none;color:#ef4444;font-size:11px;margin-top:8px;"></div>
+</div>
 
 <div id="start-overlay">
   <h1>CLUSTER EXPLORER</h1>
@@ -82,6 +103,10 @@ canvas{display:block;}
 </div>
 <div id="flash"></div>
 <div id="boss-alert"></div>
+<div id="leaderboard" style="position:fixed;top:60px;right:18px;background:rgba(10,10,30,.85);border:1px solid #6366f1;border-radius:8px;padding:8px 14px;color:#a5b4fc;font-size:10px;pointer-events:none;display:none;min-width:140px;box-shadow:0 0 12px rgba(99,102,241,.3);z-index:50;">
+  <div style="font-size:11px;color:#e0e7ff;font-weight:bold;letter-spacing:2px;margin-bottom:6px;">LEADERBOARD</div>
+  <div id="lbEntries"></div>
+</div>
 <div id="controls-hint">KLICK: Pointer lock<br>MAUS: Zielen<br>W/S/A/D: Fliegen<br>SHIFT: Boost<br>SPACE/KLICK: Feuer</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -100,6 +125,129 @@ const COLLISION_RADII = {
 
 function collideSphere(posA, radA, posB, radB) {
     return posA.distanceToSquared(posB) < (radA + radB) ** 2;
+}
+// ────────────────────────────────────────────────────────────────
+
+// ── MULTIPLAYER SESSION ─────────────────────────────────────────
+const SESSION = { code: null, isHost: false, myId: @json(auth()->id()), myName: @json(auth()->user()->name) };
+let echoChannel = null;
+const remotePlayers = {};
+
+document.getElementById('btnSolo').addEventListener('click', () => {
+    document.getElementById('lobbyScreen').style.display = 'none';
+});
+
+document.getElementById('btnCreate').addEventListener('click', async () => {
+    try {
+        const res = await fetch('/game/sessions', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        SESSION.code = data.code;
+        SESSION.isHost = true;
+        document.getElementById('sessionCode').textContent = data.code;
+        document.getElementById('lobbyInfo').style.display = 'block';
+        document.getElementById('btnStart').style.display = SESSION.isHost ? '' : 'none';
+        joinChannel(data.code);
+    } catch (e) {
+        document.getElementById('lobbyError').textContent = 'Fehler: ' + e.message;
+        document.getElementById('lobbyError').style.display = 'block';
+    }
+});
+
+document.getElementById('btnJoin').addEventListener('click', async () => {
+    const code = document.getElementById('joinCodeInput').value.toUpperCase().trim();
+    if (code.length !== 6) return;
+    try {
+        const res = await fetch('/game/sessions/' + code + '/join', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+        });
+        if (!res.ok) throw new Error('Session nicht gefunden oder voll');
+        const data = await res.json();
+        SESSION.code = data.code;
+        SESSION.isHost = data.is_host;
+        document.getElementById('sessionCode').textContent = data.code;
+        document.getElementById('lobbyInfo').style.display = 'block';
+        document.getElementById('btnStart').style.display = SESSION.isHost ? '' : 'none';
+        joinChannel(data.code);
+    } catch (e) {
+        document.getElementById('lobbyError').textContent = e.message;
+        document.getElementById('lobbyError').style.display = 'block';
+    }
+});
+
+document.getElementById('btnStart').addEventListener('click', () => {
+    document.getElementById('lobbyScreen').style.display = 'none';
+});
+
+function renderPlayerList(members) {
+    const ul = document.getElementById('playerList');
+    ul.innerHTML = members.map(m => '<li>' + (m.id === SESSION.myId ? '★ ' : '• ') + m.name + '</li>').join('');
+}
+
+function joinChannel(code) {
+    if (!window.Echo) { console.warn('Echo not loaded'); return; }
+    echoChannel = window.Echo.join('game.' + code)
+        .here(members => { renderPlayerList(members); members.forEach(m => addRemotePlayer(m)); })
+        .joining(member => { addRemotePlayer(member); })
+        .leaving(member => { removeRemotePlayer(member); })
+        .listenForWhisper('player.state', data => onRemotePlayerState(data))
+        .listen('.enemy.destroyed', data => onEnemyDestroyed(data))
+        .listen('.session.update', data => onSessionUpdate(data));
+}
+
+function addRemotePlayer(member) {
+    if (member.id === SESSION.myId || remotePlayers[member.id]) return;
+    const geo = new THREE.SphereGeometry(2, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    remotePlayers[member.id] = { mesh, name: member.name, score: 0, kills: 0 };
+}
+
+function onRemotePlayerState(data) {
+    if (data.userId === SESSION.myId) return;
+    let rp = remotePlayers[data.userId];
+    if (!rp) { addRemotePlayer({ id: data.userId, name: data.userName }); rp = remotePlayers[data.userId]; }
+    if (rp) {
+        rp.mesh.position.set(data.position[0], data.position[1], data.position[2]);
+        rp.score = data.score || 0;
+        rp.kills = data.kills || 0;
+    }
+}
+
+function removeRemotePlayer(member) {
+    const rp = remotePlayers[member.id];
+    if (rp) { scene.remove(rp.mesh); delete remotePlayers[member.id]; }
+}
+
+function onEnemyDestroyed(data) {
+    if (data.byUserId === SESSION.myId) return;
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (enemies[i].userData.uid === data.enemyId) {
+            explode(enemies[i].position, enemies[i].material.color.getHex(), 16);
+            scene.remove(enemies[i]); enemies.splice(i, 1);
+            enemyCountEl.textContent = enemies.length;
+            break;
+        }
+    }
+}
+
+function onSessionUpdate(data) {
+    if (data.gameOver) { /* handle remote game over */ }
+    updateLeaderboard(data.leaderboard);
+}
+
+function updateLeaderboard(entries) {
+    if (!entries || !entries.length) { document.getElementById('leaderboard').style.display = 'none'; return; }
+    document.getElementById('leaderboard').style.display = 'block';
+    const el = document.getElementById('lbEntries');
+    el.innerHTML = entries
+        .sort((a, b) => b.score - a.score)
+        .map(e => '<div class="lb-row"><span class="lb-name">' + (e.id === SESSION.myId ? '★ ' : '') + e.name + '</span><span class="lb-score">' + e.score + '</span></div>')
+        .join('');
 }
 // ────────────────────────────────────────────────────────────────
 
@@ -330,7 +478,7 @@ function spawnEnemy(type='anomaly',pos=null){
   const mesh=new THREE.Mesh(geo,mat);
   if(pos)mesh.position.copy(pos);
   else{const r=80+Math.random()*50,a=Math.random()*Math.PI*2,b=(Math.random()-.5)*.8;mesh.position.set(camera.position.x+r*Math.cos(a)*Math.cos(b),camera.position.y+r*Math.sin(b)*20,camera.position.z+r*Math.sin(a)*Math.cos(b));}
-  mesh.userData={type,hp,maxHp:hp,pts,size,speed,vel:new THREE.Vector3((Math.random()-.5)*.02,(Math.random()-.5)*.02,(Math.random()-.5)*.02),spinX:(Math.random()-.5)*.07,spinY:(Math.random()-.5)*.08,teleportTimer:type==='dark'?80+Math.random()*40:999999,wanderTarget:null,wanderTimer:0};
+  mesh.userData={uid:crypto.randomUUID(),type,hp,maxHp:hp,pts,size,speed,vel:new THREE.Vector3((Math.random()-.5)*.02,(Math.random()-.5)*.02,(Math.random()-.5)*.02),spinX:(Math.random()-.5)*.07,spinY:(Math.random()-.5)*.08,teleportTimer:type==='dark'?80+Math.random()*40:999999,wanderTarget:null,wanderTimer:0};
   scene.add(mesh);enemies.push(mesh);enemyCountEl.textContent=enemies.length;
 }
 
@@ -500,9 +648,29 @@ function animate(){
     }else{infoPanelEl.style.opacity='0';closestCluster=null;}
   }
   renderer.render(scene,camera);
+  // ── MULTIPLAYER BROADCAST ──
+  if(echoChannel&&gameStarted){
+    const _now=performance.now();
+    if(!window._lastBroadcast)window._lastBroadcast=0;
+    if(_now-window._lastBroadcast>50){
+      window._lastBroadcast=_now;
+      echoChannel.whisper('player.state',{
+        userId:SESSION.myId,userName:SESSION.myName,
+        position:[camera.position.x,camera.position.y,camera.position.z],
+        rotation:[mouseX,mouseY],score,kills,
+      });
+      // Update local leaderboard in multiplayer
+      if(SESSION.code){
+        const lb=[{id:SESSION.myId,name:SESSION.myName,score,kills}];
+        Object.entries(remotePlayers).forEach(([id,rp])=>lb.push({id:parseInt(id),name:rp.name,score:rp.score||0,kills:rp.kills||0}));
+        updateLeaderboard(lb);
+      }
+    }
+  }
 }
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 animate();
 </script>
+@vite(['resources/js/echo.js'])
 </body>
 </html>
