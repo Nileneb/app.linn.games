@@ -79,6 +79,7 @@ WORKDIR /var/www
 # docs/agents/ contains production configs (gitignored .claude/ is NOT in the build context)
 RUN mkdir -p .claude/agents \
     && cp docs/agents/worker-*.md .claude/agents/ \
+    && cp docs/agents/chat-agent.md .claude/agents/ \
     && cp docs/agents/mcp-production.json .claude/ \
     && cp docs/agents/settings.production.json .claude/
 

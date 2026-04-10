@@ -7,7 +7,7 @@ uses(Tests\TestCase::class);
 
 test('call() gibt content aus Claude CLI JSON-Output zurück', function () {
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: json_encode([
                 'type' => 'result',
                 'subtype' => 'success',
@@ -26,7 +26,7 @@ test('call() gibt content aus Claude CLI JSON-Output zurück', function () {
 
 test('call() wirft ClaudeCliException bei Fehler-Exit-Code', function () {
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: '',
             errorOutput: 'Claude CLI not found',
             exitCode: 1,
@@ -41,7 +41,7 @@ test('call() wirft ClaudeCliException bei Fehler-Exit-Code', function () {
 
 test('call() sendet --output-format json und --print Flags', function () {
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: json_encode(['type' => 'result', 'subtype' => 'success', 'is_error' => false, 'result' => 'OK']),
             exitCode: 0,
         ),
@@ -62,7 +62,7 @@ test('callForPhase() verwendet --model Flag und gibt Token-Info zurück', functi
     config(['services.anthropic.api_key' => 'test-key']);
 
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: json_encode([
                 'result' => 'Search result',
                 'is_error' => false,
@@ -94,7 +94,7 @@ test('callForPhase() wirft Exception bei CLI-Fehler', function () {
     config(['services.anthropic.api_key' => 'test-key']);
 
     Process::fake([
-        'claude*' => Process::result(output: '', errorOutput: 'Error', exitCode: 1),
+        '*claude*' => Process::result(output: '', errorOutput: 'Error', exitCode: 1),
     ]);
 
     $service = app(ClaudeCliService::class);

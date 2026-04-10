@@ -21,7 +21,11 @@ class PromptLoaderService
             throw new \RuntimeException("Ungültiger Agent-Key: {$agentKey}");
         }
 
-        $agentPath = resource_path("prompts/agents/{$agentKey}.md");
+        // docs/agents/ is the canonical location for deployed agent definitions.
+        // resources/prompts/agents/ is the fallback for app-internal prompts (workers, etc.).
+        $agentPath = File::exists(base_path("docs/agents/{$agentKey}.md"))
+            ? base_path("docs/agents/{$agentKey}.md")
+            : resource_path("prompts/agents/{$agentKey}.md");
 
         if (! File::exists($agentPath)) {
             throw new \RuntimeException("Agent-Prompt nicht gefunden: {$agentKey}");
