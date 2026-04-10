@@ -4,15 +4,19 @@
       "Bash(*)",
       "Edit(*)",
       "Write(*)",
+      "NotebookEdit(*)",
       "Read(/etc/**)",
       "Read(/root/**)",
       "Read(/home/**/.ssh/**)",
       "Read(/home/**/.env*)",
       "Read(/var/www/.env*)"
     ],
-    "allow": []
-  },
-  "env": {
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL": "1"
+    "allow": [
+      "mcp__memory__search_memory",
+      "mcp__memory__put",
+      "mcp__memory__get",
+      "mcp__memory__list_by_source",
+      "mcp__memory__invalidate"
+    ]
   }
 }
