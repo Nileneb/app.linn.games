@@ -35,6 +35,13 @@ canvas{display:block;}
 #boss-alert{position:fixed;top:28%;left:50%;transform:translateX(-50%);color:#ef4444;font-size:18px;font-weight:bold;letter-spacing:4px;text-shadow:0 0 20px #ef4444;pointer-events:none;opacity:0;transition:opacity .3s;}
 #mute-btn{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,.7);border:1px solid #6366f1;color:#a5b4fc;font-size:10px;padding:4px 12px;border-radius:4px;cursor:pointer;letter-spacing:2px;transition:background .2s;}
 #mute-btn:hover{background:rgba(99,102,241,.3);}
+#gameOverOverlay{position:fixed;inset:0;background:rgba(0,0,10,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;font-family:'Courier New',monospace;color:#a5b4fc;}
+#gameOverOverlay h2{font-size:36px;letter-spacing:8px;color:#ef4444;text-shadow:0 0 30px #ef4444,0 0 60px #ef4444;margin-bottom:24px;}
+.go-stat{font-size:16px;letter-spacing:2px;margin:6px 0;color:#e0e7ff;}
+.go-stat span{color:#f59e0b;font-weight:bold;}
+#gameOverOverlay .go-btn{margin-top:28px;background:rgba(99,102,241,.2);border:1px solid #6366f1;color:#a5b4fc;font-size:13px;letter-spacing:3px;padding:10px 28px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .2s;}
+#gameOverOverlay .go-btn:hover{background:rgba(99,102,241,.4);box-shadow:0 0 20px rgba(99,102,241,.4);}
+#goFinalBoard{margin-top:20px;background:rgba(10,10,30,.8);border:1px solid #6366f1;border-radius:8px;padding:12px 20px;min-width:220px;}
 #back-btn{position:fixed;top:14px;left:18px;background:rgba(10,10,30,.7);border:1px solid #6366f1;color:#a5b4fc;font-size:10px;padding:4px 12px;border-radius:4px;cursor:pointer;letter-spacing:2px;text-decoration:none;transition:background .2s;z-index:200;}
 #back-btn:hover{background:rgba(99,102,241,.3);}
 #start-overlay{position:fixed;inset:0;background:rgba(0,0,10,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a5b4fc;z-index:100;}
@@ -108,6 +115,20 @@ canvas{display:block;}
   <div id="lbEntries"></div>
 </div>
 <div id="controls-hint">KLICK: Pointer lock<br>MAUS: Zielen<br>W/S/A/D: Fliegen<br>SHIFT: Boost<br>SPACE/KLICK: Feuer</div>
+
+<div id="gameOverOverlay">
+  <h2>GAME OVER</h2>
+  <div class="go-stat">SCORE: <span id="goScore">0</span></div>
+  <div class="go-stat">KILLS: <span id="goKills">0</span></div>
+  <div class="go-stat">WAVE: <span id="goWave">1</span></div>
+  <div class="go-stat">PRÄZISION: <span id="goPrecision">—</span></div>
+  <div id="goFinalBoard" style="display:none;">
+    <div style="font-size:11px;color:#e0e7ff;font-weight:bold;letter-spacing:2px;margin-bottom:8px;">FINAL RANKING</div>
+    <div id="goFinalEntries"></div>
+  </div>
+  <button class="go-btn" onclick="window.location.reload()">↺ NEUSTART</button>
+  <a href="{{ route('recherche.projekt', $projektId) }}" class="go-btn" style="text-decoration:none;margin-top:8px;">← ZURÜCK</a>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -236,7 +257,7 @@ function onEnemyDestroyed(data) {
 }
 
 function onSessionUpdate(data) {
-    if (data.gameOver) { /* handle remote game over */ }
+    if (data.gameOver && !gameOver) { gameOver = true; setTimeout(handleGameOver, 300); }
     updateLeaderboard(data.leaderboard);
 }
 
@@ -453,7 +474,7 @@ function behaviorBoss(e){
   e.position.add(e.userData.vel);
   if(!e.userData.shootTimer)e.userData.shootTimer=0;
   e.userData.shootTimer++;
-  if(e.userData.shootTimer%(100-wave*5)===0)fireEnemyProjectile(e.position.clone(),0.8+wave*.1);
+  if(e.userData.shootTimer%Math.max(20,100-wave*5)===0)fireEnemyProjectile(e.position.clone(),0.8+wave*.1);
 }
 
 // ── ENEMY PROJECTILES ─────────────────────────────────────────────────
@@ -545,7 +566,48 @@ function showWaveBanner(txt){waveBanner.textContent=txt;waveBanner.style.opacity
 function updateEvidence(){const b=Math.min(10,Math.floor(kills/3));evidenceEl.textContent='▓'.repeat(b)+'░'.repeat(10-b);evidenceEl.style.color=b>6?'#10b981':b>3?'#f59e0b':'#ef4444';}
 function addScore(pts){score+=pts*combo;scoreEl.textContent=score.toLocaleString();scoreEl.classList.add('pop');setTimeout(()=>scoreEl.classList.remove('pop'),120);}
 function bumpCombo(){combo=Math.min(combo+1,8);comboTimer=130;comboNumEl.textContent=combo;comboEl.style.opacity='1';soundCombo();}
-function takeDamage(amt){health=Math.max(0,health-amt);healthInner.style.width=health+'%';soundDamage();flashEl.style.background='rgba(239,68,68,.35)';flashEl.style.opacity='1';setTimeout(()=>flashEl.style.opacity='0',100);if(health<=0&&!gameOver){gameOver=true;setTimeout(()=>alert('GAME OVER\nScore: '+score.toLocaleString()+'\nKills: '+kills),300);}}
+function takeDamage(amt){health=Math.max(0,health-amt);healthInner.style.width=health+'%';soundDamage();flashEl.style.background='rgba(239,68,68,.35)';flashEl.style.opacity='1';setTimeout(()=>flashEl.style.opacity='0',100);if(health<=0&&!gameOver){gameOver=true;setTimeout(handleGameOver,300);}}
+
+async function handleGameOver(){
+  // Show overlay
+  document.getElementById('goScore').textContent=score.toLocaleString();
+  document.getElementById('goKills').textContent=kills;
+  document.getElementById('goWave').textContent=wave;
+  document.getElementById('goPrecision').textContent=shots>0?Math.round(hits/shots*100)+'%':'—';
+  // Final leaderboard (multiplayer)
+  if(SESSION.code){
+    const myEntry={id:SESSION.myId,name:SESSION.myName,score,kills};
+    const allEntries=[myEntry,...Object.values(remotePlayers).map(rp=>({id:rp.id||0,name:rp.name,score:rp.score||0,kills:rp.kills||0}))];
+    if(allEntries.length>1){
+      const fb=document.getElementById('goFinalBoard');
+      fb.style.display='block';
+      document.getElementById('goFinalEntries').innerHTML=allEntries
+        .sort((a,b)=>b.score-a.score)
+        .map((e,i)=>'<div class="lb-row"><span class="lb-name">'+(i===0?'🏆 ':''+(i+1)+'. ')+(e.id===SESSION.myId?'★ ':'')+e.name+'</span><span class="lb-score">'+e.score.toLocaleString()+'</span></div>')
+        .join('');
+    }
+  }
+  document.getElementById('gameOverOverlay').style.display='flex';
+  // Persist score to DB
+  if(SESSION.code){
+    try{
+      await fetch('/game/sessions/'+SESSION.code+'/score',{
+        method:'PATCH',
+        headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Content-Type':'application/json'},
+        body:JSON.stringify({score,kills,wave}),
+      });
+    }catch(e){console.warn('Score save failed:',e);}
+    // Host ends the session
+    if(SESSION.isHost){
+      try{
+        await fetch('/game/sessions/'+SESSION.code+'/end',{
+          method:'PATCH',
+          headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+        });
+      }catch(e){console.warn('Session end failed:',e);}
+    }
+  }
+}
 function startWave(n){
   wave=n;waveKills=0;waveTarget=6+n*4;waveNumEl.textContent=n;soundWave();
   showWaveBanner('— WAVE '+n+' —');

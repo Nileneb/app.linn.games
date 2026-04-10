@@ -94,4 +94,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('game.sessions.join');
     Route::get('/game/sessions/{code}', [\App\Http\Controllers\GameSessionController::class, 'show'])
         ->name('game.sessions.show');
+    Route::patch('/game/sessions/{code}/score', [\App\Http\Controllers\GameSessionController::class, 'saveScore'])
+        ->name('game.sessions.score');
+    Route::patch('/game/sessions/{code}/end', [\App\Http\Controllers\GameSessionController::class, 'end'])
+        ->name('game.sessions.end');
 });

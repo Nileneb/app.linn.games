@@ -60,4 +60,37 @@ class GameSessionController extends Controller
 
         return response()->json(['session' => $session, 'players' => $players]);
     }
+
+    public function saveScore(Request $request, string $code): JsonResponse
+    {
+        $validated = $request->validate([
+            'score' => 'required|integer|min:0',
+            'kills' => 'required|integer|min:0',
+            'wave' => 'integer|min:1',
+        ]);
+
+        $session = GameSession::where('code', $code)
+            ->where('status', '!=', 'ended')
+            ->firstOrFail();
+
+        DB::table('game_session_players')
+            ->where('session_id', $session->id)
+            ->where('user_id', auth()->id())
+            ->update([
+                'score' => $validated['score'],
+                'kills' => $validated['kills'],
+            ]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function end(Request $request, string $code): JsonResponse
+    {
+        $session = GameSession::where('code', $code)->firstOrFail();
+        abort_unless($session->isHost(auth()->id()), 403, 'Nur der Host kann die Session beenden');
+
+        $session->update(['status' => 'ended']);
+
+        return response()->json(['ok' => true]);
+    }
 }
