@@ -132,12 +132,17 @@ class ClaudeCliService
      *
      * @throws ClaudeCliException
      */
+    private function cliBin(): string
+    {
+        return config('services.anthropic.cli_path', base_path('node_modules/.bin/claude'));
+    }
+
     public function call(string $userMessage, array $context = []): array
     {
         $systemSuffix = $this->buildContextBlock($context);
 
         $parts = array_filter([
-            'claude',
+            $this->cliBin(),
             '--print',
             '--output-format', 'json',
             ...$this->productionChatFlags(),
@@ -206,7 +211,7 @@ class ClaudeCliService
             ->last()['content'] ?? '';
 
         $parts = array_filter([
-            'claude',
+            $this->cliBin(),
             '--print',
             '--output-format', 'json',
             '--model', escapeshellarg($model),
