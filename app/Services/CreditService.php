@@ -178,4 +178,35 @@ class CreditService
             ->where('created_at', '>=', Carbon::today())
             ->sum(DB::raw('ABS(amount_cents)'));
     }
+
+    /**
+     * Prüft ob der Workspace sein Clone-Limit (pending PhaseAgentResults) erreicht hat.
+     *
+     * @throws \App\Exceptions\CloneLimitExceededException
+     */
+    public function checkCloneLimit(Workspace $workspace): void
+    {
+        $tier = $workspace->tier ?? 'free';
+
+        $maxPending = match ($tier) {
+            'pro'        => 3,
+            'enterprise' => PHP_INT_MAX,
+            default      => 1,  // free
+        };
+
+        if ($maxPending === PHP_INT_MAX) {
+            return;
+        }
+
+        $pendingCount = \App\Models\PhaseAgentResult::whereHas(
+            'projekt',
+            fn ($q) => $q->where('workspace_id', $workspace->id)
+        )->where('status', 'pending')->count();
+
+        if ($pendingCount >= $maxPending) {
+            throw new \App\Exceptions\CloneLimitExceededException(
+                "Clone-Limit ({$maxPending}) für Tier '{$tier}' erreicht."
+            );
+        }
+    }
 }
