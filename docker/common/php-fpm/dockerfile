@@ -46,7 +46,7 @@ RUN npm ci && npm run build
 # Stage 2: Production environment
 FROM php:8.4-fpm AS production
 
-# Install runtime libraries required for PHP extensions + Node.js for Claude CLI
+# Install runtime libraries required for PHP extensions + Node.js (for project-local claude CLI)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libpq-dev \
@@ -54,7 +54,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     nodejs \
     npm \
-    && npm install -g @anthropic-ai/claude-code \
     && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy PHP extensions and libraries from the builder stage
@@ -75,6 +74,13 @@ COPY --from=builder /var/www /var/www
 COPY --from=builder /var/www/public/build /var/www/public/build
 
 WORKDIR /var/www
+
+# Set up .claude/ structure from committed docs/agents/
+# docs/agents/ contains production configs (gitignored .claude/ is NOT in the build context)
+RUN mkdir -p .claude/agents \
+    && cp docs/agents/worker-*.md .claude/agents/ \
+    && cp docs/agents/mcp-production.json .claude/ \
+    && cp docs/agents/settings.production.json .claude/
 
 # Ensure correct permissions
 RUN chown -R www-data:www-data /var/www
