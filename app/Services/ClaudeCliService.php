@@ -19,7 +19,9 @@ class ClaudeCliService
             return [];
         }
 
-        return [
+        $mcpConfig = base_path('.claude/mcp-production.json');
+
+        return array_filter([
             '--bare',
             '--allowedTools', implode(',', [
                 'mcp__memory__search_memory',
@@ -29,7 +31,9 @@ class ClaudeCliService
                 'mcp__memory__invalidate',
             ]),
             '--agents', $this->buildAllowedAgentsJson(),
-        ];
+            file_exists($mcpConfig) ? '--mcp-config' : null,
+            file_exists($mcpConfig) ? $mcpConfig : null,
+        ]);
     }
 
     /**
@@ -44,10 +48,40 @@ class ClaudeCliService
             return [];
         }
 
-        return [
-            '--bare',
-            '--allowedTools', '',
+        // Paper-Search Tools: Suche + Read + Ingest. Kein Download (macht DownloadPaperJob).
+        $paperSearchTools = [
+            // Search
+            'mcp__paper-search__search_papers',
+            'mcp__paper-search__search_arxiv',
+            'mcp__paper-search__search_pubmed',
+            'mcp__paper-search__search_biorxiv',
+            'mcp__paper-search__search_medrxiv',
+            'mcp__paper-search__search_google_scholar',
+            'mcp__paper-search__search_semantic',
+            'mcp__paper-search__search_crossref',
+            'mcp__paper-search__search_iacr',
+            'mcp__paper-search__get_crossref_paper_by_doi',
+            // Read (Text aus Paper extrahieren für Analyse)
+            'mcp__paper-search__read_arxiv_paper',
+            'mcp__paper-search__read_pubmed_paper',
+            'mcp__paper-search__read_biorxiv_paper',
+            'mcp__paper-search__read_medrxiv_paper',
+            'mcp__paper-search__read_iacr_paper',
+            'mcp__paper-search__read_semantic_paper',
+            'mcp__paper-search__read_crossref_paper',
+            // Ingest + RAG
+            'mcp__paper-search__ingest_paper',
+            'mcp__paper-search__search_rag_papers',
         ];
+
+        $mcpConfig = base_path('.claude/mcp-production.json');
+
+        return array_filter([
+            '--bare',
+            '--allowedTools', implode(',', $paperSearchTools),
+            file_exists($mcpConfig) ? '--mcp-config' : null,
+            file_exists($mcpConfig) ? $mcpConfig : null,
+        ]);
     }
 
     /**
