@@ -4,6 +4,7 @@ use App\Models\Recherche\Projekt;
 use App\Models\User;
 
 beforeEach(function () {
+    $this->withoutVite();
     $this->user = User::factory()->withoutTwoFactor()->create();
     $this->projekt = Projekt::factory()->create(['user_id' => $this->user->id]);
 });
