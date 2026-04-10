@@ -8,13 +8,12 @@ use Illuminate\Support\Facades\Process;
 class ClaudeCliService
 {
     /**
-     * Gibt die Production-Hardening-Flags zurück.
-     * --bare: kein Hook-Loading, kein LSP, keine Auto-Discovery, kein CLAUDE.md
-     * --disallowedTools: explizite Tool-Blacklist (kein Bash, kein Edit, kein Write)
+     * Production-Hardening-Flags für den Chat-Agent (Main Agent).
+     * Whitelist-Ansatz: nur MCP Memory Tools + definierte Subagents erlaubt.
      *
      * @return string[]
      */
-    private function productionFlags(): array
+    private function productionChatFlags(): array
     {
         if (app()->environment('local', 'testing')) {
             return [];
@@ -22,8 +21,73 @@ class ClaudeCliService
 
         return [
             '--bare',
-            '--disallowedTools', 'Bash,Edit,Write,NotebookEdit',
+            '--allowedTools', implode(',', [
+                'mcp__memory__search_memory',
+                'mcp__memory__put',
+                'mcp__memory__get',
+                'mcp__memory__list_by_source',
+                'mcp__memory__invalidate',
+            ]),
+            '--agents', $this->buildAllowedAgentsJson(),
         ];
+    }
+
+    /**
+     * Production-Hardening-Flags für Phase-Agents (Worker).
+     * Worker sind reine Text-in/Text-out Agents — keine Tools.
+     *
+     * @return string[]
+     */
+    private function productionWorkerFlags(): array
+    {
+        if (app()->environment('local', 'testing')) {
+            return [];
+        }
+
+        return [
+            '--bare',
+            '--allowedTools', '',
+        ];
+    }
+
+    /**
+     * Baut das JSON für --agents Flag.
+     * Definiert die erlaubten Subagents (Worker 1-3) — nur diese darf der Main Agent erstellen.
+     */
+    private function buildAllowedAgentsJson(): string
+    {
+        $agents = [];
+
+        $agentFiles = [
+            'worker-1-cluster',
+            'worker-2-search',
+            'worker-3-quality',
+        ];
+
+        foreach ($agentFiles as $agentFile) {
+            $path = base_path(".claude/agents/{$agentFile}.md");
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                // YAML-Frontmatter parsen
+                if (preg_match('/^---\s*\n(.*?)\n---\s*\n(.*)/s', $content, $m)) {
+                    $frontmatter = [];
+                    foreach (explode("\n", $m[1]) as $line) {
+                        if (preg_match('/^(\w+):\s*(.+)$/', trim($line), $kv)) {
+                            $frontmatter[$kv[1]] = $kv[2];
+                        }
+                    }
+                    $agents[$agentFile] = [
+                        'description' => $frontmatter['description'] ?? $agentFile,
+                        'prompt' => trim($m[2]),
+                    ];
+                    if (isset($frontmatter['model'])) {
+                        $agents[$agentFile]['model'] = $frontmatter['model'];
+                    }
+                }
+            }
+        }
+
+        return escapeshellarg(json_encode($agents, JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -42,7 +106,7 @@ class ClaudeCliService
             'claude',
             '--print',
             '--output-format', 'json',
-            ...$this->productionFlags(),
+            ...$this->productionChatFlags(),
             $systemSuffix !== '' ? '--append-system-prompt' : null,
             $systemSuffix !== '' ? escapeshellarg($systemSuffix) : null,
             escapeshellarg($userMessage),
@@ -112,7 +176,7 @@ class ClaudeCliService
             '--print',
             '--output-format', 'json',
             '--model', escapeshellarg($model),
-            ...$this->productionFlags(),
+            ...$this->productionWorkerFlags(),
             $systemPrompt !== '' ? '--append-system-prompt' : null,
             $systemPrompt !== '' ? escapeshellarg($systemPrompt) : null,
             escapeshellarg($userMessage),
