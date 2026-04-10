@@ -512,29 +512,35 @@ function spawnEnemy(type='anomaly',pos=null){
 }
 
 // ── PARTICLES ─────────────────────────────────────────────────────────
+// Shared geometries — allocated once, reused for every particle (avoids per-explosion GC pressure)
+const _GEO_PART_SM=new THREE.SphereGeometry(.18,4,4);
+const _GEO_PART_LG=new THREE.SphereGeometry(.35,4,4);
+const _GEO_RING_SM=new THREE.RingGeometry(.1,2,16);
+const _GEO_RING_LG=new THREE.RingGeometry(.1,4,16);
+
 const particles=[];
-function explode(pos,color=0xef4444,count=25,big=false){
+function explode(pos,color=0xef4444,count=12,big=false){
+  const geo=big?_GEO_PART_LG:_GEO_PART_SM;
   for(let i=0;i<count;i++){
-    const g=new THREE.SphereGeometry(big?.35:.18,4,4);
     const m=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1});
-    const p=new THREE.Mesh(g,m);p.position.copy(pos);
+    const p=new THREE.Mesh(geo,m);p.position.copy(pos);
     const d=new THREE.Vector3((Math.random()-.5)*2,(Math.random()-.5)*2,(Math.random()-.5)*2).normalize();
     p.userData={vel:d.multiplyScalar(big?Math.random()*2+.6:Math.random()*1.4+.2),life:1,decay:big?.011:.02};
     scene.add(p);particles.push(p);
   }
-  const rg=new THREE.RingGeometry(.1,big?4:2,24);
-  const rm=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,side:THREE.DoubleSide});
-  const ring=new THREE.Mesh(rg,rm);ring.position.copy(pos);ring.lookAt(camera.position);
+  const ring=new THREE.Mesh(big?_GEO_RING_LG:_GEO_RING_SM,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,side:THREE.DoubleSide}));
+  ring.position.copy(pos);ring.lookAt(camera.position);
   ring.userData={vel:new THREE.Vector3(),life:1,decay:.055,ring:true,scale:big?2:.9};
   scene.add(ring);particles.push(ring);
 }
 
 // ── LASERS ────────────────────────────────────────────────────────────
+// Shared laser geometry — allocated once
+const _GEO_LASER=(()=>{const g=new THREE.CylinderGeometry(.04,.04,5,5);g.rotateX(Math.PI/2);return g;})();
 const lasers=[];
 function fireLaser(){
   if(!gameStarted||gameOver)return;shots++;soundLaser();
-  const g=new THREE.CylinderGeometry(.04,.04,5,5);g.rotateX(Math.PI/2);
-  const l=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x00ffff}));
+  const l=new THREE.Mesh(_GEO_LASER,new THREE.MeshBasicMaterial({color:0x00ffff}));
   l.position.copy(camera.position);
   const dir=new THREE.Vector3();camera.getWorldDirection(dir);
   l.userData={dir,speed:5,life:80};l.lookAt(l.position.clone().add(dir));
@@ -640,9 +646,14 @@ async function startGame(){
 }
 
 // ── MAIN LOOP ─────────────────────────────────────────────────────────
+// FPS cap at 60 — prevents speed-scaling on 144Hz/240Hz monitors
+const _FRAME_BUDGET=1000/60;let _lastFrame=0;
 let t=0,spawnTimer=0,autoFireTimer=0;
-function animate(){
-  requestAnimationFrame(animate);if(gameOver)return;t+=.008;
+function animate(now=0){
+  requestAnimationFrame(animate);
+  const _dt=now-_lastFrame;if(_dt<_FRAME_BUDGET)return;
+  _lastFrame=now-(_dt%_FRAME_BUDGET);
+  if(gameOver)return;t=now*.001;
   camera.rotation.order='YXZ';camera.rotation.y=mouseX;camera.rotation.x=mouseY;
   const fwd=new THREE.Vector3(),rgt=new THREE.Vector3();
   camera.getWorldDirection(fwd);rgt.crossVectors(fwd,camera.up).normalize();
@@ -667,13 +678,13 @@ function animate(){
       if(e.userData.type==='anomaly')e.material.emissiveIntensity=.5+.5*Math.abs(Math.sin(t*5+i));
       if(collideSphere(e.position,COLLISION_RADII['enemy_'+e.userData.type]||1.4,camera.position,COLLISION_RADII.player)){
         const dmg=e.userData.type==='boss'?18:e.userData.type==='dark'?9:e.userData.type==='collision'?6:4;
-        takeDamage(dmg);explode(e.position,e.material.color.getHex(),8);
+        takeDamage(dmg);explode(e.position,e.material.color.getHex(),6);
         scene.remove(e);enemies.splice(i,1);enemyCountEl.textContent=enemies.length;combo=1;comboEl.style.opacity='0';
       }
     }
     for(let i=enemyProjectiles.length-1;i>=0;i--){
       const p=enemyProjectiles[i];p.position.addScaledVector(p.userData.dir,p.userData.speed);
-      if(collideSphere(p.position,COLLISION_RADII.projectile,camera.position,COLLISION_RADII.player)){takeDamage(8);explode(p.position,0xff4400,6);scene.remove(p);enemyProjectiles.splice(i,1);continue;}
+      if(collideSphere(p.position,COLLISION_RADII.projectile,camera.position,COLLISION_RADII.player)){takeDamage(8);explode(p.position,0xff4400,5);scene.remove(p);enemyProjectiles.splice(i,1);continue;}
       if(p.position.distanceTo(camera.position)>200){scene.remove(p);enemyProjectiles.splice(i,1);}
     }
     for(let i=lasers.length-1;i>=0;i--){
@@ -686,10 +697,10 @@ function animate(){
           hits++;const e=enemies[j];e.userData.hp--;
           const origIntens=e.material.emissiveIntensity;
           e.material.emissiveIntensity=3;setTimeout(()=>{if(e.material)e.material.emissiveIntensity=origIntens;},80);
-          explode(l.position,0x00ffff,5);
+          explode(l.position,0x00ffff,4);
           if(e.userData.hp<=0){
             const big=e.userData.type==='boss';
-            explode(e.position,e.material.color.getHex(),big?60:24,big);
+            explode(e.position,e.material.color.getHex(),big?30:14,big);
             soundExplode(big);flashEl.style.background=big?'rgba(255,34,0,.4)':'rgba(6,182,212,.12)';
             flashEl.style.opacity='1';setTimeout(()=>flashEl.style.opacity='0',100);
             soundHit();addScore(e.userData.pts);kills++;waveKills++;killsEl.textContent=kills;
