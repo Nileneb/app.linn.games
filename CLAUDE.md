@@ -34,8 +34,9 @@ Main Agent (Chat): StreamingAgentService → ClaudeCliService
   → SSE-Chunks an Browser → AgentResultStorageService (Markdown)
 
 Phasen-Agents (P1–P8): ProcessPhaseAgentJob (Queue)
-  → SendAgentMessage → ClaudeService::callByConfigKey()
-  → POST api.anthropic.com/v1/messages
+  → ClaudeCliService::callForPhase(agentConfigKey, messages, context)
+  → claude --print --output-format json --model {worker-model}
+  → AgentResponseParser::parse() (JSON-Envelope → db_payload + md_files)
   → AgentPayloadService::persistPayload() (JSON→DB, RLS-geschützt)
   → LangdockArtifactService::persistFromAgentResponse()
   → PhaseAgentResult gespeichert
@@ -160,5 +161,5 @@ mcp__memory__invalidate     — Veraltete Memory invalidieren
 ## Bekannte Lücken
 
 - Admin-Panel Tests fehlen
-- ProcessPhaseAgentJob nutzt noch direkte API statt ClaudeCliService (Migration ausstehend)
-- AgentResponseParser noch nicht extrahiert (Parsing 3x dupliziert)
+- Fake-Streaming in StreamingAgentService (100-Zeichen-Chunks statt echtem stream:true)
+- LangdockArtifactService umbenennen zu AgentArtifactService (kosmetisch)
