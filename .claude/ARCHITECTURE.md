@@ -156,14 +156,14 @@ Baut einen Markdown-Kontext-Block aus DB-Daten der dem System-Prompt angehängt 
 
 2. Job::handle()
    → prependRetrieverContext()         // RAG-Chunks voranstellen (RetrieverService)
-   → SendAgentMessage::execute()       // → ClaudeService::callByConfigKey()
+   → ClaudeCliService::callForPhase()  // Claude CLI subprocess
      → PromptLoaderService::buildSystemPrompt(promptFile) + Skills
      → ClaudeContextBuilder::build(context)
-     → POST api.anthropic.com/v1/messages
-     → Response
+     → claude --print --model {worker-model} --output-format json
+     → JSON Response {result, cost_usd, usage}
 
 3. Response verarbeiten
-   → parseStructuredResponse()         // JSON-Envelope {meta/result/db} oder Freitext
+   → AgentResponseParser::parse()            // JSON-Envelope → db_payload + md_files
    → AgentPayloadService::persistPayload()   // DB-Writes aus db_payload
    → enrichResponseWithSynthesis()           // Synthesis-MD mit Traceability
    → LangdockArtifactService [⚠ ALT — umbenennen zu AgentArtifactService]
@@ -320,7 +320,8 @@ storage/app/agent-results/
 | `app/Services/CreditService.php` | Token-Tracking pro Workspace |
 | `app/Services/SynthesisMarkdownService.php` | Synthesis-MD mit Traceability |
 | `app/Services/TransitionValidator.php` | Phase-Threshold-Checks |
-| `app/Actions/SendAgentMessage.php` | Wrapper → ClaudeService::callByConfigKey() |
+| `app/Services/AgentResponseParser.php` | JSON-Envelope Parser (db_payload + md_files) |
+| `app/Actions/SendAgentMessage.php` | Legacy-Wrapper (nicht mehr von ProcessPhaseAgentJob genutzt) |
 | `app/Jobs/ProcessPhaseAgentJob.php` | Queue-Job Worker-Agents |
 | `app/Jobs/IngestAgentResultJob.php` | MD → Chunks → agent_result_embeddings |
 | `resources/prompts/agents/` | Agent-Prompts mit YAML-Skills-Frontmatter |
@@ -334,8 +335,8 @@ storage/app/agent-results/
 
 | # | Problem | Priorität |
 |---|---------|-----------|
-| 1 | **AgentResponseParser** extrahieren — Parsing 3x dupliziert (ProcessPhaseAgentJob, LangdockArtifactService, enrichResponseWithSynthesis) | Hoch |
-| 2 | **ProcessPhaseAgentJob → ClaudeCliService** — Phase-Jobs sollen über CLI laufen statt direkte API | Hoch |
+| 1 | ~~AgentResponseParser~~ ✅ Erledigt (19dd5e7) | — |
+| 2 | ~~ProcessPhaseAgentJob → ClaudeCliService~~ ✅ Erledigt (e772921) | — |
 | 3 | **Fake-Streaming** in `StreamingAgentService` — 100-Zeichen-Chunks statt echtem `stream:true` | Mittel |
 | 4 | **`LangdockArtifactService`** umbenennen zu `AgentArtifactService` | Niedrig |
 | 5 | **Admin-Panel Tests** fehlen (Filament-Ressourcen) | Niedrig |
