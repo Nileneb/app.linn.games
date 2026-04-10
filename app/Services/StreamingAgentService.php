@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class StreamingAgentService
 {
     public function __construct(
+        private readonly ClaudeCliService $claudeCliService,
         private readonly ClaudeService $claudeService,
         private readonly ContextProvider $contextProvider,
         private readonly AgentResultStorageService $storageService,
@@ -37,12 +38,12 @@ class StreamingAgentService
                 try {
                     $builtMessages = $this->buildMessages($messages, $context);
 
-                    // Claude API synchron aufrufen (echtes Token-Streaming kommt in Spec 2)
-                    $result = $this->claudeService->callByConfigKey(
-                        $agentId,
-                        $builtMessages,
-                        $context,
-                    );
+                    // Main Agent via Claude CLI subprocess aufrufen
+                    $userMessage = collect($builtMessages)
+                        ->where('role', 'user')
+                        ->last()['content'] ?? '';
+
+                    $result = $this->claudeCliService->call($userMessage, $context);
 
                     $fullText = $result['content'];
                     $index = 0;
@@ -68,7 +69,7 @@ class StreamingAgentService
                     // Chat persistieren (nur wenn Projekt-Kontext vorhanden)
                     $this->persistChat($fullText, $messages, $context);
 
-                } catch (ClaudeAgentException $e) {
+                } catch (ClaudeAgentException|ClaudeCliException $e) {
                     Log::error('StreamingAgentService: Claude-Agent fehlgeschlagen', [
                         'agent_id' => $agentId,
                         'error' => $e->getMessage(),
