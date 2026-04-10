@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Read(/etc/**)",
+      "Read(/root/**)",
+      "Read(/home/**/.ssh/**)",
+      "Read(/home/**/.env*)",
+      "Read(/var/www/.env*)"
+    ],
+    "allow": []
+  },
+  "env": {
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL": "1"
+  }
+}

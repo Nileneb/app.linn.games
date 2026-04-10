@@ -22,6 +22,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Claude Code — env-spezifische Configs (Dev ≠ Production)
+.claude/settings.local.json
+.claude/agent-memory/
 docker-compose.override.yml
 **/paper-search-mcp
 *.sql
