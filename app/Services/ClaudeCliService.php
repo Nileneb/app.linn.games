@@ -8,6 +8,25 @@ use Illuminate\Support\Facades\Process;
 class ClaudeCliService
 {
     /**
+     * Gibt die Production-Hardening-Flags zurück.
+     * --bare: kein Hook-Loading, kein LSP, keine Auto-Discovery, kein CLAUDE.md
+     * --disallowedTools: explizite Tool-Blacklist (kein Bash, kein Edit, kein Write)
+     *
+     * @return string[]
+     */
+    private function productionFlags(): array
+    {
+        if (app()->environment('local', 'testing')) {
+            return [];
+        }
+
+        return [
+            '--bare',
+            '--disallowedTools', 'Bash,Edit,Write,NotebookEdit',
+        ];
+    }
+
+    /**
      * Ruft den Main Agent via Claude CLI subprocess auf.
      *
      * @param  array<string, mixed>  $context  projekt_id, workspace_id, phase_nr, user_id, ...
@@ -23,6 +42,7 @@ class ClaudeCliService
             'claude',
             '--print',
             '--output-format', 'json',
+            ...$this->productionFlags(),
             $systemSuffix !== '' ? '--append-system-prompt' : null,
             $systemSuffix !== '' ? escapeshellarg($systemSuffix) : null,
             escapeshellarg($userMessage),
@@ -92,6 +112,7 @@ class ClaudeCliService
             '--print',
             '--output-format', 'json',
             '--model', escapeshellarg($model),
+            ...$this->productionFlags(),
             $systemPrompt !== '' ? '--append-system-prompt' : null,
             $systemPrompt !== '' ? escapeshellarg($systemPrompt) : null,
             escapeshellarg($userMessage),
