@@ -46,12 +46,15 @@ RUN npm ci && npm run build
 # Stage 2: Production environment
 FROM php:8.4-fpm AS production
 
-# Install runtime libraries required for PHP extensions
+# Install runtime libraries required for PHP extensions + Node.js for Claude CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libpq-dev \
     libicu-dev \
     libzip-dev \
+    nodejs \
+    npm \
+    && npm install -g @anthropic-ai/claude-code \
     && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy PHP extensions and libraries from the builder stage

@@ -30,7 +30,13 @@ class ClaudeCliService
 
         $command = implode(' ', array_values($parts));
 
-        $result = Process::timeout(120)->run($command);
+        $env = [];
+        $apiKey = config('services.anthropic.api_key');
+        if ($apiKey) {
+            $env['ANTHROPIC_API_KEY'] = $apiKey;
+        }
+
+        $result = Process::timeout(120)->env($env)->run($command);
 
         if (! $result->successful()) {
             Log::error('Claude CLI subprocess fehlgeschlagen', [
