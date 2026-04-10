@@ -46,7 +46,7 @@ class ClaudeCliService
 
         $decoded = json_decode($result->output(), true);
 
-        if (! is_array($decoded) || ($decoded['is_error'] ?? false)) {
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded) || ($decoded['is_error'] ?? false)) {
             throw new ClaudeCliException('Claude CLI: ungültiger JSON-Output: '.$result->output());
         }
 
