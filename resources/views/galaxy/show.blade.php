@@ -86,6 +86,23 @@ canvas{display:block;}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ── COLLISION SYSTEM ────────────────────────────────────────────
+const COLLISION_RADII = {
+    player: 2.5,
+    laser: 0.8,
+    projectile: 2.0,
+    enemy_anomaly: 1.4,
+    enemy_collision: 2.2,
+    enemy_dark: 1.8,
+    enemy_boss: 6.0,
+    planet: 30.0,
+};
+
+function collideSphere(posA, radA, posB, radB) {
+    return posA.distanceToSquared(posB) < (radA + radB) ** 2;
+}
+// ────────────────────────────────────────────────────────────────
+
 const PROJEKT_ID = @json($projektId);
 const GALAXY_DATA_URL = '/recherche/' + PROJEKT_ID + '/galaxy-data';
 
@@ -428,7 +445,7 @@ function animate(){
       else if(e.userData.type==='dark')behaviorDark(e);
       else if(e.userData.type==='boss')behaviorBoss(e);
       if(e.userData.type==='anomaly')e.material.emissiveIntensity=.5+.5*Math.abs(Math.sin(t*5+i));
-      if(e.position.distanceTo(camera.position)<(e.userData.size+2.5)){
+      if(collideSphere(e.position,COLLISION_RADII['enemy_'+e.userData.type]||1.4,camera.position,COLLISION_RADII.player)){
         const dmg=e.userData.type==='boss'?18:e.userData.type==='dark'?9:e.userData.type==='collision'?6:4;
         takeDamage(dmg);explode(e.position,e.material.color.getHex(),8);
         scene.remove(e);enemies.splice(i,1);enemyCountEl.textContent=enemies.length;combo=1;comboEl.style.opacity='0';
@@ -436,7 +453,7 @@ function animate(){
     }
     for(let i=enemyProjectiles.length-1;i>=0;i--){
       const p=enemyProjectiles[i];p.position.addScaledVector(p.userData.dir,p.userData.speed);
-      if(p.position.distanceTo(camera.position)<2){takeDamage(8);explode(p.position,0xff4400,6);scene.remove(p);enemyProjectiles.splice(i,1);continue;}
+      if(collideSphere(p.position,COLLISION_RADII.projectile,camera.position,COLLISION_RADII.player)){takeDamage(8);explode(p.position,0xff4400,6);scene.remove(p);enemyProjectiles.splice(i,1);continue;}
       if(p.position.distanceTo(camera.position)>200){scene.remove(p);enemyProjectiles.splice(i,1);}
     }
     for(let i=lasers.length-1;i>=0;i--){
@@ -445,7 +462,7 @@ function animate(){
       let removed=false;
       for(let j=enemies.length-1;j>=0;j--){
         if(removed)break;
-        if(l.position.distanceTo(enemies[j].position)<(enemies[j].userData.size+1.5)){
+        if(collideSphere(l.position,COLLISION_RADII.laser,enemies[j].position,COLLISION_RADII['enemy_'+enemies[j].userData.type]||1.4)){
           hits++;const e=enemies[j];e.userData.hp--;
           const origIntens=e.material.emissiveIntensity;
           e.material.emissiveIntensity=3;setTimeout(()=>{if(e.material)e.material.emissiveIntensity=origIntens;},80);
