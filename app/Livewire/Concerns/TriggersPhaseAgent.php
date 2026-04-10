@@ -42,22 +42,22 @@ trait TriggersPhaseAgent
             ];
 
             $context = [
-                'source'         => 'phase_trigger',
-                'projekt_id'     => $this->projekt->id,
-                'workspace_id'   => $this->projekt->workspace_id,
+                'source' => 'phase_trigger',
+                'projekt_id' => $this->projekt->id,
+                'workspace_id' => $this->projekt->workspace_id,
                 'workspace_name' => Workspace::find($this->projekt->workspace_id)?->name,
-                'phase_nr'       => $phaseNr,
-                'user_id'        => auth()->id(),
-                'user_name'      => auth()->user()?->name,
+                'phase_nr' => $phaseNr,
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()?->name,
             ];
 
             // Create pending record synchronously so the button stays disabled on reload
             PhaseAgentResult::create([
-                'projekt_id'       => $this->projekt->id,
-                'user_id'          => auth()->id(),
-                'phase_nr'         => $phaseNr,
+                'projekt_id' => $this->projekt->id,
+                'user_id' => auth()->id(),
+                'phase_nr' => $phaseNr,
                 'agent_config_key' => $configKey,
-                'status'           => 'pending',
+                'status' => 'pending',
             ]);
 
             ProcessPhaseAgentJob::dispatch(
@@ -72,9 +72,9 @@ trait TriggersPhaseAgent
 
         } catch (\Throwable $e) {
             Log::error('TriggersPhaseAgent: unerwartete Exception', [
-                'phase_nr'  => $phaseNr,
+                'phase_nr' => $phaseNr,
                 'exception' => $e::class,
-                'message'   => $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
             $this->dispatch('notify', type: 'error', message: 'Fehler bei Agent-Aufruf: '.$e->getMessage());
         }

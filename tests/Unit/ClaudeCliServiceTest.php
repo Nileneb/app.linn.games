@@ -9,10 +9,10 @@ test('call() gibt content aus Claude CLI JSON-Output zurück', function () {
     Process::fake([
         'claude*' => Process::result(
             output: json_encode([
-                'type'     => 'result',
-                'subtype'  => 'success',
+                'type' => 'result',
+                'subtype' => 'success',
                 'is_error' => false,
-                'result'   => 'Hallo vom Mock-Claude',
+                'result' => 'Hallo vom Mock-Claude',
             ]),
             exitCode: 0,
         ),
@@ -50,8 +50,7 @@ test('call() sendet --output-format json und --print Flags', function () {
     $service = app(ClaudeCliService::class);
     $service->call('Frage', ['projekt_id' => 'xyz']);
 
-    Process::assertRan(fn ($process) =>
-        str_contains($process->command, '--output-format') &&
+    Process::assertRan(fn ($process) => str_contains($process->command, '--output-format') &&
         str_contains($process->command, 'json') &&
         str_contains($process->command, '--print')
     );
