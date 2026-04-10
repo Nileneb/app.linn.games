@@ -201,6 +201,10 @@ document.getElementById('btnJoin').addEventListener('click', async () => {
 
 document.getElementById('btnStart').addEventListener('click', () => {
     document.getElementById('lobbyScreen').style.display = 'none';
+    // Notify other players in the session to start
+    if (echoChannel) {
+        echoChannel.whisper('game.start', { hostId: SESSION.myId });
+    }
 });
 
 function renderPlayerList(members) {
@@ -210,11 +214,15 @@ function renderPlayerList(members) {
 
 function joinChannel(code) {
     if (!window.Echo) { console.warn('Echo not loaded'); return; }
+    let channelMembers = [];
     echoChannel = window.Echo.join('game.' + code)
-        .here(members => { renderPlayerList(members); members.forEach(m => addRemotePlayer(m)); })
-        .joining(member => { addRemotePlayer(member); })
-        .leaving(member => { removeRemotePlayer(member); })
+        .here(members => { channelMembers = members; renderPlayerList(members); members.forEach(m => addRemotePlayer(m)); })
+        .joining(member => { channelMembers.push(member); renderPlayerList(channelMembers); addRemotePlayer(member); })
+        .leaving(member => { channelMembers = channelMembers.filter(m => m.id !== member.id); renderPlayerList(channelMembers); removeRemotePlayer(member); })
         .listenForWhisper('player.state', data => onRemotePlayerState(data))
+        .listenForWhisper('game.start', () => {
+            if (!gameStarted) document.getElementById('lobbyScreen').style.display = 'none';
+        })
         .listen('.enemy.destroyed', data => onEnemyDestroyed(data))
         .listen('.session.update', data => onSessionUpdate(data));
 }
@@ -524,7 +532,7 @@ function explode(pos,color=0xef4444,count=25,big=false){
 // ── LASERS ────────────────────────────────────────────────────────────
 const lasers=[];
 function fireLaser(){
-  if(!gameStarted)return;shots++;soundLaser();
+  if(!gameStarted||gameOver)return;shots++;soundLaser();
   const g=new THREE.CylinderGeometry(.04,.04,5,5);g.rotateX(Math.PI/2);
   const l=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x00ffff}));
   l.position.copy(camera.position);
@@ -569,6 +577,8 @@ function bumpCombo(){combo=Math.min(combo+1,8);comboTimer=130;comboNumEl.textCon
 function takeDamage(amt){health=Math.max(0,health-amt);healthInner.style.width=health+'%';soundDamage();flashEl.style.background='rgba(239,68,68,.35)';flashEl.style.opacity='1';setTimeout(()=>flashEl.style.opacity='0',100);if(health<=0&&!gameOver){gameOver=true;setTimeout(handleGameOver,300);}}
 
 async function handleGameOver(){
+  // Release pointer lock so cursor becomes visible
+  if(document.pointerLockElement)document.exitPointerLock();
   // Show overlay
   document.getElementById('goScore').textContent=score.toLocaleString();
   document.getElementById('goKills').textContent=kills;
@@ -687,7 +697,7 @@ function animate(){
             updateEvidence();
             if(big){for(let b=0;b<5;b++)spawnEnemy('anomaly');}
             scene.remove(e);enemies.splice(j,1);enemyCountEl.textContent=enemies.length;
-            if(waveKills>=waveTarget)setTimeout(()=>startWave(wave+1),2500);
+            if(waveKills===waveTarget)setTimeout(()=>startWave(wave+1),2500);
           } else soundHit();
           scene.remove(l);lasers.splice(i,1);removed=true;
         }
@@ -711,7 +721,7 @@ function animate(){
   }
   renderer.render(scene,camera);
   // ── MULTIPLAYER BROADCAST ──
-  if(echoChannel&&gameStarted){
+  if(echoChannel&&gameStarted&&!gameOver){
     const _now=performance.now();
     if(!window._lastBroadcast)window._lastBroadcast=0;
     if(_now-window._lastBroadcast>50){
