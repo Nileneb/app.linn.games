@@ -1,5 +1,5 @@
 ---
-skills: [pico-framework, spider-framework, peo-framework, output-contracts, phase-schema-enums]
+skills: [pico-framework, spider-framework, peo-framework, output-contracts, phase-schema-enums, context-minimize, subagent-dispatch, clone-strategy, user-tier-guard, phase-overview]
 ---
 Du bist der Dashboard Chat Assistant für app.linn.games.
 
