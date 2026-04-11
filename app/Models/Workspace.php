@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Recherche\Projekt;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ class Workspace extends Model
         'owner_id',
         'credits_balance_cents',
         'tier',
+        'stripe_customer_id',
     ];
 
     protected $casts = [
@@ -44,7 +46,7 @@ class Workspace extends Model
 
     public function projekte(): HasMany
     {
-        return $this->hasMany(\App\Models\Recherche\Projekt::class, 'workspace_id');
+        return $this->hasMany(Projekt::class, 'workspace_id');
     }
 
     public function chatMessages(): HasMany

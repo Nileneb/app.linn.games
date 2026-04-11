@@ -25,6 +25,7 @@
         "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-cookie-consent": "^3.4",
         "spatie/laravel-permission": "^7.2",
+        "stripe/stripe-php": "*",
         "symfony/yaml": "*"
     },
     "require-dev": {
