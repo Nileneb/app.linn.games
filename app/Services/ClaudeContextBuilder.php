@@ -266,11 +266,14 @@ class ClaudeContextBuilder
             4 => [
                 'p4_suchstrings' => 'projekt_id (uuid, required), datenbank (text, required), suchstring (text, required), version (text, required), feldeinschraenkung, gesetzte_filter (jsonb), treffer_anzahl (integer), einschaetzung, aenderungs_grund, suchdatum (date)',
                 'p4_thesaurus_mapping' => 'projekt_id (uuid, required), freitext_de, freitext_en, mesh_term, emtree_term, psycinfo_term, anmerkung',
+                'p4_anpassungsprotokoll' => 'suchstring_id (uuid, required — FK zu p4_suchstrings.id), version (text, required), datum (date), aenderung, grund, treffer_vorher (integer), treffer_nachher (integer), entscheidung',
             ],
             5 => [
                 'p5_treffer' => 'projekt_id (uuid, required), record_id (text, required), titel, autoren, jahr (integer), journal, doi, abstract, datenbank_quelle, ist_duplikat (boolean, required)',
                 'p5_screening_kriterien' => 'projekt_id (uuid, required), beschreibung (text, required), level (enum: L1_titel_abstract|L2_volltext, required), kriterium_typ (enum: einschluss|ausschluss, required), beispiel',
+                'p5_screening_entscheidungen' => 'treffer_id (uuid, required — FK zu p5_treffer.id), level (enum: L1_titel_abstract|L2_volltext, required), entscheidung (enum: eingeschlossen|ausgeschlossen|unklar, required), ausschlussgrund, reviewer, datum (date), anmerkung',
                 'p5_prisma_zahlen' => 'projekt_id (uuid, required), identifiziert_gesamt (integer), davon_datenbank_treffer (integer), davon_graue_literatur (integer), nach_deduplizierung (integer), ausgeschlossen_l1 (integer), volltext_geprueft (integer), ausgeschlossen_l2 (integer), eingeschlossen_final (integer)',
+                'p5_tool_entscheidung' => 'projekt_id (uuid, required), tool (enum: Rayyan|Covidence|EPPI_Reviewer|DistillerSR|ASReview|SWIFT_ActiveScreener, required), gewaehlt (boolean), begruendung',
             ],
             6 => [
                 'p6_qualitaetsbewertung' => 'treffer_id (uuid, required), studientyp (enum: RCT|cohort|case_control|cross_sectional|qualitative|systematic_review|other, required), rob_tool (enum: RoB2|ROBINS-I|CASP|NOS|GRADE|other, required), gesamturteil (enum: niedrig|moderat|hoch|kritisch, required), hauptproblem, im_review_behalten (boolean, required), anmerkung, bewertet_von, bewertet_am (date)',
