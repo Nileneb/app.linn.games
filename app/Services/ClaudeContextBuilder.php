@@ -85,9 +85,9 @@ class ClaudeContextBuilder
                 $lines[] = '    "phase": '.$phaseNr.',';
                 $lines[] = '    "agent": "'.$agentKey.'",';
                 $lines[] = '    "qualitaets_bewertung": {';
-                $lines[] = '      "score": "<integer 0-100>",';
-                $lines[] = '      "level": "<schwach|befriedigend|gut|sehr_gut>",';
-                $lines[] = '      "punkte": ["<konkreter positiver Punkt auf Deutsch>", "<Verbesserungshinweis auf Deutsch>"]';
+                $lines[] = '      "score": 75,';
+                $lines[] = '      "level": "gut",';
+                $lines[] = '      "punkte": ["+ Population klar definiert", "- Outcome noch zu unspezifisch"]';
                 $lines[] = '    }';
                 $lines[] = '  },';
             } else {
