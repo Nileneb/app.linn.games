@@ -88,6 +88,11 @@
                 <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" placeholder="{{ __('Confirm password') }}" class="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500" />
             </div>
 
+            {{-- Honeypot: verstecktes Feld — Bots füllen es aus, Menschen nicht --}}
+            <div class="hidden" aria-hidden="true" tabindex="-1">
+                <input type="text" name="website" id="website" autocomplete="off" tabindex="-1">
+            </div>
+
             <div class="flex items-center justify-end">
                 <button type="submit" data-test="register-user-button" class="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                     {{ __('Create account') }}

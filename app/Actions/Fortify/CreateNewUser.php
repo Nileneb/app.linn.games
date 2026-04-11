@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -18,6 +19,12 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        if (! empty($input['website'] ?? null)) {
+            throw ValidationException::withMessages([
+                'email' => ['Registrierung fehlgeschlagen.'],
+            ]);
+        }
+
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -61,6 +68,7 @@ class CreateNewUser implements CreatesNewUsers
             'forschungsfrage' => $input['forschungsfrage'],
             'forschungsbereich' => $input['forschungsbereich'],
             'erfahrung' => $input['erfahrung'],
+            'registration_ip' => request()->ip(),
         ]);
     }
 }
