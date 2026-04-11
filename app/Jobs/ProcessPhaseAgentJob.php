@@ -101,10 +101,18 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
             // Debug: Pi agent output sichtbar machen wenn kein db_payload
             if ($parsed['db_payload'] === null) {
+                // Try raw JSON decode to surface the parse error
+                json_decode(trim($rawContent), true);
+                $jsonErr = json_last_error() !== JSON_ERROR_NONE
+                    ? json_last_error_msg().' (pos ~'.strrpos(mb_substr($rawContent, 0, 2000), '{').')'
+                    : 'no json_error (db_payload key missing)';
+
                 Log::debug('ProcessPhaseAgentJob: kein db_payload im Agent-Response', [
                     'projekt_id' => $this->projektId,
                     'phase_nr' => $this->phaseNr,
-                    'response_preview' => mb_substr($rawContent, 0, 600),
+                    'json_error' => $jsonErr,
+                    'response_len' => strlen($rawContent),
+                    'response_preview' => mb_substr($rawContent, 0, 800),
                 ]);
             }
 

@@ -56,11 +56,7 @@ class ClaudeContextBuilder
 
             $lines[] = '## Output-Anforderung';
             $lines[] = '';
-            $lines[] = '⚠️ ACHTUNG: Du bist ein DATEN-GENERATOR, KEIN SQL-Executor!';
-            $lines[] = '- Führe KEINE SQL-Abfragen aus. Kein SELECT, kein UPDATE, kein DELETE.';
-            $lines[] = '- Dein Output sind INSERT-Daten (neue Zeilen), KEINE Query-Ergebnisse.';
-            $lines[] = '- Wenn du Daten aus dem Kontext siehst (z.B. P2-Ergebnisse), nutze sie als Eingabe — schreibe sie NICHT zurück in db_payload.';
-            $lines[] = '- `db_payload.tables` enthält NUR neue Zeilen, die in die DB geschrieben werden sollen.';
+            $lines[] = 'REGEL: Kein SQL. Kein SELECT. Nur neue INSERT-Daten in db_payload.tables.';
             $lines[] = '';
             // Restrict Pi agent to phase-specific tables only
             $allowedTables = $this->tablesForPhase($phaseNr);
@@ -98,7 +94,13 @@ class ClaudeContextBuilder
             $lines[] = '```';
             $lines[] = '';
             $lines[] = 'WICHTIG: `db_payload.tables` darf NUR die oben gelisteten Tabellennamen enthalten.';
-            $lines[] = 'Erfundene Tabellennamen wie "p4_final_search_components", "p4_disziplinen" etc. sind VERBOTEN.';
+            // Phase-specific verboten lists prevent model from reusing other-phase table patterns
+            $verbotenExtra = match ($phaseNr) {
+                3 => '"p3_cluster", "p3_review_typ_entscheidung", "p3_mapping_suchstring_komponenten", "p3_suchstring_komponenten"',
+                4 => '"p4_cluster", "p4_final_search_components", "p4_disziplinen", "p4_final_database_matrix"',
+                default => '"p4_final_search_components", "p4_disziplinen"',
+            };
+            $lines[] = "VERBOTEN (nicht existierende Tabellen): {$verbotenExtra} — diese Namen dürfen NICHT in db_payload.tables erscheinen.";
             $lines[] = '';
 
             // Exaktes Schema der für diese Phase relevanten Tabellen

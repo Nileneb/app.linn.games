@@ -54,18 +54,88 @@ class AgentResponseParser
 
     /**
      * Versucht JSON aus dem Response zu extrahieren.
-     * Unterstützt: reines JSON, oder JSON in ```json ... ``` Codeblock.
+     * Unterstützt: reines JSON, JSON mit Trailing-Text, JSON in ```json...``` Codeblock,
+     * und JSON irgendwo im Fließtext (Pi-Agent gibt manchmal Präambel aus).
      */
     private function extractJson(string $content): ?array
     {
-        // Direktes JSON
+        // 1. Direktes JSON — versuche zuerst full decode, dann balanced extraction
         if (str_starts_with($content, '{')) {
-            return $this->tryDecode($content);
+            $result = $this->tryDecode($content);
+            if ($result !== null) {
+                return $result;
+            }
+            // Trailing text nach dem JSON-Objekt? Balanced-Brace-Extraktion
+            $result = $this->extractJsonObject($content);
+            if ($result !== null) {
+                return $result;
+            }
         }
 
-        // JSON in Markdown-Codeblock
-        if (preg_match('/```json\s*\n(.*?)\n```/s', $content, $matches)) {
-            return $this->tryDecode($matches[1]);
+        // 2. JSON in Markdown-Codeblock (```json oder ```)
+        if (preg_match('/```(?:json)?\s*\n(.*?)\n```/s', $content, $matches)) {
+            $result = $this->tryDecode($matches[1]);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        // 3. JSON irgendwo im Text (Pi-Agent schreibt Präambel vor das JSON)
+        $pos = strpos($content, '{');
+        if ($pos !== false && $pos > 0) {
+            $result = $this->extractJsonObject(substr($content, $pos));
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extrahiert ein vollständiges JSON-Objekt via Balanced-Brace-Counting.
+     * Ignoriert Text nach dem schließenden `}` — robust gegen Pi-Agent Trailing-Text.
+     */
+    private function extractJsonObject(string $content): ?array
+    {
+        $depth = 0;
+        $inString = false;
+        $escape = false;
+        $len = strlen($content);
+
+        for ($i = 0; $i < $len; $i++) {
+            $char = $content[$i];
+
+            if ($escape) {
+                $escape = false;
+
+                continue;
+            }
+
+            if ($char === '\\' && $inString) {
+                $escape = true;
+
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = ! $inString;
+
+                continue;
+            }
+
+            if ($inString) {
+                continue;
+            }
+
+            if ($char === '{') {
+                $depth++;
+            } elseif ($char === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    return $this->tryDecode(substr($content, 0, $i + 1));
+                }
+            }
         }
 
         return null;
@@ -73,12 +143,8 @@ class AgentResponseParser
 
     private function tryDecode(string $json): ?array
     {
-        try {
-            $decoded = json_decode(trim($json), true, flags: JSON_THROW_ON_ERROR);
+        $decoded = json_decode(trim($json), true);
 
-            return is_array($decoded) ? $decoded : null;
-        } catch (\Throwable) {
-            return null;
-        }
+        return (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
     }
 }
