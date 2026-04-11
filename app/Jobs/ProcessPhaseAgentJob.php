@@ -26,7 +26,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 180; // Queue worker timeout (not HTTP)
+    public int $timeout = 360; // Must exceed ClaudeCliService::callForPhase() timeout (300s)
 
     /** @var array<object>|null Retrieved chunks for synthesis */
     private ?array $retrievedChunks = null;
@@ -150,6 +150,32 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 'exception' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Called by the queue worker when the job is killed (timeout / SIGKILL / max attempts).
+     * Without this, PhaseAgentResult stays pending forever.
+     */
+    public function failed(?\Throwable $exception = null): void
+    {
+        $result = PhaseAgentResult::where('projekt_id', $this->projektId)
+            ->where('phase_nr', $this->phaseNr)
+            ->where('agent_config_key', $this->agentConfigKey)
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($result) {
+            $message = $exception?->getMessage() ?? 'Job abgebrochen (Timeout oder Worker-Fehler)';
+            $result->markFailed($message);
+        }
+
+        Log::error('Phase agent job failed/killed', [
+            'projekt_id' => $this->projektId,
+            'phase_nr' => $this->phaseNr,
+            'agent_config_key' => $this->agentConfigKey,
+            'exception' => $exception?->getMessage(),
+        ]);
     }
 
     /**
