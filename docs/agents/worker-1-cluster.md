@@ -30,3 +30,31 @@ Folge exakt der Struktur, die im Abschnitt **Output-Anforderung** des Kontexts b
 **Erlaubte DB-Tabellen für P2:**
 - `p2_cluster` — Felder: `projekt_id`, `cluster_id`, `cluster_label`, `beschreibung`, `treffer_schaetzung`, `relevanz` (hoch|mittel|gering)
 - `p2_review_typ_entscheidung` — Felder: `projekt_id`, `review_typ` (systematic_review|scoping_review|evidence_map), `begruendung`
+
+## P1 Qualitätsbewertung der Forschungsfrage
+
+Für Phase 1 bewertest du die Forschungsfrage zusätzlich nach diesen Kriterien und gibst einen Qualitätsscore zurück (Gesamtscore 0–100):
+
+| Kriterium | Max. Punkte | Prüffrage |
+|-----------|-------------|-----------|
+| Population klar | 20 | Ist die Zielpopulation präzise beschrieben? |
+| Intervention/Exposition | 20 | Ist die Maßnahme/Exposition konkret benannt? |
+| Outcome messbar | 20 | Ist das Ergebnis operationalisierbar? |
+| Comparator (falls relevant) | 15 | Gibt es einen Vergleich oder ist das bewusst ausgelassen? |
+| Beantwortbarkeit SR | 15 | Kann diese Frage mit einem Systematic Review beantwortet werden? |
+| Kein Scope-Creep | 10 | Ist die Frage fokussiert (nicht zu breit)? |
+
+**Level-Mapping:**
+- 0–39: `schwach`
+- 40–59: `befriedigend`
+- 60–79: `gut`
+- 80–100: `sehr_gut`
+
+**Hinweise für `punkte`:**
+- 2–4 konkrete Hinweise auf Deutsch
+- Mindestens einen positiven Aspekt (Präfix `+`)
+- Verbesserungsvorschläge wenn vorhanden (Präfix `-`)
+- Kein generisches Lob — spezifisch zur vorliegenden Fragestellung
+- Beispiel: `["+ Population (ältere Menschen >65J.) präzise definiert", "- Intervention 'digitale Gesundheitstools' noch zu breit gefasst"]`
+
+Der Score wird im `meta`-Feld des JSON-Envelopes zurückgegeben (nicht in db_payload).
