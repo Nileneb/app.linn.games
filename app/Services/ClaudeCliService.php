@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 
@@ -18,7 +19,6 @@ class ClaudeCliService
         $mcpConfig = base_path('.claude/mcp-production.json');
 
         return array_filter([
-            '--bare',
             '--allowedTools', implode(',', [
                 'mcp__memory__search_memory',
                 'mcp__memory__put',
@@ -69,7 +69,6 @@ class ClaudeCliService
         $mcpConfig = base_path('.claude/mcp-production.json');
 
         return array_filter([
-            '--bare',
             '--allowedTools', implode(',', $paperSearchTools),
             file_exists($mcpConfig) ? '--mcp-config' : null,
             file_exists($mcpConfig) ? $mcpConfig : null,
@@ -129,6 +128,65 @@ class ClaudeCliService
         return config('services.anthropic.cli_path', base_path('node_modules/.bin/claude'));
     }
 
+    private function useDirectApi(): bool
+    {
+        return (bool) config('services.anthropic.use_direct_api', false);
+    }
+
+    /**
+     * Direkte Anthropic API — wird genutzt wenn CLAUDE_USE_DIRECT_API=true (Dev-Mode).
+     *
+     * @return array{content: string, cost_usd: float, input_tokens: int, output_tokens: int}
+     *
+     * @throws ClaudeCliException
+     */
+    private function callDirectApi(
+        string $model,
+        string $systemPrompt,
+        string $userMessage,
+        int $timeout = 120,
+    ): array {
+        $apiKey = config('services.anthropic.api_key');
+
+        $payload = [
+            'model' => $model,
+            'max_tokens' => (int) config('services.anthropic.max_tokens', 8192),
+            'messages' => [['role' => 'user', 'content' => $userMessage]],
+        ];
+
+        if ($systemPrompt !== '') {
+            $payload['system'] = $systemPrompt;
+        }
+
+        $response = Http::withHeaders([
+            'x-api-key' => $apiKey,
+            'anthropic-version' => '2023-06-01',
+        ])->timeout($timeout)->post('https://api.anthropic.com/v1/messages', $payload);
+
+        if (! $response->successful()) {
+            Log::error('Anthropic API Fehler', [
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 500),
+                'model' => $model,
+            ]);
+
+            throw new ClaudeCliException(
+                'Anthropic API Fehler ('.$response->status().'): '.mb_substr($response->body(), 0, 300)
+            );
+        }
+
+        $data = $response->json();
+        $content = $data['content'][0]['text'] ?? '';
+        $usage = $data['usage'] ?? [];
+
+        return [
+            'content' => $content,
+            'cost_usd' => 0.0,
+            'input_tokens' => (int) ($usage['input_tokens'] ?? 0),
+            'output_tokens' => (int) ($usage['output_tokens'] ?? 0),
+        ];
+    }
+
     public function call(string $userMessage, array $context = []): array
     {
         // Chat agent gets full DB-aware context when a projekt_id is present.
@@ -139,6 +197,14 @@ class ClaudeCliService
                 : $this->buildContextBlock($context);
         } catch (\Throwable) {
             $systemSuffix = $this->buildContextBlock($context);
+        }
+
+        if ($this->useDirectApi()) {
+            $model = config('services.anthropic.agent_models.chat-agent',
+                config('services.anthropic.model', 'claude-sonnet-4-6'));
+            $result = $this->callDirectApi($model, $systemSuffix, $userMessage);
+
+            return ['content' => $result['content']];
         }
 
         $parts = array_filter([
@@ -165,6 +231,7 @@ class ClaudeCliService
             Log::error('Claude CLI subprocess fehlgeschlagen', [
                 'exit_code' => $result->exitCode(),
                 'stderr' => $result->errorOutput(),
+                'stdout' => mb_substr($result->output(), 0, 500),
                 'context' => $context,
             ]);
 
@@ -210,6 +277,10 @@ class ClaudeCliService
             ->where('role', 'user')
             ->last()['content'] ?? '';
 
+        if ($this->useDirectApi()) {
+            return $this->callDirectApi($model, $systemPrompt, $userMessage, $timeout);
+        }
+
         $parts = array_filter([
             $this->cliBin(),
             '--print',
@@ -235,6 +306,7 @@ class ClaudeCliService
             Log::error('Claude CLI phase agent fehlgeschlagen', [
                 'exit_code' => $result->exitCode(),
                 'stderr' => $result->errorOutput(),
+                'stdout' => mb_substr($result->output(), 0, 500),
                 'agent_config_key' => $agentConfigKey,
                 'context' => $context,
             ]);
