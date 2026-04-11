@@ -56,6 +56,16 @@ class ClaudeContextBuilder
 
             $lines[] = '## Output-Anforderung';
             $lines[] = '';
+            // Restrict Pi agent to phase-specific tables only
+            $allowedTables = $this->tablesForPhase($phaseNr);
+            if (! empty($allowedTables)) {
+                $lines[] = '**ERLAUBTE TABELLEN FÜR DIESE PHASE (NUR DIESE — keine anderen Tabellennamen verwenden!):**';
+                foreach ($allowedTables as $tbl) {
+                    $lines[] = "- `{$tbl}`";
+                }
+                $lines[] = '';
+            }
+
             $lines[] = 'Gib exakt EIN gültiges JSON-Objekt zurück. Kein Text davor oder danach. Keine Markdown-Fences.';
             $lines[] = '';
             $lines[] = 'Pflichtstruktur:';
@@ -174,12 +184,23 @@ class ClaudeContextBuilder
     }
 
     /**
-     * Gibt das exakte DB-Schema der für diese Phase beschreibbaren Tabellen zurück.
-     * Nur Pflichtfelder (NOT NULL ohne Default) werden als (required) markiert.
+     * Returns the list of writable table names for a given phase.
+     *
+     * @return string[]
      */
-    private function schemaForPhase(int $phaseNr): string
+    private function tablesForPhase(int $phaseNr): array
     {
-        $schemas = [
+        return array_keys($this->phaseSchemas()[$phaseNr] ?? []);
+    }
+
+    /**
+     * Canonical phase→table→columns map. Single source of truth for schema injection and table allowlist.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function phaseSchemas(): array
+    {
+        return [
             1 => [
                 'p1_komponenten' => 'projekt_id (uuid, required), komponente_kuerzel (text, required), komponente_label (text, required), modell (enum: PICO|SPIDER|PICOS, required), inhaltlicher_begriff_de, englische_entsprechung, mesh_term, thesaurus_term, anmerkungen, synonyme (jsonb)',
                 'p1_kriterien' => 'projekt_id (uuid, required), beschreibung (text, required), kriterium_typ (enum: einschluss|ausschluss, required), begruendung, quellbezug',
@@ -224,8 +245,15 @@ class ClaudeContextBuilder
                 'p8_update_plan' => 'projekt_id (uuid, required), update_typ, intervall, verantwortlich, tool, naechstes_update (date)',
             ],
         ];
+    }
 
-        $tables = $schemas[$phaseNr] ?? [];
+    /**
+     * Gibt das exakte DB-Schema der für diese Phase beschreibbaren Tabellen zurück.
+     * Nur Pflichtfelder (NOT NULL ohne Default) werden als (required) markiert.
+     */
+    private function schemaForPhase(int $phaseNr): string
+    {
+        $tables = $this->phaseSchemas()[$phaseNr] ?? [];
         if (empty($tables)) {
             return '';
         }

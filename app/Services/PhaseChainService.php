@@ -40,6 +40,16 @@ class PhaseChainService
             return;
         }
 
+        // null means "no auto-chain for this phase" (e.g. P4 requires manual paper import)
+        if ($chain['next_phase'] === null) {
+            Log::info('PhaseChain: no auto-chain configured for this phase', [
+                'projekt_id' => $projekt->id,
+                'completed_phase' => $completedPhaseNr,
+            ]);
+
+            return;
+        }
+
         $nextPhase = (int) $chain['next_phase'];
         $agentKey = (string) $chain['agent_config_key'];
 

@@ -165,6 +165,13 @@ class AgentPayloadService
             // Phase tables have no created_at/updated_at columns.
             unset($data['created_at'], $data['updated_at']);
 
+            // JSON-encode arrays/objects — jsonb columns require a JSON string, not a PHP array.
+            foreach ($data as $key => $value) {
+                if (is_array($value) || (is_object($value) && ! ($value instanceof \BackedEnum))) {
+                    $data[$key] = json_encode($value, JSON_UNESCAPED_UNICODE);
+                }
+            }
+
             try {
                 DB::table($tableName)->insert($data);
                 $inserted++;
