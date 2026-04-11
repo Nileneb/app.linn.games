@@ -21,6 +21,6 @@ class Usage extends Component
         return view('livewire.credits.usage', [
             'workspace' => $workspace,
             'transactions' => $transactions,
-        ])->layout('layouts.app');
+        ])->layout('components.layouts.app');
     }
 }

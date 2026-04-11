@@ -22,6 +22,6 @@ class Purchase extends Component
         return view('livewire.credits.purchase', [
             'workspace' => $workspace,
             'packages' => $this->packages(),
-        ])->layout('layouts.app');
+        ])->layout('components.layouts.app');
     }
 }
