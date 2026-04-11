@@ -7,6 +7,7 @@ use App\Services\GameRewardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class GameSessionController extends Controller
 {
@@ -74,25 +75,43 @@ class GameSessionController extends Controller
             ->where('status', '!=', 'ended')
             ->firstOrFail();
 
-        $previousKills = DB::table('game_session_players')
-            ->where('session_id', $session->id)
-            ->where('user_id', auth()->id())
-            ->value('kills') ?? 0;
+        $newKills = 0;
+        $user = null;
 
-        DB::table('game_session_players')
-            ->where('session_id', $session->id)
-            ->where('user_id', auth()->id())
-            ->update([
-                'score' => $validated['score'],
-                'kills' => $validated['kills'],
-            ]);
+        DB::transaction(function () use ($session, $validated, $request, &$newKills, &$user): void {
+            $row = DB::table('game_session_players')
+                ->where('session_id', $session->id)
+                ->where('user_id', auth()->id())
+                ->lockForUpdate()
+                ->first(['kills']);
 
-        $newKills = max(0, $validated['kills'] - $previousKills);
-        if ($newKills > 0) {
-            $user = $request->user();
-            $user->increment('total_kills', $newKills);
-            $user->refresh();
-            app(GameRewardService::class)->checkAndReward($user);
+            $previousKills = $row?->kills ?? 0;
+
+            DB::table('game_session_players')
+                ->where('session_id', $session->id)
+                ->where('user_id', auth()->id())
+                ->update([
+                    'score' => $validated['score'],
+                    'kills' => $validated['kills'],
+                ]);
+
+            $newKills = max(0, $validated['kills'] - $previousKills);
+            if ($newKills > 0) {
+                $user = $request->user();
+                $user->increment('total_kills', $newKills);
+                $user->refresh();
+            }
+        });
+
+        if ($newKills > 0 && $user !== null) {
+            try {
+                app(GameRewardService::class)->checkAndReward($user);
+            } catch (\Throwable $e) {
+                Log::error('GameRewardService::checkAndReward failed', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json(['ok' => true]);
