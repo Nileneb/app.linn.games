@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameSession;
+use App\Services\GameRewardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,11 @@ class GameSessionController extends Controller
             ->where('status', '!=', 'ended')
             ->firstOrFail();
 
+        $previousKills = DB::table('game_session_players')
+            ->where('session_id', $session->id)
+            ->where('user_id', auth()->id())
+            ->value('kills') ?? 0;
+
         DB::table('game_session_players')
             ->where('session_id', $session->id)
             ->where('user_id', auth()->id())
@@ -80,6 +86,14 @@ class GameSessionController extends Controller
                 'score' => $validated['score'],
                 'kills' => $validated['kills'],
             ]);
+
+        $newKills = max(0, $validated['kills'] - $previousKills);
+        if ($newKills > 0) {
+            $user = $request->user();
+            $user->increment('total_kills', $newKills);
+            $user->refresh();
+            app(GameRewardService::class)->checkAndReward($user);
+        }
 
         return response()->json(['ok' => true]);
     }
