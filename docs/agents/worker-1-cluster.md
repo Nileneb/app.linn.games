@@ -33,18 +33,48 @@ Folge exakt der Struktur, die im Abschnitt **Output-Anforderung** des Kontexts b
 
 ## P1 Qualitätsbewertung der Forschungsfrage
 
-Für Phase 1 bewertest du die Forschungsfrage zusätzlich nach diesen Kriterien und gibst einen Qualitätsscore zurück (Gesamtscore 0–100):
+Für Phase 1 bewertest du die Forschungsfrage und gibst einen Qualitätsscore zurück (Gesamtscore 0–100). **Wähle das Rubrik passend zum Framework, das du für diese Frage bestimmst.**
+
+---
+
+### Rubrik PICO / PICOS (quantitativ, RCT, Interventionsstudien)
 
 | Kriterium | Max. Punkte | Prüffrage |
 |-----------|-------------|-----------|
 | Population klar | 20 | Ist die Zielpopulation präzise beschrieben? |
-| Intervention/Exposition | 20 | Ist die Maßnahme/Exposition konkret benannt? |
-| Outcome messbar | 20 | Ist das Ergebnis operationalisierbar? |
+| Intervention konkret | 20 | Ist die Maßnahme/Intervention klar benannt? |
+| Outcome messbar | 20 | Ist das Ergebnis operationalisierbar/quantifizierbar? |
 | Comparator (falls relevant) | 15 | Gibt es einen Vergleich oder ist das bewusst ausgelassen? |
 | Beantwortbarkeit SR | 15 | Kann diese Frage mit einem Systematic Review beantwortet werden? |
 | Kein Scope-Creep | 10 | Ist die Frage fokussiert (nicht zu breit)? |
 
-**Level-Mapping:**
+---
+
+### Rubrik SPIDER (qualitativ, Erfahrungen, Phänomene)
+
+| Kriterium | Max. Punkte | Prüffrage |
+|-----------|-------------|-----------|
+| Sample klar | 20 | Ist die Untersuchungsgruppe präzise beschrieben? |
+| Phänomen des Interesses | 25 | Ist das zu untersuchende Erleben/Phänomen klar benannt? |
+| Evaluation / Outcome | 20 | Sind die qualitativen Ergebnisaspekte (Erfahrungen, Bedeutungen) benannt? |
+| Research Type | 15 | Ist der qualitative Ansatz (z.B. Interviews, Ethnographie) erkennbar? |
+| Beantwortbarkeit qualitativer SR | 10 | Eignet sich die Frage für eine qualitative Synthese? |
+| Kein Scope-Creep | 10 | Ist die Frage fokussiert und nicht zu weit gefasst? |
+
+---
+
+### Rubrik PEO (qualitativ/beobachtend, Exposition ohne Intervention)
+
+| Kriterium | Max. Punkte | Prüffrage |
+|-----------|-------------|-----------|
+| Population klar | 25 | Ist die Zielpopulation präzise beschrieben? |
+| Exposition beschrieben | 30 | Ist der Kontextfaktor/die Exposition klar benannt (kein aktiver Eingriff)? |
+| Outcome definiert | 25 | Sind die interessierenden Ergebnisse benannt? |
+| Beantwortbarkeit SR | 20 | Kann diese Frage ohne experimentellen Eingriff systematisch untersucht werden? |
+
+---
+
+**Level-Mapping (gilt für alle Frameworks):**
 - 0–39: `schwach`
 - 40–59: `befriedigend`
 - 60–79: `gut`
@@ -54,7 +84,9 @@ Für Phase 1 bewertest du die Forschungsfrage zusätzlich nach diesen Kriterien 
 - 2–4 konkrete Hinweise auf Deutsch
 - Mindestens einen positiven Aspekt (Präfix `+`)
 - Verbesserungsvorschläge wenn vorhanden (Präfix `-`)
-- Kein generisches Lob — spezifisch zur vorliegenden Fragestellung
-- Beispiel: `["+ Population (ältere Menschen >65J.) präzise definiert", "- Intervention 'digitale Gesundheitstools' noch zu breit gefasst"]`
+- Kein generisches Lob — spezifisch zur vorliegenden Fragestellung und zum gewählten Framework
+- PICO-Beispiel: `["+ Population (ältere Menschen >65J.) präzise definiert", "- Intervention 'digitale Gesundheitstools' noch zu breit gefasst"]`
+- SPIDER-Beispiel: `["+ Phänomen (Erleben von Isolation) klar benannt", "- Sample-Beschreibung fehlt Altersangabe und Setting"]`
+- PEO-Beispiel: `["+ Exposition (Schichtarbeit) und Population klar", "- Outcome-Aspekte (Gesundheitsfolgen) noch zu unspezifisch"]`
 
 Der Score wird im `meta`-Feld des JSON-Envelopes zurückgegeben (nicht in db_payload).
