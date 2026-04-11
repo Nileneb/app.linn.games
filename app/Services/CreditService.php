@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\CloneLimitExceededException;
 use App\Models\CreditTransaction;
+use App\Models\PhaseAgentResult;
 use App\Models\Workspace;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,11 +21,17 @@ class CreditService
 
     public function deduct(Workspace $workspace, int $inputTokens, string $agentKey, int $outputTokens = 0): void
     {
-        $cents = $this->toCents($inputTokens, $outputTokens);
+        $rawCents = $this->toCents($inputTokens, $outputTokens);
 
-        if ($cents <= 0) {
+        if ($rawCents <= 0) {
             return;
         }
+
+        $markupFactor = (float) config("services.anthropic.markup_factors.{$agentKey}",
+            config('services.anthropic.markup_factors.default', 3.0)
+        );
+        $discountFactor = (float) ($workspace->discount_factor ?? 1.0);
+        $cents = (int) ceil($rawCents * $markupFactor * $discountFactor);
 
         DB::transaction(function () use ($workspace, $cents, $inputTokens, $outputTokens, $agentKey): void {
             // Lock workspace row first — prevents concurrent deduct race conditions
@@ -182,7 +190,7 @@ class CreditService
     /**
      * Prüft ob der Workspace sein Clone-Limit (pending PhaseAgentResults) erreicht hat.
      *
-     * @throws \App\Exceptions\CloneLimitExceededException
+     * @throws CloneLimitExceededException
      */
     public function checkCloneLimit(Workspace $workspace): void
     {
@@ -198,13 +206,13 @@ class CreditService
             return;
         }
 
-        $pendingCount = \App\Models\PhaseAgentResult::whereHas(
+        $pendingCount = PhaseAgentResult::whereHas(
             'projekt',
             fn ($q) => $q->where('workspace_id', $workspace->id)
         )->where('status', 'pending')->count();
 
         if ($pendingCount >= $maxPending) {
-            throw new \App\Exceptions\CloneLimitExceededException(
+            throw new CloneLimitExceededException(
                 "Clone-Limit ({$maxPending}) für Tier '{$tier}' erreicht."
             );
         }

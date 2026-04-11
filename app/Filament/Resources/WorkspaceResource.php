@@ -46,6 +46,14 @@ class WorkspaceResource extends Resource
                 ->searchable()
                 ->preload()
                 ->required(),
+            TextInput::make('discount_factor')
+                ->label('Rabatt-Faktor')
+                ->helperText('1.0 = kein Rabatt, 0.5 = 50% Rabatt, 0.0 = kostenlos (z.B. für Studis)')
+                ->numeric()
+                ->minValue(0.0)
+                ->maxValue(1.0)
+                ->step(0.05)
+                ->default(1.0),
         ]);
     }
 
@@ -63,6 +71,13 @@ class WorkspaceResource extends Resource
                 TextColumn::make('credit_transactions_count')
                     ->label('Transaktionen')
                     ->counts('creditTransactions'),
+                TextColumn::make('discount_factor')
+                    ->label('Rabatt')
+                    ->formatStateUsing(fn (?float $state): string => $state === null || $state >= 1.0
+                        ? '—'
+                        : number_format((1 - $state) * 100, 0).' %'
+                    )
+                    ->color(fn (?float $state): string => ($state !== null && $state < 1.0) ? 'warning' : 'gray'),
                 TextColumn::make('created_at')->label('Erstellt')->dateTime('d.m.Y')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')

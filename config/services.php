@@ -109,6 +109,20 @@ return [
         'price_per_1k_input_tokens_cents' => (int) env('CLAUDE_INPUT_PRICE_CENTS', 1),
         'price_per_1k_output_tokens_cents' => (int) env('CLAUDE_OUTPUT_PRICE_CENTS', 4),
 
+        // Markup-Faktoren: API-Kosten × Faktor = User-seitige Kosten
+        // Haiku-Worker: 3× (günstiges Modell, höhere Marge), Sonnet Chat: 2× (teurer, moderate Marge)
+        'markup_factors' => [
+            'scoping_mapping_agent' => 3.0,
+            'search_agent' => 3.0,
+            'review_agent' => 3.0,
+            'evaluation_agent' => 3.0,
+            'synthesis_agent' => 3.0,
+            'mayring_agent' => 3.0,
+            'chat-agent' => 2.0,
+            'agent_id' => 2.0,
+            'default' => 3.0,
+        ],
+
         'low_balance_threshold_percent' => (int) env('CLAUDE_LOW_BALANCE_THRESHOLD_PERCENT', 10),
 
         // Modell pro Agent-Typ (CLI --model Flag)

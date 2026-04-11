@@ -20,11 +20,13 @@ class Workspace extends Model
         'credits_balance_cents',
         'tier',
         'stripe_customer_id',
+        'discount_factor',
     ];
 
     protected $casts = [
         'credits_balance_cents' => 'integer',
         'tier' => 'string',
+        'discount_factor' => 'float',
     ];
 
     public function owner(): BelongsTo
