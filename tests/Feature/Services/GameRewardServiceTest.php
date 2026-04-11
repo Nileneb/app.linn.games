@@ -3,7 +3,6 @@
 use App\Models\GameRewardClaim;
 use App\Models\User;
 use App\Services\GameRewardService;
-use Illuminate\Support\Str;
 
 // Disable starter credit topup so tests start with known balance
 beforeEach(function () {
@@ -43,30 +42,11 @@ test('2500 kills reduces discount_factor by 0.05', function () {
 });
 
 test('discount_factor never goes below 0.0', function () {
+    config(['game.kill_rewards' => [['kills' => 5000, 'type' => 'discount', 'value' => 0.10]]]);
+
     $user = User::factory()->withoutTwoFactor()->create(['total_kills' => 5000]);
     $workspace = $user->workspaces()->first();
     $workspace->update(['discount_factor' => 0.03]);
-
-    // Pre-claim the 2500 threshold so only 5000 fires
-    GameRewardClaim::create([
-        'id' => Str::uuid(),
-        'user_id' => $user->id,
-        'kills_threshold' => 2500,
-        'reward_type' => 'discount',
-        'reward_value' => 0.05,
-        'claimed_at' => now(),
-    ]);
-    // Pre-claim topup thresholds too
-    foreach ([100, 500, 1000] as $threshold) {
-        GameRewardClaim::create([
-            'id' => Str::uuid(),
-            'user_id' => $user->id,
-            'kills_threshold' => $threshold,
-            'reward_type' => 'topup',
-            'reward_value' => 0,
-            'claimed_at' => now(),
-        ]);
-    }
 
     app(GameRewardService::class)->checkAndReward($user);
 
