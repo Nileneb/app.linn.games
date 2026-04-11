@@ -23,8 +23,7 @@ class CreditOverviewWidget extends BaseWidget
         // Aktive Nutzer (Status aktiv)
         $activeUsers = User::where('status', 'active')->count();
 
-        // Laufende Recherchen (nicht abgeschlossen)
-        $runningResearch = Projekt::where('status', '!=', 'completed')->count();
+        $runningResearch = Projekt::count();
 
         return [
             Stat::make('Gesamtguthaben', number_format($totalBalance / 100, 2, ',', '.').' €')
@@ -39,8 +38,8 @@ class CreditOverviewWidget extends BaseWidget
                 ->description('Status: aktiv')
                 ->color('info')
                 ->icon('heroicon-o-users'),
-            Stat::make('Laufende Recherchen', $runningResearch)
-                ->description('Nicht abgeschlossene Projekte')
+            Stat::make('Recherche-Projekte', $runningResearch)
+                ->description('Gesamt')
                 ->color('primary')
                 ->icon('heroicon-o-document-magnifying-glass'),
         ];
