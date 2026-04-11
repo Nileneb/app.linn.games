@@ -2,12 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\PhaseAgentResult;
 use Filament\Pages\Page;
+use Illuminate\Support\Collection;
 use UnitEnum;
 
 class LangdockAgentsPage extends Page
 {
     protected string $view = 'filament.pages.langdock-agents';
+
+    protected static ?string $slug = 'claude-agenten';
 
     protected static ?string $navigationLabel = 'Claude Agenten';
 
@@ -24,6 +28,9 @@ class LangdockAgentsPage extends Page
 
     public ?string $error = null;
 
+    /** @var Collection<int, PhaseAgentResult> */
+    public Collection $recentRuns;
+
     public function mount(): void
     {
         $agents = config('services.anthropic.agents', []);
@@ -38,5 +45,9 @@ class LangdockAgentsPage extends Page
             fn ($value) => is_string($value) ? $value : (string) $value,
             $agents,
         );
+
+        $this->recentRuns = PhaseAgentResult::orderByDesc('created_at')
+            ->limit(20)
+            ->get();
     }
 }
