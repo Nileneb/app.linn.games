@@ -36,3 +36,32 @@ test('job does not suspend user when langdock returns low probability', function
 
     expect($user->fresh()->status)->toBe('waitlisted');
 });
+
+test('job does not suspend when langdock call throws', function () {
+    $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
+    Http::fake(fn () => throw new \RuntimeException('connection refused'));
+    ReviewRegistrationJob::dispatchSync($user->id);
+    expect($user->fresh()->status)->toBe('waitlisted');
+});
+
+test('job suspends at exact 0.80 threshold', function () {
+    $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
+    Http::fake([
+        config('services.langdock.base_url').'*' => Http::response([
+            'choices' => [['message' => ['content' => '0.80']]],
+        ]),
+    ]);
+    ReviewRegistrationJob::dispatchSync($user->id);
+    expect($user->fresh()->status)->toBe('suspended');
+});
+
+test('job does not suspend at 0.79', function () {
+    $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
+    Http::fake([
+        config('services.langdock.base_url').'*' => Http::response([
+            'choices' => [['message' => ['content' => '0.79']]],
+        ]),
+    ]);
+    ReviewRegistrationJob::dispatchSync($user->id);
+    expect($user->fresh()->status)->toBe('waitlisted');
+});
