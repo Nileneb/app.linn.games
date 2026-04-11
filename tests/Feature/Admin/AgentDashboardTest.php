@@ -61,5 +61,5 @@ test('Admin-Seiten sind für Nicht-Admins gesperrt', function () {
 
     $this->actingAs($user)
         ->get('/admin/claude-agenten')
-        ->assertRedirect();
+        ->assertForbidden();
 });

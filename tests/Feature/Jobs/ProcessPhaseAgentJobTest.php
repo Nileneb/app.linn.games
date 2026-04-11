@@ -45,7 +45,7 @@ test('ProcessPhaseAgentJob dispatches successfully', function () {
 
 test('ProcessPhaseAgentJob creates pending result record and completes', function () {
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: json_encode([
                 'result' => 'Test response',
                 'is_error' => false,
@@ -82,7 +82,7 @@ test('ProcessPhaseAgentJob creates pending result record and completes', functio
 
 test('ProcessPhaseAgentJob marks result as completed on success', function () {
     Process::fake([
-        'claude*' => Process::result(
+        '*claude*' => Process::result(
             output: json_encode([
                 'result' => 'Successful response',
                 'is_error' => false,
@@ -119,7 +119,7 @@ test('ProcessPhaseAgentJob marks result as completed on success', function () {
 
 test('ProcessPhaseAgentJob marks result as failed on CLI error', function () {
     Process::fake([
-        'claude*' => Process::result(output: '', errorOutput: 'CLI error', exitCode: 1),
+        '*claude*' => Process::result(output: '', errorOutput: 'CLI error', exitCode: 1),
     ]);
 
     $job = new ProcessPhaseAgentJob(

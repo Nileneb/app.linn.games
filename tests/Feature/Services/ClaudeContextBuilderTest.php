@@ -1,8 +1,16 @@
 <?php
 
+use App\Models\Recherche\P1Kriterium;
+use App\Models\Recherche\P2Cluster;
+use App\Models\Recherche\P3Datenbankmatrix;
+use App\Models\Recherche\P4Suchstring;
+use App\Models\Recherche\P5ScreeningEntscheidung;
+use App\Models\Recherche\P5Treffer;
+use App\Models\Recherche\P6Qualitaetsbewertung;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceUser;
 use App\Services\ClaudeContextBuilder;
 
 function makeProjektWithWorkspace(): array
@@ -12,7 +20,7 @@ function makeProjektWithWorkspace(): array
         'owner_id' => $user->id,
         'name' => $user->name.' Workspace',
     ]);
-    \App\Models\WorkspaceUser::create([
+    WorkspaceUser::create([
         'workspace_id' => $workspace->id,
         'user_id' => $user->id,
         'role' => 'owner',
@@ -64,15 +72,19 @@ test('build enthält structured_output hinweis wenn gesetzt', function () {
         'projekt_id' => $projekt->id,
         'phase_nr' => 1,
         'structured_output' => true,
+        'agent_config_key' => 'scoping_mapping_agent',
     ]);
 
-    expect($result)->toContain('JSON Envelope v1');
+    expect($result)
+        ->toContain('Output-Anforderung')
+        ->toContain('db_payload')
+        ->toContain('Pflichtstruktur');
 });
 
 test('build phase 2 enthält p1Kriterien wenn vorhanden', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    \App\Models\Recherche\P1Kriterium::create([
+    P1Kriterium::create([
         'projekt_id' => $projekt->id,
         'kriterium_typ' => 'einschluss',
         'beschreibung' => 'RCT-Studien',
@@ -92,7 +104,7 @@ test('build phase 2 enthält p1Kriterien wenn vorhanden', function () {
 test('build phase 3 enthält p2Cluster wenn vorhanden', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    \App\Models\Recherche\P2Cluster::create([
+    P2Cluster::create([
         'projekt_id' => $projekt->id,
         'cluster_id' => 'C1',
         'cluster_label' => 'KI-Assistenz',
@@ -111,7 +123,7 @@ test('build phase 3 enthält p2Cluster wenn vorhanden', function () {
 test('build phase 5 enthält treffer-count wenn treffer vorhanden', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    \App\Models\Recherche\P5Treffer::create([
+    P5Treffer::create([
         'projekt_id' => $projekt->id,
         'record_id' => 'REC-001',
         'titel' => 'Teststudie',
@@ -128,13 +140,13 @@ test('build phase 5 enthält treffer-count wenn treffer vorhanden', function () 
 test('build phase 7 enthält p6Qualitaetsbewertungen wenn vorhanden', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    $treffer = \App\Models\Recherche\P5Treffer::create([
+    $treffer = P5Treffer::create([
         'projekt_id' => $projekt->id,
         'record_id' => 'REC-002',
         'titel' => 'Bewertete Studie',
     ]);
 
-    \App\Models\Recherche\P6Qualitaetsbewertung::create([
+    P6Qualitaetsbewertung::create([
         'treffer_id' => $treffer->id,
         'studientyp' => 'RCT',
         'rob_tool' => 'RoB2',
@@ -165,7 +177,7 @@ test('build phase 2 ohne kriterien enthält keinen p1Kriterien-Block', function 
 test('build enthält p3 datenbanken bei phase 4', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    \App\Models\Recherche\P3Datenbankmatrix::create([
+    P3Datenbankmatrix::create([
         'projekt_id' => $projekt->id,
         'datenbank' => 'PubMed',
         'disziplin' => 'Medizin',
@@ -187,7 +199,7 @@ test('build enthält p3 datenbanken bei phase 4', function () {
 test('build enthält p4 suchstrings bei phase 5', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    \App\Models\Recherche\P4Suchstring::create([
+    P4Suchstring::create([
         'projekt_id' => $projekt->id,
         'datenbank' => 'PubMed',
         'suchstring' => '("artificial intelligence" OR "machine learning") AND nursing',
@@ -207,13 +219,13 @@ test('build enthält p4 suchstrings bei phase 5', function () {
 test('build phase 6 enthält screening count ohne relation-guard', function () {
     [$projekt] = makeProjektWithWorkspace();
 
-    $treffer = \App\Models\Recherche\P5Treffer::create([
+    $treffer = P5Treffer::create([
         'projekt_id' => $projekt->id,
         'record_id' => 'REC-SCREEN-01',
         'titel' => 'Eingeschlossene Studie',
     ]);
 
-    \App\Models\Recherche\P5ScreeningEntscheidung::create([
+    P5ScreeningEntscheidung::create([
         'treffer_id' => $treffer->id,
         'level' => 'L1_titel_abstract',
         'entscheidung' => 'eingeschlossen',

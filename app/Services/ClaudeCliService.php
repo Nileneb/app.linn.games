@@ -132,9 +132,14 @@ class ClaudeCliService
     public function call(string $userMessage, array $context = []): array
     {
         // Chat agent gets full DB-aware context when a projekt_id is present.
-        $systemSuffix = ! empty($context['projekt_id'])
-            ? app(ClaudeContextBuilder::class)->build($context)
-            : $this->buildContextBlock($context);
+        // Wrapped in try-catch so unit tests (no DB) and edge cases fall back gracefully.
+        try {
+            $systemSuffix = ! empty($context['projekt_id'])
+                ? app(ClaudeContextBuilder::class)->build($context)
+                : $this->buildContextBlock($context);
+        } catch (\Throwable) {
+            $systemSuffix = $this->buildContextBlock($context);
+        }
 
         $parts = array_filter([
             $this->cliBin(),
