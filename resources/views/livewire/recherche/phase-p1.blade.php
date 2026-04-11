@@ -347,7 +347,7 @@ new class extends Component {
     @php $bewertung = $agentResult?->result_data['qualitaets_bewertung'] ?? null; @endphp
     @if ($bewertung)
         @php
-            $score    = (int) ($bewertung['score'] ?? 0);
+            $score    = max(0, min(100, (int) ($bewertung['score'] ?? 0)));
             $level    = $bewertung['level'] ?? 'befriedigend';
             $punkte   = $bewertung['punkte'] ?? [];
             $levelColor = match($level) {
@@ -383,6 +383,7 @@ new class extends Component {
             @if ($punkte)
                 <ul class="space-y-1">
                     @foreach ($punkte as $punkt)
+                        @php $punkt = is_string($punkt) ? $punkt : ''; @endphp
                         <li class="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
                             <span class="{{ str_starts_with($punkt, '+') ? 'text-green-500' : 'text-yellow-500' }} mt-0.5 shrink-0">
                                 {{ str_starts_with($punkt, '+') ? '✓' : '△' }}
