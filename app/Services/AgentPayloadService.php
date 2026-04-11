@@ -123,6 +123,7 @@ class AgentPayloadService
             'p4_thesaurus_mapping',
             'p4_anpassungsprotokoll',
             // P5
+            'p5_treffer',
             'p5_screening_kriterien',
             'p5_screening_entscheidungen',
             'p5_prisma_zahlen',
