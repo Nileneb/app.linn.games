@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Auth;
 
 class CreditCheckoutController extends Controller
 {
-    public function redirect(Request $request, StripeService $stripe): RedirectResponse
+    public function redirect(Request $request): RedirectResponse
     {
         $request->validate(['package' => 'required|integer|min:0|max:3']);
 
         $workspace = Auth::user()->workspaces()->firstOrFail();
-        $url = $stripe->createCheckoutSession($workspace, (int) $request->input('package'));
+        $url = app(StripeService::class)->createCheckoutSession($workspace, (int) $request->input('package'));
 
         return redirect()->away($url);
     }

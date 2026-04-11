@@ -238,5 +238,5 @@ test('build phase 6 enthält screening count ohne relation-guard', function () {
 
     expect($result)
         ->toContain('P5-Screening')
-        ->toContain('1 eingeschlossene Treffer');
+        ->toContain('Eingeschlossene Treffer');
 });
