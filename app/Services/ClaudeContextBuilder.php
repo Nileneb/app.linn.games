@@ -80,7 +80,19 @@ class ClaudeContextBuilder
             $lines[] = 'Pflichtstruktur (EXAKT so — keine anderen Schlüssel!):';
             $lines[] = '```json';
             $lines[] = '{';
-            $lines[] = '  "meta": {"phase": '.$phaseNr.', "agent": "'.$agentKey.'"},';
+            if ($phaseNr === 1) {
+                $lines[] = '  "meta": {';
+                $lines[] = '    "phase": '.$phaseNr.',';
+                $lines[] = '    "agent": "'.$agentKey.'",';
+                $lines[] = '    "qualitaets_bewertung": {';
+                $lines[] = '      "score": "<integer 0-100>",';
+                $lines[] = '      "level": "<schwach|befriedigend|gut|sehr_gut>",';
+                $lines[] = '      "punkte": ["<konkreter positiver Punkt auf Deutsch>", "<Verbesserungshinweis auf Deutsch>"]';
+                $lines[] = '    }';
+                $lines[] = '  },';
+            } else {
+                $lines[] = '  "meta": {"phase": '.$phaseNr.', "agent": "'.$agentKey.'"},';
+            }
             $lines[] = '  "result": {';
             $lines[] = '    "summary": "<kurze Zusammenfassung>",';
             $lines[] = '    "data": {"md_files": []}';
