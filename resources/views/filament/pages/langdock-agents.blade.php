@@ -47,5 +47,61 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Keine Agenten in <code>services.anthropic.agents</code> konfiguriert.</p>
         @endif
 
+        {{-- Letzte Agent-Runs --}}
+        <div class="fi-ta overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 shadow-sm">
+            <div class="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-white/10">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Letzte Agent-Runs (PhaseAgentResult)
+                </span>
+            </div>
+            @if ($recentRuns->isEmpty())
+                <p class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">Noch keine Agent-Runs vorhanden.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gray-900">
+                                <th class="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-300">Status</th>
+                                <th class="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-300">Agent</th>
+                                <th class="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-300">Phase</th>
+                                <th class="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-300">Zeit</th>
+                                <th class="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-300">Fehler</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-white/5">
+                            @foreach ($recentRuns as $run)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td class="px-4 py-2.5">
+                                        @php
+                                            $badgeClass = match($run->status) {
+                                                'completed' => 'bg-success-100 dark:bg-success-950 text-success-700 dark:text-success-300',
+                                                'failed'    => 'bg-danger-100 dark:bg-danger-950 text-danger-700 dark:text-danger-300',
+                                                default     => 'bg-warning-100 dark:bg-warning-950 text-warning-700 dark:text-warning-300',
+                                            };
+                                        @endphp
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $badgeClass }}">
+                                            {{ $run->status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-2.5 font-mono text-xs text-gray-700 dark:text-gray-300">
+                                        {{ $run->agent_config_key }}
+                                    </td>
+                                    <td class="px-4 py-2.5 text-xs text-gray-600 dark:text-gray-400">
+                                        P{{ $run->phase_nr }}
+                                    </td>
+                                    <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $run->created_at?->diffForHumans() }}
+                                    </td>
+                                    <td class="px-4 py-2.5 text-xs text-danger-600 dark:text-danger-400 max-w-xs truncate">
+                                        {{ $run->error_message }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
     </div>
 </x-filament-panels::page>
