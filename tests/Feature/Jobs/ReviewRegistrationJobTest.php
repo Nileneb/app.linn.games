@@ -6,8 +6,9 @@ use Illuminate\Support\Facades\Http;
 
 test('job does nothing when user not found', function () {
     ReviewRegistrationJob::dispatchSync(999999999);
-    // no exception = pass
-})->doesNotPerformAssertions();
+
+    expect(User::find(999999999))->toBeNull();
+});
 
 test('job suspends user when langdock returns spam probability >= 0.80', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
