@@ -134,6 +134,11 @@ return [
         ],
     ],
 
+    'pi_agent' => [
+        // Pi-Server (MayringCoder pi_server.py) — Dev-Worker-Backend
+        'url' => env('PI_AGENT_URL', 'http://host.docker.internal:8091'),
+    ],
+
     'mayring_mcp' => [
         'endpoint' => env('MAYRING_MCP_ENDPOINT', 'http://localhost:8090'),
         'auth_token' => env('MAYRING_MCP_AUTH_TOKEN'),

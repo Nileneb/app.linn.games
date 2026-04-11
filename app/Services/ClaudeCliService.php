@@ -139,52 +139,49 @@ class ClaudeCliService
     }
 
     /**
-     * Ruft einen Phase-Worker via lokalem Ollama auf (Dev-Mode, kein API-Cost).
+     * Ruft einen Phase-Worker via Pi-Server (MayringCoder + Ollama + RAG) auf.
+     * Dev-Mode: kein API-Cost, Memory-gestütztes lokales Modell.
      *
      * @return array{content: string, cost_usd: float, input_tokens: int, output_tokens: int}
      *
      * @throws ClaudeCliException
      */
-    private function callOllama(
-        string $model,
+    private function callPiAgent(
         string $systemPrompt,
         string $userMessage,
         int $timeout = 300,
     ): array {
-        $ollamaUrl = rtrim(config('services.ollama.url', 'http://localhost:11434'), '/');
+        $piUrl = rtrim(config('services.pi_agent.url', 'http://host.docker.internal:8091'), '/');
 
-        $messages = [];
-        if ($systemPrompt !== '') {
-            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
-        }
-        $messages[] = ['role' => 'user', 'content' => $userMessage];
+        // Kombiniere System-Prompt + User-Message als Pi-Task
+        $task = $systemPrompt !== ''
+            ? "{$systemPrompt}\n\n---\n\n{$userMessage}"
+            : $userMessage;
 
-        $response = Http::timeout($timeout)->post("{$ollamaUrl}/api/chat", [
-            'model' => $model,
-            'messages' => $messages,
-            'stream' => false,
+        $response = Http::timeout($timeout)->post("{$piUrl}/pi-task", [
+            'task' => $task,
         ]);
 
         if (! $response->successful()) {
-            Log::error('Ollama Worker Fehler', [
+            Log::error('Pi-Agent Fehler', [
                 'status' => $response->status(),
                 'body' => mb_substr($response->body(), 0, 500),
-                'model' => $model,
+                'pi_url' => $piUrl,
             ]);
 
             throw new ClaudeCliException(
-                'Ollama Fehler ('.$response->status().'): '.mb_substr($response->body(), 0, 300)
+                'Pi-Agent Fehler ('.$response->status().'): '.mb_substr($response->body(), 0, 300)
             );
         }
 
         $data = $response->json();
-        $content = $data['message']['content'] ?? '';
+        $content = $data['content'] ?? '';
 
         return [
             'content' => $content,
             'cost_usd' => 0.0,
-            'input_tokens' => (int) ($data['prompt_eval_count'] ?? 0),
-            'output_tokens' => (int) ($data['eval_count'] ?? 0),
+            'input_tokens' => 0,
+            'output_tokens' => 0,
         ];
     }
 
@@ -333,9 +330,7 @@ class ClaudeCliService
             ->last()['content'] ?? '';
 
         if ($this->useOllamaForWorkers()) {
-            $ollamaModel = config('services.anthropic.ollama_worker_model', 'llama3.2');
-
-            return $this->callOllama($ollamaModel, $systemPrompt, $userMessage, $timeout);
+            return $this->callPiAgent($systemPrompt, $userMessage, $timeout);
         }
 
         if ($this->useDirectApi()) {
