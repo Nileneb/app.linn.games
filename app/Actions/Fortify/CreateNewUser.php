@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +25,15 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => ['Registrierung fehlgeschlagen.'],
             ]);
         }
+
+        // Rate limiting: 5 registrations per IP per hour
+        $key = 'register:'.request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            throw ValidationException::withMessages([
+                'email' => [__('Too many registration attempts. Please try again later.')],
+            ]);
+        }
+        RateLimiter::hit($key, 3600); // 1 hour decay
 
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
