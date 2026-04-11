@@ -133,6 +133,61 @@ class ClaudeCliService
         return (bool) config('services.anthropic.use_direct_api', false);
     }
 
+    private function useOllamaForWorkers(): bool
+    {
+        return (bool) config('services.anthropic.use_ollama_workers', false);
+    }
+
+    /**
+     * Ruft einen Phase-Worker via lokalem Ollama auf (Dev-Mode, kein API-Cost).
+     *
+     * @return array{content: string, cost_usd: float, input_tokens: int, output_tokens: int}
+     *
+     * @throws ClaudeCliException
+     */
+    private function callOllama(
+        string $model,
+        string $systemPrompt,
+        string $userMessage,
+        int $timeout = 300,
+    ): array {
+        $ollamaUrl = rtrim(config('services.ollama.url', 'http://localhost:11434'), '/');
+
+        $messages = [];
+        if ($systemPrompt !== '') {
+            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
+        }
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        $response = Http::timeout($timeout)->post("{$ollamaUrl}/api/chat", [
+            'model' => $model,
+            'messages' => $messages,
+            'stream' => false,
+        ]);
+
+        if (! $response->successful()) {
+            Log::error('Ollama Worker Fehler', [
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 500),
+                'model' => $model,
+            ]);
+
+            throw new ClaudeCliException(
+                'Ollama Fehler ('.$response->status().'): '.mb_substr($response->body(), 0, 300)
+            );
+        }
+
+        $data = $response->json();
+        $content = $data['message']['content'] ?? '';
+
+        return [
+            'content' => $content,
+            'cost_usd' => 0.0,
+            'input_tokens' => (int) ($data['prompt_eval_count'] ?? 0),
+            'output_tokens' => (int) ($data['eval_count'] ?? 0),
+        ];
+    }
+
     /**
      * Direkte Anthropic API — wird genutzt wenn CLAUDE_USE_DIRECT_API=true (Dev-Mode).
      *
@@ -276,6 +331,12 @@ class ClaudeCliService
         $userMessage = collect($messages)
             ->where('role', 'user')
             ->last()['content'] ?? '';
+
+        if ($this->useOllamaForWorkers()) {
+            $ollamaModel = config('services.anthropic.ollama_worker_model', 'llama3.2');
+
+            return $this->callOllama($ollamaModel, $systemPrompt, $userMessage, $timeout);
+        }
 
         if ($this->useDirectApi()) {
             return $this->callDirectApi($model, $systemPrompt, $userMessage, $timeout);

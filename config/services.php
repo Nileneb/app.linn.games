@@ -85,6 +85,9 @@ return [
         // Path to the claude CLI binary — uses project-local node_modules, not the user's global install
         'cli_path' => env('CLAUDE_CLI_PATH', base_path('node_modules/.bin/claude')),
         'use_direct_api' => env('CLAUDE_USE_DIRECT_API', false),
+        // Dev: Phase-Worker via lokalem Ollama statt Claude API/CLI
+        'use_ollama_workers' => env('CLAUDE_USE_OLLAMA_WORKERS', false),
+        'ollama_worker_model' => env('CLAUDE_OLLAMA_WORKER_MODEL', 'llama3.2'),
         'model' => env('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'),
         'max_tokens' => (int) env('CLAUDE_MAX_TOKENS', 8192),
         'retry_attempts' => (int) env('CLAUDE_RETRY_ATTEMPTS', 3),
