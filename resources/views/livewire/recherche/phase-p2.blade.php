@@ -167,7 +167,11 @@ new class extends Component {
         $r = P2MappingSuchstringKomponente::where('projekt_id', $this->projekt->id)->findOrFail($id);
         $this->editingMapId = $id;
         $this->mapKomponenteLabel = $r->komponente_label ?? '';
-        $this->mapSuchbegriffe = is_array($r->suchbegriffe) ? implode(', ', $r->suchbegriffe) : '';
+        $this->mapSuchbegriffe = is_array($r->suchbegriffe)
+            ? collect($r->suchbegriffe)->map(fn($s) =>
+                is_array($s) ? ($s['term'] ?? $s['label'] ?? '') : (string) $s
+              )->filter()->implode(', ')
+            : '';
         $this->mapSprache = $r->sprache ?? '';
         $this->mapTrunkierung = (bool) $r->trunkierung_genutzt;
         $this->mapAnmerkung = $r->anmerkung ?? '';
@@ -544,9 +548,14 @@ new class extends Component {
                             <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/30">
                                 <td class="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">{{ $m->komponente_label }}</td>
                                 <td class="px-4 py-2 text-neutral-600 dark:text-neutral-300">
-                                    @if (is_array($m->suchbegriffe))
-                                        {{ implode(', ', array_slice($m->suchbegriffe, 0, 4)) }}
-                                        @if (count($m->suchbegriffe) > 4) <span class="text-neutral-400">+{{ count($m->suchbegriffe) - 4 }}</span> @endif
+                                    @if (is_array($m->suchbegriffe) && count($m->suchbegriffe) > 0)
+                                        @php
+                                            $labels = collect($m->suchbegriffe)->map(fn($s) =>
+                                                is_array($s) ? ($s['term'] ?? $s['label'] ?? json_encode($s, JSON_UNESCAPED_UNICODE)) : (string) $s
+                                            );
+                                        @endphp
+                                        {{ $labels->take(4)->implode(', ') }}
+                                        @if ($labels->count() > 4) <span class="text-neutral-400">+{{ $labels->count() - 4 }}</span> @endif
                                     @else — @endif
                                 </td>
                                 <td class="px-4 py-2 text-neutral-500">{{ $m->sprache ?? '—' }}</td>
