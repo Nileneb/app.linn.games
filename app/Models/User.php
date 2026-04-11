@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use App\Models\Concerns\HasWorkspaces;
+use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -17,7 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, HasWorkspaces, LogsActivity, Notifiable, TwoFactorAuthenticatable;
 
     /**
@@ -37,6 +39,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'invitation_expires_at',
         'provider',
         'provider_id',
+        'registration_ip',
+        'total_kills',
     ];
 
     /**
@@ -63,6 +67,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'invitation_expires_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'string',
+            'total_kills' => 'integer',
         ];
     }
 
@@ -114,6 +119,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasRole(\App\Enums\UserRole::ADMIN);
+        return $this->hasRole(UserRole::ADMIN);
     }
 }
