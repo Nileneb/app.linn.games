@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Jobs\ReviewRegistrationJob;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
@@ -70,7 +71,7 @@ class CreateNewUser implements CreatesNewUsers
             ],
         ])->validate();
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
@@ -80,5 +81,10 @@ class CreateNewUser implements CreatesNewUsers
             'erfahrung' => $input['erfahrung'],
             'registration_ip' => request()->ip(),
         ]);
+
+        // Spam-Review im Hintergrund — kein Einfluss auf Registrierungs-Response
+        ReviewRegistrationJob::dispatch($user->id)->delay(now()->addSeconds(10));
+
+        return $user;
     }
 }
