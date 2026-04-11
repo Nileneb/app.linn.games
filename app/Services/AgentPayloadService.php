@@ -96,23 +96,41 @@ class AgentPayloadService
      */
     private function insertRows(string $tableName, array $rows, string $projektId): int
     {
-        // Whitelist of allowed tables (only agent output tables)
+        // Whitelist of allowed tables (only agent output tables — must match actual DB table names)
         $allowedTables = [
-            'p1_strukturmodelle',
-            'p2_review_typen',
-            'p3_datenbanken',
+            // P1
+            'p1_komponenten',
+            'p1_kriterien',
+            'p1_strukturmodell_wahl',
+            'p1_warnsignale',
+            // P2
+            'p2_cluster',
+            'p2_review_typ_entscheidung',
+            'p2_mapping_suchstring_komponenten',
+            'p2_trefferlisten',
+            // P3
+            'p3_datenbankmatrix',
+            'p3_disziplinen',
+            'p3_geografische_filter',
+            'p3_graue_literatur',
+            // P4
             'p4_suchstrings',
             'p4_thesaurus_mapping',
+            'p4_anpassungsprotokoll',
+            // P5
             'p5_screening_kriterien',
             'p5_screening_entscheidungen',
             'p5_prisma_zahlen',
             'p5_tool_entscheidung',
+            // P6
             'p6_qualitaetsbewertung',
             'p6_luckenanalyse',
+            // P7
             'p7_datenextraktion',
             'p7_muster_konsistenz',
             'p7_grade_einschaetzung',
             'p7_synthese_methode',
+            // P8
             'p8_suchprotokoll',
             'p8_limitationen',
             'p8_reproduzierbarkeitspruefung',

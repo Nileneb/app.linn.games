@@ -131,7 +131,10 @@ class ClaudeCliService
 
     public function call(string $userMessage, array $context = []): array
     {
-        $systemSuffix = $this->buildContextBlock($context);
+        // Chat agent gets full DB-aware context when a projekt_id is present.
+        $systemSuffix = ! empty($context['projekt_id'])
+            ? app(ClaudeContextBuilder::class)->build($context)
+            : $this->buildContextBlock($context);
 
         $parts = array_filter([
             $this->cliBin(),
