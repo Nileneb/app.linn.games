@@ -26,6 +26,7 @@ yarn-error.log
 # Claude Code — env-spezifische Configs (Dev ≠ Production)
 .claude/settings.local.json
 .claude/agent-memory/
+.claude/mcp-production.json
 docker-compose.override.yml
 # paper-search-mcp ist jetzt Teil des Repos (MCP-Server für Literatursuche)
 *.sql
