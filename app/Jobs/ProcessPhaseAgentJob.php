@@ -10,6 +10,7 @@ use App\Services\AgentResponseParser;
 use App\Services\ClaudeCliService;
 use App\Services\CreditService;
 use App\Services\LangdockArtifactService;
+use App\Services\PaperSearchService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
 use App\Services\SynthesisMarkdownService;
@@ -47,6 +48,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
             $projekt = Projekt::findOrFail($this->projektId);
 
             $messages = $this->prependRetrieverContext($projekt, $this->messages);
+            $messages = $this->prependPaperSearchContext($projekt, $messages);
 
             // Find the pending record created by the Livewire component before dispatch;
             // fall back to creating one here for backward compatibility (e.g. direct job dispatch).
@@ -221,6 +223,54 @@ class ProcessPhaseAgentJob implements ShouldQueue
         ]);
 
         return [['role' => 'user', 'content' => $contextText], ...$messages];
+    }
+
+    /**
+     * For phases 3, 4, 5: fetch real papers from paper-search MCP REST API and
+     * prepend them as context so the Pi agent has actual data to work with.
+     *
+     * Phase 3: database selection — needs papers to know which DBs are relevant
+     * Phase 4: search string generation — needs papers to refine/validate strings
+     * Phase 5: screening — needs papers to create p5_treffer records
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array<int, array{role: string, content: string}>
+     */
+    private function prependPaperSearchContext(Projekt $projekt, array $messages): array
+    {
+        // Only run for phases that benefit from live paper data
+        if (! in_array($this->phaseNr, [3, 4, 5], true)) {
+            return $messages;
+        }
+
+        $query = $projekt->forschungsfrage ?? null;
+        if (! $query) {
+            return $messages;
+        }
+
+        // Phase 5 needs more results to populate p5_treffer; P3/P4 need fewer for context
+        $maxPerSource = $this->phaseNr === 5 ? 8 : 4;
+        $sources = ['pubmed', 'arxiv', 'semantic'];
+
+        $result = app(PaperSearchService::class)->search($query, $sources, $maxPerSource);
+
+        if ($result['total'] === 0 || $result['context'] === '') {
+            Log::info('PaperSearchService: keine Ergebnisse', [
+                'projekt_id' => $this->projektId,
+                'phase_nr' => $this->phaseNr,
+                'query' => mb_substr($query, 0, 100),
+            ]);
+
+            return $messages;
+        }
+
+        Log::info('PaperSearchService: Papers als Kontext geladen', [
+            'projekt_id' => $this->projektId,
+            'phase_nr' => $this->phaseNr,
+            'total' => $result['total'],
+        ]);
+
+        return [['role' => 'user', 'content' => $result['context']], ...$messages];
     }
 
     /**

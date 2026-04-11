@@ -139,6 +139,11 @@ return [
         'url' => env('PI_AGENT_URL', 'http://host.docker.internal:8091'),
     ],
 
+    'paper_search' => [
+        'url' => env('PAPER_SEARCH_URL', 'http://host.docker.internal:8089'),
+        'token' => env('PAPER_SEARCH_TOKEN', ''),
+    ],
+
     'mayring_mcp' => [
         'endpoint' => env('MAYRING_MCP_ENDPOINT', 'http://localhost:8090'),
         'auth_token' => env('MAYRING_MCP_AUTH_TOKEN'),
