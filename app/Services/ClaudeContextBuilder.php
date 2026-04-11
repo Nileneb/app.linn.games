@@ -169,10 +169,39 @@ class ClaudeContextBuilder
         }
 
         if ($phaseNr >= 6) {
-            $eingeschlossen = $projekt->p5Treffer()
+            // Load treffer with IDs so phase-6 agent can write p6_qualitaetsbewertung (treffer_id FK)
+            $treffer = $projekt->p5Treffer()
                 ->whereHas('screeningEntscheidungen', fn ($q) => $q->where('entscheidung', 'eingeschlossen'))
-                ->count();
-            $lines[] = "### P5-Screening: {$eingeschlossen} eingeschlossene Treffer";
+                ->select(['id', 'titel', 'autoren', 'jahr'])
+                ->limit(50)
+                ->get();
+
+            if ($treffer->isNotEmpty()) {
+                $lines[] = '### P5-Screening: Eingeschlossene Treffer (für p6_qualitaetsbewertung.treffer_id)';
+                $lines[] = '| treffer_id (UUID) | Titel | Autoren | Jahr |';
+                $lines[] = '|-------------------|-------|---------|------|';
+                foreach ($treffer as $t) {
+                    $titel = mb_substr((string) ($t->titel ?? ''), 0, 60);
+                    $autoren = mb_substr((string) ($t->autoren ?? ''), 0, 40);
+                    $lines[] = "| {$t->id} | {$titel} | {$autoren} | {$t->jahr} |";
+                }
+            } else {
+                $lines[] = '### P5-Screening: 0 eingeschlossene Treffer';
+                // Provide ALL treffer as fallback so P6 agent has something to assess
+                $allTreffer = $projekt->p5Treffer()
+                    ->select(['id', 'titel', 'autoren', 'jahr'])
+                    ->limit(20)
+                    ->get();
+                if ($allTreffer->isNotEmpty()) {
+                    $lines[] = '(Alle importierten Treffer ohne Screening-Entscheidung — ebenfalls für p6 nutzbar)';
+                    $lines[] = '| treffer_id (UUID) | Titel | Jahr |';
+                    $lines[] = '|-------------------|-------|------|';
+                    foreach ($allTreffer as $t) {
+                        $titel = mb_substr((string) ($t->titel ?? ''), 0, 80);
+                        $lines[] = "| {$t->id} | {$titel} | {$t->jahr} |";
+                    }
+                }
+            }
             $lines[] = '';
         }
 
@@ -204,7 +233,7 @@ class ClaudeContextBuilder
             1 => [
                 'p1_komponenten' => 'projekt_id (uuid, required), komponente_kuerzel (text, required), komponente_label (text, required), modell (enum: PICO|SPIDER|PICOS, required), inhaltlicher_begriff_de, englische_entsprechung, mesh_term, thesaurus_term, anmerkungen, synonyme (jsonb)',
                 'p1_kriterien' => 'projekt_id (uuid, required), beschreibung (text, required), kriterium_typ (enum: einschluss|ausschluss, required), begruendung, quellbezug',
-                'p1_strukturmodell_wahl' => 'projekt_id (uuid, required), modell (enum: PICO|SPIDER|PICOS, required), gewaehlt (boolean, required), begruendung',
+                'p1_strukturmodell_wahl' => 'projekt_id (uuid, required), modell (enum: PICO|SPIDER|PICOS, required), gewaehlt (boolean, required), begruendung, quellbezug',
                 'p1_warnsignale' => 'projekt_id (uuid, required), lfd_nr (integer, required), warnsignal (text, required), moegliche_auswirkung, handlungsempfehlung',
             ],
             2 => [

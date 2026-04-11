@@ -82,14 +82,14 @@ return [
         ],
         6 => [
             'min_assessments' => 1,
-            'blocking' => true,
-            'warning' => 'Mindestens 1 Qualitätsbewertung erforderlich um fortzufahren',
+            'blocking' => false,
+            'warning' => 'Mindestens 1 Qualitätsbewertung empfohlen — Fortfahren dennoch möglich',
             'agent_check' => false,
         ],
         7 => [
             'min_extractions' => 1,
-            'blocking' => true,
-            'warning' => 'Mindestens 1 Datenextraktion erforderlich um fortzufahren',
+            'blocking' => false,
+            'warning' => 'Mindestens 1 Datenextraktion empfohlen — Fortfahren dennoch möglich',
             'agent_check' => false,
         ],
     ],
