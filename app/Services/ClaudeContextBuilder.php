@@ -56,6 +56,12 @@ class ClaudeContextBuilder
 
             $lines[] = '## Output-Anforderung';
             $lines[] = '';
+            $lines[] = '⚠️ ACHTUNG: Du bist ein DATEN-GENERATOR, KEIN SQL-Executor!';
+            $lines[] = '- Führe KEINE SQL-Abfragen aus. Kein SELECT, kein UPDATE, kein DELETE.';
+            $lines[] = '- Dein Output sind INSERT-Daten (neue Zeilen), KEINE Query-Ergebnisse.';
+            $lines[] = '- Wenn du Daten aus dem Kontext siehst (z.B. P2-Ergebnisse), nutze sie als Eingabe — schreibe sie NICHT zurück in db_payload.';
+            $lines[] = '- `db_payload.tables` enthält NUR neue Zeilen, die in die DB geschrieben werden sollen.';
+            $lines[] = '';
             // Restrict Pi agent to phase-specific tables only
             $allowedTables = $this->tablesForPhase($phaseNr);
             if (! empty($allowedTables)) {

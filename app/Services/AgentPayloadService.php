@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Processes and persists the db_payload from agent responses.
@@ -164,6 +165,14 @@ class AgentPayloadService
             // Remove any timestamp keys the agent may have included —
             // Phase tables have no created_at/updated_at columns.
             unset($data['created_at'], $data['updated_at']);
+
+            // Strip columns not present in the actual DB table —
+            // handles hallucinated column names from Pi agent (e.g. p1_komponenten getting
+            // gewaehlt/quellbezug which belong to p1_strukturmodell_wahl).
+            $validColumns = Schema::getColumnListing($tableName);
+            if (! empty($validColumns)) {
+                $data = array_intersect_key($data, array_flip($validColumns));
+            }
 
             // JSON-encode arrays/objects — jsonb columns require a JSON string, not a PHP array.
             foreach ($data as $key => $value) {
