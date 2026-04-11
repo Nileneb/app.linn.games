@@ -161,14 +161,9 @@ class AgentPayloadService
                 $data['projekt_id'] = $projektId;
             }
 
-            // Add timestamps if missing
-            $now = now();
-            if (! isset($data['created_at'])) {
-                $data['created_at'] = $now;
-            }
-            if (! isset($data['updated_at'])) {
-                $data['updated_at'] = $now;
-            }
+            // Remove any timestamp keys the agent may have included —
+            // Phase tables have no created_at/updated_at columns.
+            unset($data['created_at'], $data['updated_at']);
 
             try {
                 DB::table($tableName)->insert($data);
