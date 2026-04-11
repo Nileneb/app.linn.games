@@ -99,6 +99,15 @@ class ProcessPhaseAgentJob implements ShouldQueue
             // Dedizierter Parser statt inline Logik
             $parsed = app(AgentResponseParser::class)->parse($rawContent);
 
+            // Debug: Pi agent output sichtbar machen wenn kein db_payload
+            if ($parsed['db_payload'] === null) {
+                Log::debug('ProcessPhaseAgentJob: kein db_payload im Agent-Response', [
+                    'projekt_id' => $this->projektId,
+                    'phase_nr' => $this->phaseNr,
+                    'response_preview' => mb_substr($rawContent, 0, 600),
+                ]);
+            }
+
             // DB-Payload persistieren
             if ($parsed['db_payload'] !== null) {
                 $payloadResult = app(AgentPayloadService::class)->persistPayload(

@@ -237,7 +237,7 @@ class ClaudeContextBuilder
                 'p1_warnsignale' => 'projekt_id (uuid, required), lfd_nr (integer, required), warnsignal (text, required), moegliche_auswirkung, handlungsempfehlung',
             ],
             2 => [
-                'p2_cluster' => 'projekt_id (uuid, required), cluster_id (text, required), cluster_label (text, required), beschreibung, treffer_schaetzung (integer), relevanz',
+                'p2_cluster' => 'projekt_id (uuid, required), cluster_id (text, required), cluster_label (text, required), beschreibung, treffer_schaetzung (integer), relevanz (enum: hoch|mittel|gering — oder NULL lassen)',
                 'p2_review_typ_entscheidung' => 'projekt_id (uuid, required), review_typ (enum: systematic_review|scoping_review|rapid_review|meta_analysis, required), passt (boolean), begruendung',
                 'p2_mapping_suchstring_komponenten' => 'projekt_id (uuid, required), komponente_label (text, required), sprache, trunkierung_genutzt (boolean, required), suchbegriffe (jsonb), anmerkung',
                 'p2_trefferlisten' => 'projekt_id (uuid, required), datenbank (text, required), suchstring, treffer_gesamt (integer), einschaetzung, anpassung_notwendig (boolean, required), suchdatum (date)',
