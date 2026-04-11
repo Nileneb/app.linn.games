@@ -68,24 +68,31 @@ class ClaudeContextBuilder
 
             $lines[] = 'Gib exakt EIN gültiges JSON-Objekt zurück. Kein Text davor oder danach. Keine Markdown-Fences.';
             $lines[] = '';
-            $lines[] = 'Pflichtstruktur:';
+            // Build concrete table example from allowed tables
+            $exampleTables = '';
+            if (! empty($allowedTables)) {
+                $firstTable = $allowedTables[0];
+                $projektIdEx = (string) ($context['projekt_id'] ?? 'PROJEKT-UUID');
+                $exampleTables = '"'.$firstTable.'": [{"projekt_id": "'.$projektIdEx.'", "...weitere Felder laut Schema...": "..."}]';
+            }
+            $lines[] = 'Pflichtstruktur (EXAKT so — keine anderen Schlüssel!):';
             $lines[] = '```json';
             $lines[] = '{';
             $lines[] = '  "meta": {"phase": '.$phaseNr.', "agent": "'.$agentKey.'"},';
             $lines[] = '  "result": {';
-            $lines[] = '    "summary": "<kurze Zusammenfassung für den User>",';
+            $lines[] = '    "summary": "<kurze Zusammenfassung>",';
             $lines[] = '    "data": {"md_files": []}';
             $lines[] = '  },';
             $lines[] = '  "db_payload": {';
             $lines[] = '    "tables": {';
-            $lines[] = '      "<tabellenname>": [{"projekt_id": "'.(string) ($context['projekt_id'] ?? 'UUID').'", "<feld>": "<wert>"}]';
+            $lines[] = '      '.$exampleTables;
             $lines[] = '    }';
             $lines[] = '  }';
             $lines[] = '}';
             $lines[] = '```';
             $lines[] = '';
-            $lines[] = 'Der `db_payload.tables`-Key enthält die DB-Daten als Array von Zeilen je Tabelle.';
-            $lines[] = 'Lasse `db_payload.tables` leer (`{}`), wenn keine DB-Einträge nötig sind.';
+            $lines[] = 'WICHTIG: `db_payload.tables` darf NUR die oben gelisteten Tabellennamen enthalten.';
+            $lines[] = 'Erfundene Tabellennamen wie "p4_final_search_components", "p4_disziplinen" etc. sind VERBOTEN.';
             $lines[] = '';
 
             // Exaktes Schema der für diese Phase relevanten Tabellen
@@ -243,8 +250,8 @@ class ClaudeContextBuilder
                 'p2_trefferlisten' => 'projekt_id (uuid, required), datenbank (text, required), suchstring, treffer_gesamt (integer), einschaetzung, anpassung_notwendig (boolean, required), suchdatum (date)',
             ],
             3 => [
-                'p3_datenbankmatrix' => 'projekt_id (uuid, required), datenbank (text, required), disziplin, abdeckung, besonderheit, zugang, empfohlen (boolean), begruendung',
-                'p3_disziplinen' => 'projekt_id (uuid, required), disziplin (text, required), art, relevanz, anmerkung',
+                'p3_datenbankmatrix' => 'projekt_id (uuid, required), datenbank (text, required), disziplin, abdeckung, besonderheit (NICHT "besondere"!), zugang (enum: frei|kostenpflichtig|institutionell — oder NULL), empfohlen (boolean), begruendung',
+                'p3_disziplinen' => 'projekt_id (uuid, required), disziplin (text, required), art (enum: kerndisziplin|angrenzend — NUR diese zwei Werte oder NULL!), relevanz (enum: hoch|mittel|gering — oder NULL), anmerkung',
                 'p3_geografische_filter' => 'projekt_id (uuid, required), region_land (text, required), validierter_filter_vorhanden (boolean, required), filtername_quelle, sensitivitaet_prozent, hilfsstrategie',
                 'p3_graue_literatur' => 'projekt_id (uuid, required), quelle (text, required), typ, url, suchpfad, relevanz, anmerkung',
             ],
