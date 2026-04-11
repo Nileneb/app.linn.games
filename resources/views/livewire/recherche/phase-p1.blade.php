@@ -338,11 +338,62 @@ new class extends Component {
                 report: true,
             ),
             'transitionStatus' => $validator->getTransitionStatus($this->projekt, 1, 2),
+            'agentResult' => $this->loadLatestAgentResult(1),
         ];
     }
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
+    @php $bewertung = $agentResult?->result_data['qualitaets_bewertung'] ?? null; @endphp
+    @if ($bewertung)
+        @php
+            $score    = (int) ($bewertung['score'] ?? 0);
+            $level    = $bewertung['level'] ?? 'befriedigend';
+            $punkte   = $bewertung['punkte'] ?? [];
+            $levelColor = match($level) {
+                'sehr_gut'     => 'text-green-600 dark:text-green-400',
+                'gut'          => 'text-blue-600 dark:text-blue-400',
+                'befriedigend' => 'text-yellow-600 dark:text-yellow-400',
+                default        => 'text-red-600 dark:text-red-400',
+            };
+            $barColor = match($level) {
+                'sehr_gut'     => 'bg-green-500',
+                'gut'          => 'bg-blue-500',
+                'befriedigend' => 'bg-yellow-500',
+                default        => 'bg-red-500',
+            };
+            $levelLabel = match($level) {
+                'sehr_gut'     => 'Sehr gut',
+                'gut'          => 'Gut',
+                'befriedigend' => 'Befriedigend',
+                default        => 'Schwach',
+            };
+        @endphp
+        <div class="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Fragestellungs-Qualität</span>
+                <span class="text-xs font-medium {{ $levelColor }}">{{ $levelLabel }}</span>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="flex-1 bg-gray-100 dark:bg-white/10 rounded-full h-2">
+                    <div class="{{ $barColor }} h-2 rounded-full transition-all" style="width: {{ $score }}%"></div>
+                </div>
+                <span class="text-sm font-bold {{ $levelColor }} tabular-nums w-12 text-right">{{ $score }}/100</span>
+            </div>
+            @if ($punkte)
+                <ul class="space-y-1">
+                    @foreach ($punkte as $punkt)
+                        <li class="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
+                            <span class="{{ str_starts_with($punkt, '+') ? 'text-green-500' : 'text-yellow-500' }} mt-0.5 shrink-0">
+                                {{ str_starts_with($punkt, '+') ? '✓' : '△' }}
+                            </span>
+                            <span>{{ ltrim($punkt, '+ -') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    @endif
     {{-- ═══ Strukturmodellwahl ═══ --}}
     <x-crud.section title="Strukturmodellwahl" :count="$strukturmodelle->count()" new-action="newSmw">
         <x-crud.form :visible="$showSmwForm" save-action="saveSmw" cancel-action="cancelSmw">
