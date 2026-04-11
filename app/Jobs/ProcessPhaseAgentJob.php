@@ -131,6 +131,14 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 ]);
             }
 
+            // Qualitätsscore für P1 in result_data persistieren
+            if ($this->phaseNr === 1) {
+                $bewertung = $parsed['meta']['qualitaets_bewertung'] ?? null;
+                if (is_array($bewertung) && isset($bewertung['score'])) {
+                    $result->update(['result_data' => ['qualitaets_bewertung' => $bewertung]]);
+                }
+            }
+
             // Synthesis-Markdown anreichern
             $enhancedContent = $this->enrichResponseWithSynthesis(
                 $rawContent,
