@@ -51,11 +51,31 @@ class ClaudeContextBuilder
 
         // Output-Anforderung
         if ($context['structured_output'] ?? false) {
+            $phaseNr = (int) ($context['phase_nr'] ?? 0);
+            $agentKey = $context['agent_config_key'] ?? 'worker';
+
             $lines[] = '## Output-Anforderung';
             $lines[] = '';
-            $lines[] = 'Gib exakt EIN gültiges JSON-Objekt zurück (JSON Envelope v1).';
-            $lines[] = 'Pflicht-Keys: meta, db, result, next, warnings.';
-            $lines[] = 'Keine Markdown-Fences. Kein Text davor oder danach.';
+            $lines[] = 'Gib exakt EIN gültiges JSON-Objekt zurück. Kein Text davor oder danach. Keine Markdown-Fences.';
+            $lines[] = '';
+            $lines[] = 'Pflichtstruktur:';
+            $lines[] = '```json';
+            $lines[] = '{';
+            $lines[] = '  "meta": {"phase": '.$phaseNr.', "agent": "'.$agentKey.'"},';
+            $lines[] = '  "result": {';
+            $lines[] = '    "summary": "<kurze Zusammenfassung für den User>",';
+            $lines[] = '    "data": {"md_files": []}';
+            $lines[] = '  },';
+            $lines[] = '  "db_payload": {';
+            $lines[] = '    "tables": {';
+            $lines[] = '      "<tabellenname>": [{"projekt_id": "'.(string) ($context['projekt_id'] ?? 'UUID').'", "<feld>": "<wert>"}]';
+            $lines[] = '    }';
+            $lines[] = '  }';
+            $lines[] = '}';
+            $lines[] = '```';
+            $lines[] = '';
+            $lines[] = 'Der `db_payload.tables`-Key enthält die DB-Daten als Array von Zeilen je Tabelle.';
+            $lines[] = 'Lasse `db_payload.tables` leer (`{}`), wenn keine DB-Einträge nötig sind.';
             $lines[] = '';
         }
 

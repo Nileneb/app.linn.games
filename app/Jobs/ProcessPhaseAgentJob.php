@@ -65,10 +65,17 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 ]);
 
             // Agent via Claude CLI subprocess aufrufen
+            // structured_output: true instructs ClaudeContextBuilder to append the JSON Envelope
+            // requirement to the system prompt so workers persist data via db_payload.
+            $contextWithOutput = array_merge($this->context, [
+                'structured_output' => true,
+                'agent_config_key' => $this->agentConfigKey,
+            ]);
+
             $cliResult = app(ClaudeCliService::class)->callForPhase(
                 $this->agentConfigKey,
                 $messages,
-                $this->context,
+                $contextWithOutput,
             );
 
             $rawContent = $cliResult['content'];
