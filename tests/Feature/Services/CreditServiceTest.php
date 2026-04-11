@@ -55,6 +55,7 @@ test('deduct zieht input und output tokens separat ab', function () {
     config([
         'services.anthropic.price_per_1k_input_tokens_cents' => 1,
         'services.anthropic.price_per_1k_output_tokens_cents' => 4,
+        'services.anthropic.markup_factors.search_agent' => 1.0,
     ]);
 
     $user = User::factory()->withoutTwoFactor()->create();
@@ -124,6 +125,7 @@ test('checkLowBalance gibt true zurück wenn guthaben unter schwellenwert', func
     config([
         'services.anthropic.low_balance_threshold_percent' => 10,
         'services.anthropic.price_per_1k_input_tokens_cents' => 2,
+        'services.anthropic.markup_factors.default' => 1.0,
     ]);
     $workspace = makeWorkspace(1000);
 
@@ -160,6 +162,7 @@ test('assertAgentDailyLimit wirft exception wenn tageslimit überschritten', fun
     config([
         'services.anthropic.agent_daily_limits.test_agent' => 100,
         'services.anthropic.price_per_1k_input_tokens_cents' => 2,
+        'services.anthropic.markup_factors.default' => 1.0,
     ]);
     $workspace = makeWorkspace(10000);
 
@@ -182,11 +185,15 @@ test('assertAgentDailyLimit erlaubt nutzung wenn kein limit konfiguriert', funct
 });
 
 test('assertAgentDailyLimit zählt nur heutige ausgaben', function () {
-    config(['services.anthropic.agent_daily_limits.daily_agent' => 500]);
+    config([
+        'services.anthropic.agent_daily_limits.daily_agent' => 500,
+        'services.anthropic.markup_factors.default' => 1.0,
+    ]);
     $workspace = makeWorkspace(10000);
 
-    // Gestern: 400 cents ausgegeben
-    CreditTransaction::create([
+    // Gestern: 400 cents ausgegeben — DB::table nötig weil created_at nicht in $fillable
+    DB::table('credit_transactions')->insert([
+        'id' => \Illuminate\Support\Str::uuid()->toString(),
         'workspace_id' => $workspace->id,
         'type' => 'usage',
         'amount_cents' => -400,

@@ -1,5 +1,9 @@
 <?php
 
+use Illuminate\Support\Facades\RateLimiter;
+
+beforeEach(fn () => RateLimiter::clear('register:127.0.0.1'));
+
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 

@@ -2,8 +2,11 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
+
+beforeEach(fn () => RateLimiter::clear('register:127.0.0.1'));
 
 $validPayload = fn () => [
     'name' => 'Test User',
