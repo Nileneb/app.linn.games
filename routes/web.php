@@ -98,4 +98,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('game.sessions.score');
     Route::patch('/game/sessions/{code}/end', [\App\Http\Controllers\GameSessionController::class, 'end'])
         ->name('game.sessions.end');
+
+    // Credits
+    Route::get('credits', \App\Livewire\Credits\Purchase::class)->name('credits.purchase');
+    Route::get('credits/usage', \App\Livewire\Credits\Usage::class)->name('credits.usage');
+    Route::get('credits/success', fn () => view('credits.success'))->name('credits.success');
+    Route::post('credits/checkout', [\App\Http\Controllers\CreditCheckoutController::class, 'redirect'])->name('credits.checkout');
 });

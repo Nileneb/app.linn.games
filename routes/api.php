@@ -7,6 +7,8 @@ use App\Http\Middleware\SecureMcpHeaders;
 use App\Http\Middleware\VerifyMcpToken;
 use Illuminate\Support\Facades\Route;
 
+Route::post('stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handle'])->name('stripe.webhook');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function () {
         return request()->user();
