@@ -159,4 +159,17 @@ return [
         'url' => env('OLLAMA_URL', 'http://localhost:11434'),
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => 'eur',
+        'packages' => [
+            ['cents' => 500,   'price_eur' => 500,   'label' => '5 €'],
+            ['cents' => 1000,  'price_eur' => 1000,  'label' => '10 €'],
+            ['cents' => 2500,  'price_eur' => 2500,  'label' => '25 €'],
+            ['cents' => 5000,  'price_eur' => 5000,  'label' => '50 €'],
+        ],
+    ],
+
 ];
