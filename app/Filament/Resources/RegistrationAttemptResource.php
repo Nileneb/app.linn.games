@@ -7,6 +7,7 @@ use App\Models\RegistrationAttempt;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Schema;
 
 class RegistrationAttemptResource extends Resource
 {
@@ -23,6 +24,11 @@ class RegistrationAttemptResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Schema::hasTable('registration_attempts');
     }
 
     public static function table(Table $table): Table
@@ -81,11 +87,13 @@ class RegistrationAttemptResource extends Resource
                     ]),
                 Tables\Filters\SelectFilter::make('country_code')
                     ->label('Land')
-                    ->options(fn () => RegistrationAttempt::query()
-                        ->whereNotNull('country_code')
-                        ->distinct()
-                        ->pluck('country_name', 'country_code')
-                        ->toArray()
+                    ->options(fn () => Schema::hasTable('registration_attempts')
+                        ? RegistrationAttempt::query()
+                            ->whereNotNull('country_code')
+                            ->distinct()
+                            ->pluck('country_name', 'country_code')
+                            ->toArray()
+                        : []
                     ),
             ])
             ->actions([

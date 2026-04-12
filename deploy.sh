@@ -4,6 +4,10 @@ set -euo pipefail
 # ──────────────────────────────────────────────
 # deploy.sh — Production build & deploy for app.linn.games
 # Usage: ./deploy.sh [--skip-build] [--skip-migrate] [--seed] [--fresh] [--with-mcp]
+#                   [--migrate-only]
+#
+# --migrate-only   Schnell-Deploy: nur Migrate + Cache + Queue-Restart
+#                  Ideal für Hotfixes ohne Rebuild (z. B. fehlende Migrationen nachholen)
 # ──────────────────────────────────────────────
 
 SKIP_BUILD=false
@@ -11,14 +15,16 @@ SKIP_MIGRATE=false
 RUN_SEED=false
 FRESH_DB=false
 WITH_MCP=false
+MIGRATE_ONLY=false
 
 for arg in "$@"; do
   case "$arg" in
-    --skip-build)   SKIP_BUILD=true ;;
-    --skip-migrate) SKIP_MIGRATE=true ;;
-    --seed)         RUN_SEED=true ;;
-    --fresh)        FRESH_DB=true ;;
-    --with-mcp)     WITH_MCP=true ;;
+    --skip-build)    SKIP_BUILD=true ;;
+    --skip-migrate)  SKIP_MIGRATE=true ;;
+    --seed)          RUN_SEED=true ;;
+    --fresh)         FRESH_DB=true ;;
+    --with-mcp)      WITH_MCP=true ;;
+    --migrate-only)  MIGRATE_ONLY=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -28,6 +34,30 @@ cd "$(dirname "$0")"
 DC=(docker compose)
 if [ "$WITH_MCP" = true ]; then
   DC+=(--profile mcp)
+fi
+
+# ── Migrate-only: schneller Hotfix-Pfad ────────
+if [ "$MIGRATE_ONLY" = true ]; then
+  echo "==> [migrate-only] Clearing stale config cache..."
+  "${DC[@]}" run --rm php-cli php artisan optimize:clear
+
+  echo "==> [migrate-only] Running database migrations..."
+  if ! "${DC[@]}" run --rm php-cli php artisan migrate --force; then
+    echo "ERROR: Migration failed." >&2
+    exit 1
+  fi
+
+  echo "==> [migrate-only] Rebuilding config/route/view cache..."
+  "${DC[@]}" run --rm php-cli php artisan config:cache
+  "${DC[@]}" run --rm php-cli php artisan route:cache
+  "${DC[@]}" run --rm php-cli php artisan view:cache
+
+  echo "==> [migrate-only] Restarting queue workers..."
+  "${DC[@]}" run --rm php-cli php artisan queue:restart
+
+  echo ""
+  echo "==> Migrate-only deploy complete."
+  exit 0
 fi
 
 # ── Pre-flight checks ──────────────────────────
@@ -125,6 +155,9 @@ if [ "$SKIP_MIGRATE" = false ]; then
     echo "ERROR: RoleSeeder failed." >&2
     exit 1
   fi
+
+  echo "==> Restarting queue workers (neue Migrations-Klassen laden)..."
+  "${DC[@]}" run --rm php-cli php artisan queue:restart
 else
   echo "==> Skipping migrations (--skip-migrate)"
 fi
