@@ -42,7 +42,8 @@ class AgentPayloadService
             if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $projektId)) {
                 throw new \InvalidArgumentException("Invalid projekt_id format: {$projektId}");
             }
-            DB::statement('SET LOCAL app.current_projekt_id = ?', [$projektId]);
+            // PostgreSQL unterstützt keine Bindings bei SET LOCAL — UUID ist bereits durch Regex validiert
+            DB::statement("SET LOCAL app.current_projekt_id = '{$projektId}'");
 
             foreach ($tables as $tableName => $rows) {
                 if (! is_string($tableName) || ! is_array($rows) || empty($rows)) {
