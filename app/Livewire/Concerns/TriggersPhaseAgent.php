@@ -82,6 +82,8 @@ trait TriggersPhaseAgent
 
     public function checkAgentStatus(): void
     {
+        // Only 'pending' keeps the spinner running — 'deferred' means the job was rescheduled
+        // for tomorrow and should no longer show as actively running.
         $stillPending = PhaseAgentResult::where('projekt_id', $this->projekt->id)
             ->where('status', 'pending')
             ->exists();

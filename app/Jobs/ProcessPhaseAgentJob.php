@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\Workspace;
+use App\Services\AgentDailyLimitExceededException;
 use App\Services\AgentPayloadService;
 use App\Services\AgentResponseParser;
 use App\Services\ClaudeCliService;
@@ -19,6 +20,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class ProcessPhaseAgentJob implements ShouldQueue
@@ -65,6 +67,38 @@ class ProcessPhaseAgentJob implements ShouldQueue
                     'agent_config_key' => $this->agentConfigKey,
                     'status' => 'pending',
                 ]);
+
+            // Tageslimit vorab prüfen — bevor der API-Call Kosten verursacht.
+            // Bei Limit: Status auf 'deferred', Job für morgen 00:05 Uhr einplanen.
+            $workspaceIdForCheck = $this->context['workspace_id'] ?? $projekt->workspace_id;
+            if ($workspaceIdForCheck) {
+                $workspaceForCheck = Workspace::find($workspaceIdForCheck);
+                if ($workspaceForCheck) {
+                    try {
+                        app(CreditService::class)->assertDailyLimitNotReached($workspaceForCheck, $this->agentConfigKey);
+                    } catch (AgentDailyLimitExceededException $e) {
+                        $scheduledFor = Carbon::tomorrow()->setTime(0, 5, 0)->format('d.m.Y H:i');
+                        $result->markDeferred($scheduledFor);
+
+                        self::dispatch(
+                            $this->projektId,
+                            $this->phaseNr,
+                            $this->agentConfigKey,
+                            $this->messages,
+                            $this->context,
+                        )->delay(Carbon::tomorrow()->setTime(0, 5, 0));
+
+                        Log::info('Phase agent job deferred — Tageslimit erreicht', [
+                            'projekt_id' => $this->projektId,
+                            'phase_nr' => $this->phaseNr,
+                            'agent_config_key' => $this->agentConfigKey,
+                            'scheduled_for' => $scheduledFor,
+                        ]);
+
+                        return;
+                    }
+                }
+            }
 
             // Agent via Claude CLI subprocess aufrufen
             // structured_output: true instructs ClaudeContextBuilder to append the JSON Envelope

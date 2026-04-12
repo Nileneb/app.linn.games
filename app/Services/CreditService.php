@@ -77,13 +77,13 @@ class CreditService
 
     public function toCents(int $inputTokens, int $outputTokens = 0): int
     {
-        $inputPrice = (int) config('services.anthropic.price_per_1k_input_tokens_cents', 1);
-        $outputPrice = (int) config('services.anthropic.price_per_1k_output_tokens_cents', 4);
+        $inputPrice = (float) config('services.anthropic.price_per_1k_input_tokens_cents', 0.08);
+        $outputPrice = (float) config('services.anthropic.price_per_1k_output_tokens_cents', 0.40);
 
-        $inputCents = $inputTokens > 0 ? (int) ceil($inputTokens * $inputPrice / 1000) : 0;
-        $outputCents = $outputTokens > 0 ? (int) ceil($outputTokens * $outputPrice / 1000) : 0;
+        $inputCents = $inputTokens > 0 ? $inputTokens * $inputPrice / 1000 : 0.0;
+        $outputCents = $outputTokens > 0 ? $outputTokens * $outputPrice / 1000 : 0.0;
 
-        return $inputCents + $outputCents;
+        return (int) ceil($inputCents + $outputCents);
     }
 
     /**
@@ -117,6 +117,32 @@ class CreditService
         }
 
         return false;
+    }
+
+    /**
+     * Pre-flight check: wirft AgentDailyLimitExceededException wenn das Tageslimit
+     * bereits vollständig ausgeschöpft ist — BEVOR der API-Call gemacht wird.
+     *
+     * Anders als assertAgentDailyLimit() prüft diese Methode OHNE einen Betrag zu addieren.
+     * Sie prüft nur: ist heute noch Budget vorhanden?
+     *
+     * @throws AgentDailyLimitExceededException
+     */
+    public function assertDailyLimitNotReached(Workspace $workspace, string $agentKey): void
+    {
+        $dailyLimitCents = (int) config("services.anthropic.agent_daily_limits.{$agentKey}", 0);
+
+        if ($dailyLimitCents <= 0) {
+            return;
+        }
+
+        $spentToday = $this->agentSpendingToday($workspace, $agentKey);
+
+        if ($spentToday >= $dailyLimitCents) {
+            throw new AgentDailyLimitExceededException(
+                "Tageslimit für Agent '{$agentKey}' bereits erreicht ({$spentToday}/{$dailyLimitCents} Cents)."
+            );
+        }
     }
 
     /**

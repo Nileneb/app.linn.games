@@ -76,4 +76,16 @@ class PhaseAgentResult extends Model
             'content' => null,
         ]);
     }
+
+    /**
+     * Mark result as deferred (daily limit reached — auto-retry tomorrow).
+     */
+    public function markDeferred(string $scheduledFor): void
+    {
+        $this->update([
+            'status' => 'deferred',
+            'error_message' => "Tageslimit erreicht — automatischer Retry um {$scheduledFor}",
+            'content' => null,
+        ]);
+    }
 }

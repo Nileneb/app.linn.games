@@ -15,14 +15,21 @@ new class extends Component {
     public int $phaseNr;
 
     public bool $dispatched = false;
+    public bool $deferred = false;
+    public string $deferredMessage = '';
 
     public function mount(): void
     {
-        $this->dispatched = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+        $latest = PhaseAgentResult::where('projekt_id', $this->projekt->id)
             ->where('phase_nr', $this->phaseNr)
             ->where('agent_config_key', $this->agentConfigKey)
-            ->where('status', 'pending')
-            ->exists();
+            ->whereIn('status', ['pending', 'deferred'])
+            ->orderByDesc('created_at')
+            ->first();
+
+        $this->dispatched = $latest?->status === 'pending';
+        $this->deferred = $latest?->status === 'deferred';
+        $this->deferredMessage = $latest?->error_message ?? '';
     }
 
     public function checkStatus(): void
@@ -35,6 +42,11 @@ new class extends Component {
 
         if (! $stillPending) {
             $this->dispatched = false;
+            $this->deferred = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+                ->where('phase_nr', $this->phaseNr)
+                ->where('agent_config_key', $this->agentConfigKey)
+                ->where('status', 'deferred')
+                ->exists();
             $this->dispatch('agent-result-ready', phaseNr: $this->phaseNr);
         }
     }
@@ -142,6 +154,13 @@ new class extends Component {
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
             {{ __('KI läuft im Hintergrund…') }}
+        </p>
+    @elseif ($deferred)
+        <p class="inline-flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            {{ $deferredMessage ?: __('Tageslimit — automatischer Retry morgen um 00:05') }}
         </p>
     @else
         <button

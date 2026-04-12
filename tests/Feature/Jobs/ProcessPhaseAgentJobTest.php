@@ -25,6 +25,9 @@ beforeEach(function () {
     config(['services.anthropic.agents.agent_id' => 'chat-agent']);
     config(['services.anthropic.agents.scoping_mapping_agent' => 'mapping-agent']);
     config(['services.anthropic.agents.search_agent' => 'pico-agent']);
+    // Force CLI subprocess path so Process::fake() works regardless of .env values
+    config(['services.anthropic.use_direct_api' => false]);
+    config(['services.anthropic.use_ollama_workers' => false]);
 
     // Mock PromptLoaderService to avoid filesystem reads in tests
     $this->mock(PromptLoaderService::class, function ($mock) {
