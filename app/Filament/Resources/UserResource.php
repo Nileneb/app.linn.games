@@ -2,8 +2,14 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\UserResource\Pages\CreateUser;
+use App\Filament\Resources\UserResource\Pages\EditUser;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\User;
 use App\Notifications\InvitationNotification;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -108,6 +114,18 @@ class UserResource extends Resource
                     ->badge()
                     ->separator(',')
                     ->sortable(false),
+                Tables\Columns\TextColumn::make('registration_ip')
+                    ->label('IP')
+                    ->copyable()
+                    ->fontFamily('mono')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('registration_country_code')
+                    ->label('Herkunft')
+                    ->formatStateUsing(fn (?string $state, User $record): string => $state
+                        ? "{$state} — {$record->registration_country_name}"
+                        : '–'
+                    )
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('email_verified_at')->dateTime('d.m.Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime('d.m.Y H:i')->sortable(),
             ])
@@ -124,8 +142,8 @@ class UserResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('freischalten')
+                EditAction::make(),
+                Action::make('freischalten')
                     ->label('Freischalten')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -143,7 +161,7 @@ class UserResource extends Resource
                             ->success()
                             ->send();
                     }),
-                \Filament\Actions\Action::make('resend_invitation')
+                Action::make('resend_invitation')
                     ->label('Einladung erneut senden')
                     ->icon('heroicon-o-envelope')
                     ->color('gray')
@@ -167,7 +185,7 @@ class UserResource extends Resource
                             ->success()
                             ->send();
                     }),
-                \Filament\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->hidden(fn (User $record) => $record->id === auth()->id())
                     ->requiresConfirmation()
                     ->modalDescription(fn (User $record) => 'Nutzer "'.$record->name.'" und alle zugehörigen Daten unwiderruflich löschen?'),
@@ -177,9 +195,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\Resources\UserResource\Pages\ListUsers::route('/'),
-            'create' => \App\Filament\Resources\UserResource\Pages\CreateUser::route('/create'),
-            'edit' => \App\Filament\Resources\UserResource\Pages\EditUser::route('/{record}/edit'),
+            'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
+            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }
