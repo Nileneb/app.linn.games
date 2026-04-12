@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class MayringMcpClient
@@ -24,8 +25,14 @@ class MayringMcpClient
         return (int) config('services.mayring_mcp.timeout', 60);
     }
 
+    private function cacheTtl(): int
+    {
+        return (int) config('services.mayring_mcp.cache_ttl_seconds', 1800); // 30 min default
+    }
+
     /**
      * Semantische Suche über Dokument-Chunks.
+     * Ergebnis wird 30 Minuten gecacht — gleiche Query kostet nur beim ersten Aufruf.
      *
      * @return array{results: array, prompt_context: string}
      *
@@ -33,23 +40,28 @@ class MayringMcpClient
      */
     public function searchDocuments(string $query, array $categories = [], int $topK = 8): array
     {
-        $response = Http::withHeaders($this->headers())
-            ->timeout($this->timeout())
-            ->post($this->endpoint().'/search', array_filter([
-                'query' => $query,
-                'categories' => $categories ?: null,
-                'top_k' => $topK,
-            ]));
+        $cacheKey = 'mayring_search:'.md5($query).':'.md5(implode(',', $categories)).':'.$topK;
 
-        if ($response->failed()) {
-            throw new \RuntimeException("MayringMcpClient: searchDocuments fehlgeschlagen ({$response->status()})");
-        }
+        return Cache::remember($cacheKey, $this->cacheTtl(), function () use ($query, $categories, $topK) {
+            $response = Http::withHeaders($this->headers())
+                ->timeout($this->timeout())
+                ->post($this->endpoint().'/search', array_filter([
+                    'query' => $query,
+                    'categories' => $categories ?: null,
+                    'top_k' => $topK,
+                ]));
 
-        return $response->json();
+            if ($response->failed()) {
+                throw new \RuntimeException("MayringMcpClient: searchDocuments fehlgeschlagen ({$response->status()})");
+            }
+
+            return $response->json();
+        });
     }
 
     /**
      * Inhalt ingesten + Mayring-Kategorisierung via Ollama.
+     * Idempotent — gleiche source_id + content gibt gecachtes Ergebnis zurück (60 min TTL).
      *
      * @return array{source_id: string, chunk_ids: array, indexed: int}
      *
@@ -57,19 +69,24 @@ class MayringMcpClient
      */
     public function ingestAndCategorize(string $content, string $sourceId): array
     {
-        $response = Http::withHeaders($this->headers())
-            ->timeout($this->timeout())
-            ->post($this->endpoint().'/ingest', [
-                'source' => ['source_id' => $sourceId, 'source_type' => 'agent_result'],
-                'content' => $content,
-                'categorize' => true,
-            ]);
+        $cacheKey = 'mayring_ingest:'.md5($content).':'.$sourceId;
+        $ttl = (int) config('services.mayring_mcp.ingest_cache_ttl_seconds', 3600); // 60 min
 
-        if ($response->failed()) {
-            throw new \RuntimeException("MayringMcpClient: ingestAndCategorize fehlgeschlagen ({$response->status()})");
-        }
+        return Cache::remember($cacheKey, $ttl, function () use ($content, $sourceId) {
+            $response = Http::withHeaders($this->headers())
+                ->timeout($this->timeout())
+                ->post($this->endpoint().'/ingest', [
+                    'source' => ['source_id' => $sourceId, 'source_type' => 'agent_result'],
+                    'content' => $content,
+                    'categorize' => true,
+                ]);
 
-        return $response->json();
+            if ($response->failed()) {
+                throw new \RuntimeException("MayringMcpClient: ingestAndCategorize fehlgeschlagen ({$response->status()})");
+            }
+
+            return $response->json();
+        });
     }
 
     /**

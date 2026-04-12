@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Workspace;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -56,7 +58,12 @@ class ClaudeService
 
         $startedAt = microtime(true);
 
-        // Mayring-Agent erhält Tool-Use-Zugriff auf MayringCoder-MCP
+        // Mayring-Agent: Pi/Ollama-Pfad wenn konfiguriert (keine Anthropic-Kosten)
+        if ($configKey === 'mayring_agent' && $this->useOllamaForWorkers()) {
+            return $this->callMayringViaPi($systemPrompt, $messages, $configKey, $workspace);
+        }
+
+        // Mayring-Agent: Tool-Use-Loop mit Anthropic (mit Prompt-Cache)
         if ($configKey === 'mayring_agent') {
             return $this->callWithToolUse($apiKey, $model, $systemPrompt, $messages, $maxTok, $configKey, $workspace);
         }
@@ -109,14 +116,17 @@ class ClaudeService
         array $messages,
         int $maxTokens,
         string $configKey,
-    ): \Illuminate\Http\Client\Response {
+    ): Response {
         $attempts = (int) config('services.anthropic.retry_attempts', 3);
         $sleepMs = (int) config('services.anthropic.retry_sleep_ms', 500);
 
         $body = [
             'model' => $model,
             'max_tokens' => $maxTokens,
-            'system' => $systemPrompt,
+            // cache_control: system prompt in Anthropic prompt-cache schreiben.
+            // Wiederholte Calls (Retry, Tool-Use-Folgeschritte) zahlen nur cache_read ($0.08/M)
+            // statt cache_write ($1.00/M). Beta-Header wird unten gesetzt.
+            'system' => [['type' => 'text', 'text' => $systemPrompt, 'cache_control' => ['type' => 'ephemeral']]],
             'messages' => $messages,
         ];
 
@@ -128,6 +138,7 @@ class ClaudeService
                 $response = Http::withHeaders([
                     'x-api-key' => $apiKey,
                     'anthropic-version' => '2023-06-01',
+                    'anthropic-beta' => 'prompt-caching-2024-07-31',
                     'content-type' => 'application/json',
                 ])->timeout(120)->post(self::API_URL, $body);
 
@@ -138,7 +149,7 @@ class ClaudeService
                 Log::warning("Claude API {$response->status()} — Retry {$attempt}/{$attempts}", [
                     'config_key' => $configKey,
                 ]);
-            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            } catch (ConnectionException $e) {
                 $lastException = $e;
                 Log::warning("Claude API ConnectionException — Retry {$attempt}/{$attempts}", [
                     'config_key' => $configKey,
@@ -213,7 +224,9 @@ class ClaudeService
             $body = [
                 'model' => $model,
                 'max_tokens' => $maxTokens,
-                'system' => $systemPrompt,
+                // System-Prompt + Tool-Definitionen werden gecacht.
+                // Im Tool-Use-Loop wird der System-Prompt nach Iteration 1 als cache_read verrechnet.
+                'system' => [['type' => 'text', 'text' => $systemPrompt, 'cache_control' => ['type' => 'ephemeral']]],
                 'messages' => $currentMessages,
                 'tools' => $tools,
             ];
@@ -222,6 +235,7 @@ class ClaudeService
             $response = Http::withHeaders([
                 'x-api-key' => $apiKey,
                 'anthropic-version' => '2023-06-01',
+                'anthropic-beta' => 'prompt-caching-2024-07-31',
                 'content-type' => 'application/json',
             ])->timeout(120)->post(self::API_URL, $body);
 
@@ -308,6 +322,75 @@ class ClaudeService
             'raw' => $raw,
             'tokens_used' => $tokensUsed,
         ];
+    }
+
+    /**
+     * Mayring-Agent via Pi/Ollama-Server — keine Anthropic-Kosten.
+     * Holt RAG-Kontext vorab via MayringMcpClient und übergibt alles an den Pi-Worker.
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array{content: string, raw: array, tokens_used: int}
+     */
+    private function callMayringViaPi(
+        string $systemPrompt,
+        array $messages,
+        string $configKey,
+        ?Workspace $workspace,
+    ): array {
+        $piUrl = rtrim((string) config('services.pi_agent.url', 'http://host.docker.internal:8091'), '/');
+
+        // Letzten User-Message als Query für RAG-Vorsuche extrahieren
+        $userMessage = collect($messages)->where('role', 'user')->last()['content'] ?? '';
+
+        // RAG-Vorsuche: relevante Chunks vorab laden (kein Tool-Use-Loop nötig)
+        $ragContext = '';
+        if ($userMessage !== '') {
+            try {
+                $searchResult = $this->mayringClient->searchDocuments($userMessage, [], 5);
+                $promptContext = $searchResult['prompt_context'] ?? '';
+                if ($promptContext !== '') {
+                    $ragContext = "\n\n## Relevante Dokument-Chunks\n".$promptContext;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('MayringViaPi: RAG-Vorsuche fehlgeschlagen', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $task = $systemPrompt.$ragContext."\n\n---\n\n".$userMessage;
+
+        $response = Http::timeout(300)->post("{$piUrl}/pi-task", [
+            'task' => $task,
+        ]);
+
+        if (! $response->successful()) {
+            Log::error('ClaudeService: Pi-Agent Fehler', [
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 500),
+            ]);
+
+            throw new ClaudeAgentException(
+                'Pi-Agent Fehler ('.$response->status().'): '.mb_substr($response->body(), 0, 300)
+            );
+        }
+
+        $data = $response->json();
+        $content = $data['content'] ?? '';
+
+        Log::info('Claude mayring agent via Pi succeeded', [
+            'config_key' => $configKey,
+            'rag_chunks_loaded' => $ragContext !== '',
+        ]);
+
+        return [
+            'content' => $content,
+            'raw' => $data,
+            'tokens_used' => 0,  // Kein API-Cost bei Pi-Routing
+        ];
+    }
+
+    private function useOllamaForWorkers(): bool
+    {
+        return (bool) config('services.anthropic.use_ollama_workers', false);
     }
 
     private function resolveWorkspace(array $context): ?Workspace
