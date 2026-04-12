@@ -16,7 +16,7 @@ class RegistrationAttemptResource extends Resource
 
     protected static ?string $navigationLabel = 'Angriffe';
 
-    protected static ?string $navigationGroup = 'Sicherheit';
+    protected static \UnitEnum|string|null $navigationGroup = 'Sicherheit';
 
     protected static ?int $navigationSort = 10;
 
