@@ -38,10 +38,10 @@ fi
 
 # ── Migrate-only: schneller Hotfix-Pfad ────────
 if [ "$MIGRATE_ONLY" = true ]; then
-  # php-cli image neu bauen damit neue Migrationsdateien verfügbar sind
-  # (Code ist in die Image gebacken — ohne Rebuild sieht artisan migrate keine neuen Dateien)
-  echo "==> [migrate-only] Rebuilding php-cli image to include latest migration files..."
-  "${DC[@]}" build php-cli
+  # Alle PHP-Images neu bauen — Code ist baked in, nicht bind-gemountet.
+  # Ohne Rebuild laufen php-fpm und queue-worker mit veraltetem Code.
+  echo "==> [migrate-only] Rebuilding PHP images (php-cli, php-fpm, queue-worker)..."
+  "${DC[@]}" build php-cli php-fpm queue-worker
 
   echo "==> [migrate-only] Clearing stale config cache..."
   "${DC[@]}" run --rm php-cli php artisan optimize:clear
@@ -57,8 +57,10 @@ if [ "$MIGRATE_ONLY" = true ]; then
   "${DC[@]}" run --rm php-cli php artisan route:cache
   "${DC[@]}" run --rm php-cli php artisan view:cache
 
-  echo "==> [migrate-only] Restarting queue workers..."
+  echo "==> [migrate-only] Restarting queue workers with new image..."
   "${DC[@]}" run --rm php-cli php artisan queue:restart
+  # Explizit neu starten damit das neue Image verwendet wird
+  "${DC[@]}" up -d --no-deps php-fpm queue-worker
 
   echo ""
   echo "==> Migrate-only deploy complete."
