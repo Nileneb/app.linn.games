@@ -187,26 +187,6 @@ services:
       php-fpm:
         condition: service_started
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    networks:
-      - linn-network
-    volumes:
-      - linn-ollama-models:/root/.ollama
-
-  mayring-model-pull:
-    image: ollama/ollama:latest
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull qwen2.5:1.5b"]
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-    networks:
-      - linn-network
-    depends_on:
-      - ollama
-    restart: "no"
-
   mayring-api:
     build:
       context: ../MayringCoder
@@ -216,7 +196,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
       - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
       - MAYRING_MCP_AUTH_TOKEN=${MAYRING_MCP_AUTH_TOKEN}
       - CHROMA_PATH=/app/cache/chroma
@@ -224,8 +204,8 @@ services:
       - linn-mayring-cache:/app/cache
     networks:
       - linn-network
-    depends_on:
-      - ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   mayring-pi:
     build:
@@ -236,13 +216,13 @@ services:
     ports:
       - "8091:8091"
     environment:
-      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
       - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
       - PI_PORT=8091
     networks:
       - linn-network
-    depends_on:
-      - ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 
 networks:
@@ -254,5 +234,4 @@ volumes:
   linn-storage-production:
   linn-build-assets:
   linn-papers-data:
-  linn-ollama-models:
   linn-mayring-cache:
