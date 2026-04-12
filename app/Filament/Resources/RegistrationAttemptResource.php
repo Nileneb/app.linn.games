@@ -81,12 +81,11 @@ class RegistrationAttemptResource extends Resource
                     ]),
                 Tables\Filters\SelectFilter::make('country_code')
                     ->label('Land')
-                    ->options(
-                        RegistrationAttempt::query()
-                            ->whereNotNull('country_code')
-                            ->distinct()
-                            ->pluck('country_name', 'country_code')
-                            ->toArray()
+                    ->options(fn () => RegistrationAttempt::query()
+                        ->whereNotNull('country_code')
+                        ->distinct()
+                        ->pluck('country_name', 'country_code')
+                        ->toArray()
                     ),
             ])
             ->actions([
