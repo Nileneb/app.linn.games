@@ -260,7 +260,7 @@ class ClaudeCliService
         }
 
         $parts = array_filter([
-            $this->cliBin(),
+            escapeshellarg($this->cliBin()),
             '--print',
             '--output-format', 'json',
             ...$this->productionChatFlags(),
@@ -338,7 +338,7 @@ class ClaudeCliService
         }
 
         $parts = array_filter([
-            $this->cliBin(),
+            escapeshellarg($this->cliBin()),
             '--print',
             '--output-format', 'json',
             '--model', escapeshellarg($model),

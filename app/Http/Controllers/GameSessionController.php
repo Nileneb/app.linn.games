@@ -54,6 +54,12 @@ class GameSessionController extends Controller
     {
         $session = GameSession::where('code', $code)->firstOrFail();
 
+        $isMember = DB::table('game_session_players')
+            ->where('session_id', $session->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+        abort_unless($isMember, 403);
+
         $players = DB::table('game_session_players')
             ->where('session_id', $session->id)
             ->join('users', 'users.id', '=', 'game_session_players.user_id')
@@ -66,9 +72,9 @@ class GameSessionController extends Controller
     public function saveScore(Request $request, string $code): JsonResponse
     {
         $validated = $request->validate([
-            'score' => 'required|integer|min:0',
-            'kills' => 'required|integer|min:0',
-            'wave' => 'integer|min:1',
+            'score' => 'required|integer|min:0|max:9999999',
+            'kills' => 'required|integer|min:0|max:10000',
+            'wave' => 'integer|min:1|max:9999',
         ]);
 
         $session = GameSession::where('code', $code)

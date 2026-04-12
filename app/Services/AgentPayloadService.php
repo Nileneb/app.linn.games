@@ -39,12 +39,10 @@ class AgentPayloadService
         $errors = [];
 
         try {
-            // PostgreSQL SET LOCAL does not support PDO parameter binding.
-            // UUID format is validated above (matches [0-9a-f-]{36}) so interpolation is safe.
             if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $projektId)) {
                 throw new \InvalidArgumentException("Invalid projekt_id format: {$projektId}");
             }
-            DB::statement("SET LOCAL app.current_projekt_id = '{$projektId}'");
+            DB::statement('SET LOCAL app.current_projekt_id = ?', [$projektId]);
 
             foreach ($tables as $tableName => $rows) {
                 if (! is_string($tableName) || ! is_array($rows) || empty($rows)) {

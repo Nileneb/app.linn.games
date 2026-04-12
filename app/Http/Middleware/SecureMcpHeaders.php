@@ -17,9 +17,6 @@ class SecureMcpHeaders
     {
         $response = $next($request);
 
-        // Prevent CSRF attacks
-        $response->header('X-CSRF-Token', csrf_token());
-
         // Content Security Policy - restrict to same origin + Claude API
         $response->header(
             'Content-Security-Policy',
