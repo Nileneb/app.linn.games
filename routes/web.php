@@ -105,7 +105,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('credits/success', fn () => view('credits.success'))->name('credits.success');
     Route::post('credits/checkout', [\App\Http\Controllers\CreditCheckoutController::class, 'redirect'])->name('credits.checkout');
 
-    // MayringCoder Subscription + Memory
+    // MayringCoder Subscription (kein Gate — jeder Auth-User kann abonnieren)
     Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
-    Route::get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)->name('mayring.memory');
+
+    // MayringCoder Memory-Dashboard (nur für aktive Abonnenten)
+    Route::middleware('mayring.subscription')
+        ->get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)
+        ->name('mayring.memory');
 });

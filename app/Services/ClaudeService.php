@@ -58,6 +58,11 @@ class ClaudeService
 
         $startedAt = microtime(true);
 
+        // Mayring-Agent: Abo-Gate — nur für aktive Abonnenten (mayring_active = true oder enterprise)
+        if ($configKey === 'mayring_agent' && $workspace !== null && ! $workspace->hasMayringAccess()) {
+            throw new ClaudeAgentException('Mayring-Agent erfordert aktives Abo. Bitte unter Einstellungen → Mayring-Abo abonnieren.');
+        }
+
         // Mayring-Agent: Pi/Ollama-Pfad wenn konfiguriert (keine Anthropic-Kosten)
         if ($configKey === 'mayring_agent' && $this->useOllamaForWorkers()) {
             return $this->callMayringViaPi($systemPrompt, $messages, $configKey, $workspace);

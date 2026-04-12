@@ -3,6 +3,7 @@
 use App\Http\Middleware\AllowInternalMcpOnly;
 use App\Http\Middleware\BlockByCountry;
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\RequiresMayringSubscription;
 use App\Http\Middleware\TrackPageView;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'mcp.internal' => AllowInternalMcpOnly::class,
             'block.country' => BlockByCountry::class,
+            'mayring.subscription' => RequiresMayringSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
