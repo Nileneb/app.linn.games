@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RegistrationAttemptResource\Pages\ListRegistrationAttempts;
 use App\Models\RegistrationAttempt;
+use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -97,7 +98,7 @@ class RegistrationAttemptResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\Action::make('report')
+                Action::make('report')
                     ->label('Strafanzeige-Export')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('danger')
