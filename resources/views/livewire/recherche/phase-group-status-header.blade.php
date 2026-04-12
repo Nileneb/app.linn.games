@@ -66,6 +66,19 @@ new class extends Component {
         $seg2Started    = $results->has(5);
         $completedCount = $this->projekt->phasen()->where('status', 'abgeschlossen')->count();
 
+        // Detect stuck state: pipeline started, nothing pending, P4 not done
+        // Find the first non-completed phase in P1–P4 to know where to restart
+        $restartPhase = null;
+        if ($seg1Started && ! $anyPending && ! $p4Completed) {
+            foreach (range(1, 4) as $i) {
+                if ($results->get($i)?->status !== 'completed') {
+                    $restartPhase = $i;
+                    break;
+                }
+            }
+        }
+        $chainStuck = $restartPhase !== null;
+
         return [
             'results'        => $results,           // keyed by phase_nr
             'anyPending'     => $anyPending,
@@ -73,6 +86,8 @@ new class extends Component {
             'seg1Started'    => $seg1Started,
             'seg2Started'    => $seg2Started,
             'completedCount' => $completedCount,
+            'chainStuck'     => $chainStuck,
+            'restartPhase'   => $restartPhase,
         ];
     }
 }; ?>
@@ -147,6 +162,24 @@ new class extends Component {
                 >
                     ▶ Analyse P1–P4 starten
                 </button>
+            @elseif ($chainStuck)
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-900/20">
+                        <svg class="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">Phase-Chain blockiert — P{{ $restartPhase }} lieferte keine Daten</p>
+                            <p class="text-xs text-red-600 dark:text-red-400">Der Agent hat keine Strukturdaten gespeichert. Bitte P{{ $restartPhase }} neu starten.</p>
+                        </div>
+                    </div>
+                    <button
+                        wire:click="startPipeline({{ $restartPhase }})"
+                        class="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    >
+                        ↺ P{{ $restartPhase }} neu starten
+                    </button>
+                </div>
             @elseif (! $p4Completed)
                 <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
                     P1–P4 laufen durch · PhaseChain übernimmt automatisch

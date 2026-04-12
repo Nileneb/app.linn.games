@@ -38,6 +38,11 @@ fi
 
 # ── Migrate-only: schneller Hotfix-Pfad ────────
 if [ "$MIGRATE_ONLY" = true ]; then
+  # php-cli image neu bauen damit neue Migrationsdateien verfügbar sind
+  # (Code ist in die Image gebacken — ohne Rebuild sieht artisan migrate keine neuen Dateien)
+  echo "==> [migrate-only] Rebuilding php-cli image to include latest migration files..."
+  "${DC[@]}" build php-cli
+
   echo "==> [migrate-only] Clearing stale config cache..."
   "${DC[@]}" run --rm php-cli php artisan optimize:clear
 
