@@ -97,7 +97,8 @@ Artisan::command('deploy:send-reset-link', function () {
 // ── Orchestrator ──────────────────────────────────────────────────
 
 Artisan::command('deploy:post-deploy', function () {
-    foreach (['deploy:ensure-admin', 'deploy:ensure-workspace', 'deploy:send-reset-link'] as $step) {
+    // deploy:send-reset-link absichtlich NICHT hier — nur bei --fresh / DB-Neuaufbau manuell aufrufen
+    foreach (['deploy:ensure-admin', 'deploy:ensure-workspace'] as $step) {
         $this->info("── {$step}");
         try {
             $this->call($step);
@@ -105,4 +106,4 @@ Artisan::command('deploy:post-deploy', function () {
             $this->error("{$step} fehlgeschlagen: {$e->getMessage()}");
         }
     }
-})->purpose('Run all post-deploy steps (admin, workspace, password reset)');
+})->purpose('Run post-deploy steps (admin + workspace). For fresh DB also run deploy:send-reset-link manually.');

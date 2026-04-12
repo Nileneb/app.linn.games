@@ -214,9 +214,15 @@ for i in $(seq 1 $MAX_RETRIES); do
   sleep "$RETRY_INTERVAL"
 done
 
-# ── Post-deploy: ensure admin + send password reset ───────
-echo "==> Running post-deploy (admin user + password reset)..."
+# ── Post-deploy: ensure admin + workspace ─────────────────
+echo "==> Running post-deploy (admin user + workspace)..."
 "${DC[@]}" run --rm php-cli php artisan deploy:post-deploy || echo "WARN: Post-deploy failed."
+
+# Reset-Link nur bei --fresh (DB-Neuaufbau), nicht bei jedem normalen Deploy
+if [ "$FRESH_DB" = true ]; then
+  echo "==> Sending password reset link (--fresh)..."
+  "${DC[@]}" run --rm php-cli php artisan deploy:send-reset-link || echo "WARN: Reset-Link fehlgeschlagen."
+fi
 
 echo ""
 echo "==> Deployment complete."
