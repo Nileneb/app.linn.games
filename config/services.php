@@ -106,9 +106,9 @@ return [
             'agent_id' => 'chat-agent',
         ],
 
-        // Pricing: Haiku 4.5 — $0.80/$4.00 per M tokens
-        'price_per_1k_input_tokens_cents' => (int) env('CLAUDE_INPUT_PRICE_CENTS', 1),
-        'price_per_1k_output_tokens_cents' => (int) env('CLAUDE_OUTPUT_PRICE_CENTS', 4),
+        // Pricing: Haiku 4.5 — $0.80/$4.00 per M tokens = 0.08/0.40 Cents per 1K tokens
+        'price_per_1k_input_tokens_cents' => (float) env('CLAUDE_INPUT_PRICE_CENTS', 0.08),
+        'price_per_1k_output_tokens_cents' => (float) env('CLAUDE_OUTPUT_PRICE_CENTS', 0.40),
 
         // Markup-Faktoren: API-Kosten × Faktor = User-seitige Kosten
         // Haiku-Worker: 3× (günstiges Modell, höhere Marge), Sonnet Chat: 2× (teurer, moderate Marge)
@@ -138,14 +138,14 @@ return [
         ],
 
         'agent_daily_limits' => [
-            'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
-            'chat-agent' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 500),
-            'scoping_mapping_agent' => (int) env('CLAUDE_DAILY_LIMIT_SCOPING', 500),
-            'search_agent' => (int) env('CLAUDE_DAILY_LIMIT_SEARCH', 500),
-            'review_agent' => (int) env('CLAUDE_DAILY_LIMIT_REVIEW', 500),
-            'evaluation_agent' => (int) env('CLAUDE_DAILY_LIMIT_EVALUATION', 500),
-            'synthesis_agent' => (int) env('CLAUDE_DAILY_LIMIT_SYNTHESIS', 500),
-            'mayring_agent' => (int) env('CLAUDE_DAILY_LIMIT_MAYRING', 1000),
+            'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 1000),
+            'chat-agent' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 1000),
+            'scoping_mapping_agent' => (int) env('CLAUDE_DAILY_LIMIT_SCOPING', 2000),
+            'search_agent' => (int) env('CLAUDE_DAILY_LIMIT_SEARCH', 2000),
+            'review_agent' => (int) env('CLAUDE_DAILY_LIMIT_REVIEW', 3000),
+            'evaluation_agent' => (int) env('CLAUDE_DAILY_LIMIT_EVALUATION', 2000),
+            'synthesis_agent' => (int) env('CLAUDE_DAILY_LIMIT_SYNTHESIS', 2000),
+            'mayring_agent' => (int) env('CLAUDE_DAILY_LIMIT_MAYRING', 3000),
         ],
     ],
 

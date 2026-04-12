@@ -28,7 +28,7 @@ class RetrieverService
      */
     public function retrieve(string $query, string $projektId, ?int $topN = null): array
     {
-        $topN ??= (int) config('services.retriever.top_n_chunks', 5);
+        $topN ??= (int) config('services.retriever.top_n_chunks', 3);
 
         $count = DB::selectOne(
             'SELECT COUNT(*) AS cnt FROM paper_embeddings WHERE projekt_id = ?',
