@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\RegistrationAttemptResource\Pages\ListRegistrationAttempts;
 use App\Models\RegistrationAttempt;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -114,7 +116,7 @@ class RegistrationAttemptResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('bulk_report')
+                BulkAction::make('bulk_report')
                     ->label('Sammel-Export für Behörden')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('danger')
@@ -137,7 +139,7 @@ class RegistrationAttemptResource extends Resource
                             ['Content-Type' => 'text/plain; charset=utf-8']
                         );
                     }),
-                Tables\Actions\DeleteBulkAction::make()->label('Löschen'),
+                DeleteBulkAction::make()->label('Löschen'),
             ]);
     }
 
