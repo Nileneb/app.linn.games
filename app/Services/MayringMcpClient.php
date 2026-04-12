@@ -76,9 +76,10 @@ class MayringMcpClient
             $response = Http::withHeaders($this->headers())
                 ->timeout($this->timeout())
                 ->post($this->endpoint().'/ingest', [
-                    'source' => ['source_id' => $sourceId, 'source_type' => 'agent_result'],
-                    'content' => $content,
-                    'categorize' => true,
+                    'source_id'   => $sourceId,
+                    'source_type' => 'agent_result',
+                    'content'     => $content,
+                    'categorize'  => true,
                 ]);
 
             if ($response->failed()) {
