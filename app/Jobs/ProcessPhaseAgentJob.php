@@ -117,8 +117,11 @@ class ProcessPhaseAgentJob implements ShouldQueue
             $rawContent = $cliResult['content'];
 
             // Token-Tracking via CreditService
+            // Bevorzuge echte cost_usd vom CLI (inkl. Cache-Writes) über Token-Schätzung
             $workspaceId = $this->context['workspace_id'] ?? $projekt->workspace_id;
-            if ($workspaceId && ($cliResult['input_tokens'] > 0 || $cliResult['output_tokens'] > 0)) {
+            $hasTokenData = $cliResult['input_tokens'] > 0 || $cliResult['output_tokens'] > 0;
+            $hasCostData = ($cliResult['cost_usd'] ?? 0.0) > 0.0;
+            if ($workspaceId && ($hasTokenData || $hasCostData)) {
                 $workspace = Workspace::find($workspaceId);
                 if ($workspace) {
                     app(CreditService::class)->deduct(
@@ -126,6 +129,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
                         $cliResult['input_tokens'],
                         $this->agentConfigKey,
                         $cliResult['output_tokens'],
+                        $cliResult['cost_usd'] ?? 0.0,
                     );
                 }
             }

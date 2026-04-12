@@ -19,9 +19,18 @@ class CreditService
         }
     }
 
-    public function deduct(Workspace $workspace, int $inputTokens, string $agentKey, int $outputTokens = 0): void
+    /**
+     * Zieht Credits ab basierend auf tatsächlichen API-Kosten.
+     *
+     * @param  float  $actualCostUsd  Tatsächliche API-Kosten in USD (aus CLI total_cost_usd).
+     *                                0.0 = Fallback auf Token-basierte Berechnung.
+     */
+    public function deduct(Workspace $workspace, int $inputTokens, string $agentKey, int $outputTokens = 0, float $actualCostUsd = 0.0): void
     {
-        $rawCents = $this->toCents($inputTokens, $outputTokens);
+        // Bevorzuge echte API-Kosten (inkl. Cache-Writes) über Token-Schätzung
+        $rawCents = $actualCostUsd > 0.0
+            ? (int) ceil($actualCostUsd * 100)
+            : $this->toCents($inputTokens, $outputTokens);
 
         if ($rawCents <= 0) {
             return;
