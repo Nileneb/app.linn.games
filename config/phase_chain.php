@@ -50,16 +50,16 @@ return [
 
     'thresholds' => [
         1 => [
-            'min_components' => 3,
-            'blocking' => false,
-            'warning' => 'Mindestens 3 P1-Komponenten empfohlen für robuste Suchstrategie',
+            'min_components' => 1,
+            'blocking' => true,
+            'warning' => 'P1 hat keine Komponenten — Phase 2 wird nicht gestartet. Bitte den Agent erneut ausführen.',
             'agent_check' => false,
         ],
         2 => [
             'min_cluster' => 1,
             'min_mapping' => 1,
-            'blocking' => false,
-            'warning' => 'Mindestens 1 Cluster und 1 Mapping-Komponente empfohlen',
+            'blocking' => true,
+            'warning' => 'P2 hat keinen Cluster oder kein Mapping — Phase 3 wird nicht gestartet.',
             'agent_check' => false,
         ],
         3 => [
@@ -76,20 +76,20 @@ return [
         ],
         5 => [
             'min_treffer' => 5,
-            'blocking' => false,
-            'warning' => 'Mindestens 5 Treffer für Phase 6 empfohlen',
+            'blocking' => true,
+            'warning' => 'Weniger als 5 Treffer in P5 — Phase 6 wird nicht gestartet. Bitte Paper importieren.',
             'agent_check' => false,
         ],
         6 => [
             'min_assessments' => 1,
-            'blocking' => false,
-            'warning' => 'Mindestens 1 Qualitätsbewertung empfohlen — Fortfahren dennoch möglich',
+            'blocking' => true,
+            'warning' => 'Keine Qualitätsbewertungen in P6 — Phase 7 wird nicht gestartet.',
             'agent_check' => false,
         ],
         7 => [
             'min_extractions' => 1,
-            'blocking' => false,
-            'warning' => 'Mindestens 1 Datenextraktion empfohlen — Fortfahren dennoch möglich',
+            'blocking' => true,
+            'warning' => 'Keine Datenextraktionen in P7 — Phase 8 wird nicht gestartet.',
             'agent_check' => false,
         ],
     ],
