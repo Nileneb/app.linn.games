@@ -104,4 +104,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('credits/usage', \App\Livewire\Credits\Usage::class)->name('credits.usage');
     Route::get('credits/success', fn () => view('credits.success'))->name('credits.success');
     Route::post('credits/checkout', [\App\Http\Controllers\CreditCheckoutController::class, 'redirect'])->name('credits.checkout');
+
+    // MayringCoder Subscription + Memory
+    Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
+    Route::get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)->name('mayring.memory');
 });

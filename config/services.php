@@ -179,6 +179,7 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'currency' => 'eur',
+        'mayring_price_id' => env('STRIPE_MAYRING_PRICE_ID'),
         'packages' => [
             ['cents' => 500,   'price_eur' => 500,   'label' => '5 €'],
             ['cents' => 1000,  'price_eur' => 1000,  'label' => '10 €'],

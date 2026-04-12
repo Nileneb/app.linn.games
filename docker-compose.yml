@@ -200,12 +200,19 @@ services:
       - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
       - MAYRING_MCP_AUTH_TOKEN=${MAYRING_MCP_AUTH_TOKEN}
       - CHROMA_PATH=/app/cache/chroma
+      # PostgreSQL for Sanctum token validation (external Claude users)
+      - LARAVEL_DB_HOST=postgres
+      - LARAVEL_DB_PORT=5432
+      - LARAVEL_DB_USER=${POSTGRES_USERNAME}
+      - LARAVEL_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - LARAVEL_DB_NAME=${POSTGRES_DATABASE}
     volumes:
       - linn-mayring-cache:/app/cache
     networks:
       - linn-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   mayring-pi:
     build:

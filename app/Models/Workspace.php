@@ -21,12 +21,15 @@ class Workspace extends Model
         'tier',
         'stripe_customer_id',
         'discount_factor',
+        'mayring_subscription_id',
+        'mayring_active',
     ];
 
     protected $casts = [
         'credits_balance_cents' => 'integer',
         'tier' => 'string',
         'discount_factor' => 'float',
+        'mayring_active' => 'boolean',
     ];
 
     public function owner(): BelongsTo
@@ -59,5 +62,10 @@ class Workspace extends Model
     public function creditTransactions(): HasMany
     {
         return $this->hasMany(CreditTransaction::class, 'workspace_id')->orderByDesc('created_at');
+    }
+
+    public function hasMayringAccess(): bool
+    {
+        return $this->mayring_active || $this->tier === 'enterprise';
     }
 }

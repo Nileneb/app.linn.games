@@ -62,4 +62,33 @@ class StripeService
 
         return $session->url;
     }
+
+    public function createMayringSubscriptionCheckout(Workspace $workspace, string $successUrl, string $cancelUrl): string
+    {
+        $customerId = $this->ensureCustomer($workspace);
+
+        $session = $this->stripe->checkout->sessions->create([
+            'customer' => $customerId,
+            'mode' => 'subscription',
+            'line_items' => [[
+                'price' => config('services.stripe.mayring_price_id'),
+                'quantity' => 1,
+            ]],
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'allow_promotion_codes' => true,
+            'metadata' => ['workspace_id' => $workspace->id],
+        ]);
+
+        return $session->url;
+    }
+
+    public function cancelMayringSubscription(Workspace $workspace): void
+    {
+        if (! $workspace->mayring_subscription_id) {
+            return;
+        }
+
+        $this->stripe->subscriptions->cancel($workspace->mayring_subscription_id);
+    }
 }
