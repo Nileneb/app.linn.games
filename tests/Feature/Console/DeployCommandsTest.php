@@ -118,12 +118,11 @@ test('deploy:send-reset-link gibt warnung wenn user nicht existiert', function (
 
 // ─── deploy:post-deploy (Orchestrator) ───────────────────────────
 
-test('deploy:post-deploy ruft alle drei sub-commands ab', function () {
+test('deploy:post-deploy ruft ensure-admin und ensure-workspace auf (kein reset-link mehr)', function () {
     $this->artisan('deploy:post-deploy')
         ->assertSuccessful()
         ->expectsOutputToContain('deploy:ensure-admin')
-        ->expectsOutputToContain('deploy:ensure-workspace')
-        ->expectsOutputToContain('deploy:send-reset-link');
+        ->expectsOutputToContain('deploy:ensure-workspace');
 
     $user = User::where('email', 'bene@linn.games')->first();
     expect($user)->not->toBeNull();
@@ -139,13 +138,10 @@ test('deploy:post-deploy ist vollständig idempotent', function () {
 });
 
 test('deploy:post-deploy fährt fort wenn ein schritt fehlschlägt', function () {
-    // Admin anlegen, dann Workspace-Step erzwingen zu scheitern
+    // Admin anlegen, dann Orchestrator nochmal ausführen — ensure-workspace darf nicht werfen
     $this->artisan('deploy:ensure-admin')->assertSuccessful();
 
-    // Workspace-Tabelle temporär unzugänglich machen indem wir Workspace model fehler werfen
-    // Einfacherer Test: Sicherstellen dass nach einem warn() der nächste Schritt noch läuft
-    // durch Ausführen des Orchestrators nach ensure-admin (workspace existiert, kein Fehler zu erwarten)
     $this->artisan('deploy:post-deploy')
         ->assertSuccessful()
-        ->expectsOutputToContain('deploy:send-reset-link');
+        ->expectsOutputToContain('deploy:ensure-workspace');
 });
