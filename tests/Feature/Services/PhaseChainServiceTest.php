@@ -22,7 +22,10 @@ function makeChainProjekt(): Projekt
 
 test('maybeDispatchNext dispatcht den nächsten job wenn konfiguriert', function () {
     Queue::fake();
-    config(['services.langdock.scoping_mapping_agent' => 'uuid-test-agent']);
+    config([
+        'services.anthropic.agents.scoping_mapping_agent' => 'uuid-test-agent',
+        'phase_chain.thresholds.1.blocking' => false, // TransitionValidator nicht blockieren
+    ]);
 
     $projekt = makeChainProjekt();
 
@@ -58,7 +61,7 @@ test('maybeDispatchNext dispatcht nichts wenn phase nicht in chain', function ()
 
 test('maybeDispatchNext dispatcht nichts wenn agent nicht konfiguriert', function () {
     Queue::fake();
-    config(['services.langdock.scoping_mapping_agent' => null]);
+    config(['services.anthropic.agents.scoping_mapping_agent' => null]);
 
     $projekt = makeChainProjekt();
 
@@ -79,7 +82,10 @@ test('maybeDispatchNext dispatcht nichts nach letzter phase', function () {
 
 test('maybeDispatchNext enthält vorherige phase-ergebnisse im context', function () {
     Queue::fake();
-    config(['services.langdock.scoping_mapping_agent' => 'uuid-test-agent']);
+    config([
+        'services.anthropic.agents.scoping_mapping_agent' => 'uuid-test-agent',
+        'phase_chain.thresholds.1.blocking' => false, // TransitionValidator nicht blockieren
+    ]);
 
     $projekt = makeChainProjekt();
 
