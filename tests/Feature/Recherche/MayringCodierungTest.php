@@ -40,6 +40,9 @@ test('startCodierung dispatches ProcessMayringBatchJob', function () {
     Bus::fake();
 
     $user = User::factory()->withoutTwoFactor()->create();
+    // Simulate active Mayring subscription — guard in startCodierung() checks hasMayringAccess()
+    $user->currentWorkspace()->update(['mayring_active' => true]);
+
     $projekt = Projekt::factory()->create(['user_id' => $user->id]);
 
     // Insert a real embedding so totalChunks > 0
