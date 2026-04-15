@@ -2,7 +2,7 @@
   "mcpServers": {
     "paper-search": {
       "type": "sse",
-      "url": "http://mcp-paper-search:8089/sse",
+      "url": "http://mcp-paper-search:8089/sse/",
       "headers": {
         "Authorization": "Bearer ${MCP_AUTH_TOKEN}"
       }
