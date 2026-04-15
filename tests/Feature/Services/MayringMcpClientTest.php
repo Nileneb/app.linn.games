@@ -8,6 +8,7 @@ beforeEach(function () {
         'services.mayring_mcp.endpoint' => 'http://mayring-test.local',
         'services.mayring_mcp.auth_token' => 'test-token',
     ]);
+    \Illuminate\Support\Facades\Cache::flush();
 });
 
 test('searchDocuments sendet korrekte anfrage', function () {

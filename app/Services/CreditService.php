@@ -215,10 +215,13 @@ class CreditService
      */
     private function agentSpendingToday(Workspace $workspace, string $agentKey): int
     {
+        // Carbon::today() serialisiert als lokaler Timestamp ohne Timezone-Info — PostgreSQL
+        // interpretiert das als UTC. ->utc() konvertiert explizit in UTC, damit der Vergleich
+        // mit den in UTC gespeicherten timestamptz-Werten korrekt funktioniert.
         return (int) CreditTransaction::where('workspace_id', $workspace->id)
             ->where('type', 'usage')
             ->where('agent_config_key', $agentKey)
-            ->where('created_at', '>=', Carbon::today())
+            ->where('created_at', '>=', Carbon::today()->utc())
             ->sum(DB::raw('ABS(amount_cents)'));
     }
 
