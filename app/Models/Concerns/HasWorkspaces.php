@@ -52,6 +52,11 @@ trait HasWorkspaces
         return $this->cachedWorkspaceId;
     }
 
+    public function currentWorkspace(): Workspace
+    {
+        return $this->ensureDefaultWorkspace();
+    }
+
     public function ensureDefaultWorkspace(): Workspace
     {
         // oldest() stellt sicher, dass bei mehreren owned Workspaces immer der
