@@ -82,10 +82,19 @@ new class extends Component {
         return $this->pending > 0;
     }
 
+    public function getHasSubscriptionProperty(): bool
+    {
+        return (bool) Auth::user()?->currentWorkspace()?->hasMayringAccess();
+    }
+
     public function startCodierung(): void
     {
         $this->authorize('view', $this->projekt);
         $this->showConfirm = false;
+
+        if (! $this->hasSubscription) {
+            return; // Gate enforced — UI paywall prevents dispatch
+        }
 
         if ($this->totalChunks === 0) {
             return;
@@ -127,6 +136,31 @@ new class extends Component {
             </p>
         </div>
     </div>
+
+    {{-- Subscription paywall banner --}}
+    @if (! $this->hasSubscription)
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-5 dark:border-amber-800/50 dark:bg-amber-900/20">
+            <div class="flex items-start gap-3">
+                <span class="mt-0.5 text-xl">🔒</span>
+                <div class="flex-1">
+                    <p class="font-semibold text-amber-900 dark:text-amber-100">
+                        MayringCoder Memory — Abo erforderlich
+                    </p>
+                    <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                        Qualitative Kodierung und persistentes Forschungsgedächtnis erfordern ein aktives Abo (€5/Monat).
+                        Das ist bis zu 7× günstiger als MAXQDA oder Atlas.ti.
+                    </p>
+                    <a
+                        href="{{ route('mayring.subscribe') }}"
+                        class="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+                        wire:navigate
+                    >
+                        Jetzt abonnieren →
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- No chunks notice --}}
     @if ($this->totalChunks === 0)
@@ -173,7 +207,8 @@ new class extends Component {
                     @if ($this->completed < $this->totalChunks)
                         <button
                             wire:click="$set('showConfirm', true)"
-                            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+                            @disabled(! $this->hasSubscription)
+                            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-blue-500 dark:hover:bg-blue-600"
                         >
                             {{ $this->completed > 0 ? 'Codierung fortsetzen' : 'Codierung starten' }}
                         </button>
