@@ -17,7 +17,15 @@ class StripeService
     public function ensureCustomer(Workspace $workspace): string
     {
         if ($workspace->stripe_customer_id) {
-            return $workspace->stripe_customer_id;
+            // Verify the stored ID is valid in the current Stripe environment
+            // (live IDs are invalid when using test keys and vice versa)
+            try {
+                $this->stripe->customers->retrieve($workspace->stripe_customer_id);
+                return $workspace->stripe_customer_id;
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                // Customer doesn't exist in this Stripe environment — create a new one
+                $workspace->update(['stripe_customer_id' => null]);
+            }
         }
 
         $customer = $this->stripe->customers->create([
