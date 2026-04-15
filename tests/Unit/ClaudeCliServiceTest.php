@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Process;
 uses(Tests\TestCase::class);
 
 test('call() gibt content aus Claude CLI JSON-Output zurück', function () {
+    // Force CLI mode — CLAUDE_USE_DIRECT_API=true in .env would bypass Process::fake()
+    config(['services.anthropic.use_direct_api' => false]);
+
     Process::fake([
         '*claude*' => Process::result(
             output: json_encode([
@@ -25,6 +28,8 @@ test('call() gibt content aus Claude CLI JSON-Output zurück', function () {
 });
 
 test('call() wirft ClaudeCliException bei Fehler-Exit-Code', function () {
+    config(['services.anthropic.use_direct_api' => false]);
+
     Process::fake([
         '*claude*' => Process::result(
             output: '',
@@ -40,6 +45,8 @@ test('call() wirft ClaudeCliException bei Fehler-Exit-Code', function () {
 });
 
 test('call() sendet --output-format json und --print Flags', function () {
+    config(['services.anthropic.use_direct_api' => false]);
+
     Process::fake([
         '*claude*' => Process::result(
             output: json_encode(['type' => 'result', 'subtype' => 'success', 'is_error' => false, 'result' => 'OK']),
@@ -57,6 +64,8 @@ test('call() sendet --output-format json und --print Flags', function () {
 });
 
 test('callForPhase() verwendet --model Flag und gibt Token-Info zurück', function () {
+    config(['services.anthropic.use_direct_api' => false]);
+    config(['services.anthropic.use_ollama_workers' => false]);
     config(['services.anthropic.agent_models.search_agent' => 'claude-haiku-4-5-20251001']);
     config(['services.anthropic.agents.search_agent' => 'pico-agent']);
     config(['services.anthropic.api_key' => 'test-key']);
@@ -90,6 +99,8 @@ test('callForPhase() verwendet --model Flag und gibt Token-Info zurück', functi
 });
 
 test('callForPhase() wirft Exception bei CLI-Fehler', function () {
+    config(['services.anthropic.use_direct_api' => false]);
+    config(['services.anthropic.use_ollama_workers' => false]);
     config(['services.anthropic.agents.search_agent' => 'pico-agent']);
     config(['services.anthropic.api_key' => 'test-key']);
 
