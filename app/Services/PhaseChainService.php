@@ -176,6 +176,8 @@ class PhaseChainService
         $lines[] = "Aktuelle Phase: P{$nextPhaseNr}";
         $lines[] = 'Bitte nutze die oben genannte Projekt-ID für alle DB-Operationen (SET LOCAL app.current_projekt_id).';
         $lines[] = "Diese Phase wurde automatisch nach Abschluss von Phase {$completedPhaseNr} gestartet.";
+        $lines[] = '';
+        $lines[] = '⚠️ PFLICHT: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein erklärender Text. Keine Markdown-Fences. Nur reines JSON.';
 
         return [
             ['role' => 'user', 'content' => implode("\n", $lines)],

@@ -1023,10 +1023,9 @@ def create_app() -> Starlette:
 
     sse = SseServerTransport(message_path)
 
-    async def handle_sse(request: Request):
-        async with sse.connect_sse(
-            request.scope, request.receive, request._send
-        ) as streams:
+    async def handle_sse(scope: Scope, receive: Receive, send: Send):
+        """ASGI app for SSE endpoint — must be mounted via Mount, not Route."""
+        async with sse.connect_sse(scope, receive, send) as streams:
             await mcp._mcp_server.run(
                 streams[0],
                 streams[1],
@@ -1082,7 +1081,7 @@ def create_app() -> Starlette:
 
     app = Starlette(
         routes=[
-            Route("/sse", endpoint=handle_sse),
+            Mount("/sse", app=handle_sse),
             Route("/search", endpoint=handle_rest_search, methods=["GET", "POST"]),
             Mount(message_path, app=sse.handle_post_message),
         ],

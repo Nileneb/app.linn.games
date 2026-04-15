@@ -210,6 +210,9 @@ class AgentPromptBuilder
             $lines[] = "Phase P{$p}: {$summary}";
         }
 
+        $lines[] = '';
+        $lines[] = '⚠️ PFLICHT: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein erklärender Text. Keine Markdown-Fences. Nur reines JSON.';
+
         return implode("\n", $lines);
     }
 }
