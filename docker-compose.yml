@@ -234,11 +234,10 @@ services:
     command: ["python", "-m", "src.mcp_server"]
     restart: unless-stopped
     environment:
-      - MCP_TRANSPORT=sse
+      - MCP_TRANSPORT=http
       - MCP_HTTP_PORT=8092
-      - MCP_AUTH_ENABLED=true
-      - MCP_ISSUER_URL=https://mcp.linn.games
-      - MCP_CLIENT_1=${MCP_OAUTH_CLIENT_1}
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_AUTH_TOKEN=${MAYRING_MCP_AUTH_TOKEN}
       - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
       - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
       - CHROMA_PATH=/app/cache/chroma
@@ -252,7 +251,7 @@ services:
     build:
       context: ./MayringCoder
       dockerfile: docker/Dockerfile
-    command: ["python", "pi_server.py"]
+    command: ["python", "-m", "src.pi_server"]
     restart: unless-stopped
     ports:
       - "8091:8091"
@@ -264,6 +263,23 @@ services:
       - linn-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  mayring-webui:
+    build:
+      context: ./MayringCoder
+      dockerfile: docker/Dockerfile
+    command: ["python", "-m", "src.web_ui", "--host", "0.0.0.0", "--port", "7860", "--api-url", "http://mayring-api:8090"]
+    restart: unless-stopped
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
+      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
+      - CHROMA_PATH=/app/cache/chroma
+      - UI_AUTH_USER=${MAYRING_UI_AUTH_USER:-admin}
+      - UI_AUTH_PASS=${MAYRING_UI_AUTH_PASS}
+    volumes:
+      - linn-mayring-cache:/app/cache
+    networks:
+      - linn-network
 
 
 networks:
