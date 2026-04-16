@@ -62,6 +62,9 @@ if [ "$MIGRATE_ONLY" = true ]; then
   # Explizit neu starten damit das neue Image verwendet wird
   "${DC[@]}" up -d --no-deps php-fpm queue-worker
 
+  echo "==> [migrate-only] Reloading nginx (refresh upstream DNS)..."
+  "${DC[@]}" exec -T web nginx -s reload 2>/dev/null || true
+
   echo ""
   echo "==> Migrate-only deploy complete."
   exit 0
