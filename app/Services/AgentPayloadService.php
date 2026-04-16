@@ -184,10 +184,14 @@ class AgentPayloadService
             }
 
             try {
+                if ($tableName === 'p5_treffer' && ! isset($data['id'])) {
+                    $data['id'] = (string) \Illuminate\Support\Str::uuid();
+                }
+
                 DB::table($tableName)->insert($data);
                 $inserted++;
 
-                if ($tableName === 'p5_treffer' && ! blank($data['doi'] ?? null) && ! blank($data['id'] ?? null)) {
+                if ($tableName === 'p5_treffer' && ! blank($data['doi'] ?? null)) {
                     DB::table('p5_treffer')->where('id', $data['id'])->update(['retrieval_status' => 'pending']);
                     \App\Jobs\DownloadPaperJob::dispatch($data['id']);
                 }
