@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 class McpAgentController extends Controller
 {
+    public function __construct(
+        private readonly ClaudeService $claudeService,
+        private readonly AgentResultStorageService $storageService,
+    ) {}
+
     public function call(Request $request)
     {
         $validated = $request->validate([
@@ -23,7 +28,7 @@ class McpAgentController extends Controller
         ]);
 
         try {
-            $response = app(ClaudeService::class)->callByConfigKey(
+            $response = $this->claudeService->callByConfigKey(
                 $validated['agent_id'],
                 $validated['messages'],
                 $validated['context'] ?? [],
@@ -34,7 +39,7 @@ class McpAgentController extends Controller
             $context = $validated['context'] ?? [];
             if (isset($context['workspace_id'], $context['project_id'], $context['phase_number'])) {
                 $userId = $context['user_id'] ?? Auth::id() ?? 0;
-                $filePath = app(AgentResultStorageService::class)->saveResult(
+                $filePath = $this->storageService->saveResult(
                     $context['workspace_id'],
                     $userId,
                     $context['project_id'],
