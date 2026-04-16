@@ -231,6 +231,7 @@ services:
       - CHROMA_PATH=/app/cache/chroma
     volumes:
       - linn-mayring-cache:/app/cache
+      - .:/repo:ro
     networks:
       - linn-network
 
