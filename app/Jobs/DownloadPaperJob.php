@@ -36,7 +36,8 @@ class DownloadPaperJob implements ShouldQueue
         }
 
         // 1. Try full PDF via Unpaywall
-        $text = $this->tryUnpaywallPdf($treffer);
+        $pdfDownloaded = false;
+        $text = $this->tryUnpaywallPdf($treffer, $pdfDownloaded);
 
         if ($text !== null) {
             $this->dispatchIngest($treffer, $text, 'fulltext');
@@ -47,11 +48,10 @@ class DownloadPaperJob implements ShouldQueue
         // 2. Fallback: use abstract (even if PDF was downloaded but text extraction failed)
         $treffer->refresh();
         if (! blank($treffer->abstract)) {
-            $wasDownloaded = (bool) $treffer->retrieval_downloaded;
             $treffer->update([
-                'retrieval_status' => $wasDownloaded ? 'text_extraktion_fehlgeschlagen' : 'abstract_only',
+                'retrieval_status' => $pdfDownloaded ? 'text_extraktion_fehlgeschlagen' : 'abstract_only',
                 'retrieval_checked_at' => now(),
-                'retrieval_last_response' => $wasDownloaded
+                'retrieval_last_response' => $pdfDownloaded
                     ? 'PDF heruntergeladen, Textextraktion fehlgeschlagen — Abstract wird für Analyse verwendet.'
                     : 'Volltext nicht verfügbar — Abstract wird für Analyse verwendet.',
             ]);
@@ -61,9 +61,14 @@ class DownloadPaperJob implements ShouldQueue
             return;
         }
 
-        // 3. Neither fulltext nor abstract → keep current status or set bibliothek_erforderlich
-        $fresh = P5Treffer::find($this->trefferId);
-        if ($fresh && $fresh->retrieval_status !== 'text_extraktion_fehlgeschlagen') {
+        // 3. Neither fulltext nor abstract
+        if ($pdfDownloaded) {
+            $treffer->update([
+                'retrieval_status' => 'text_extraktion_fehlgeschlagen',
+                'retrieval_checked_at' => now(),
+                'retrieval_last_response' => 'PDF heruntergeladen, aber Textextraktion lieferte kein Ergebnis. Kein Abstract vorhanden.',
+            ]);
+        } else {
             $treffer->update([
                 'retrieval_status' => 'bibliothek_erforderlich',
                 'retrieval_checked_at' => now(),
@@ -72,7 +77,7 @@ class DownloadPaperJob implements ShouldQueue
         }
     }
 
-    private function tryUnpaywallPdf(P5Treffer $treffer): ?string
+    private function tryUnpaywallPdf(P5Treffer $treffer, bool &$downloaded = false): ?string
     {
         $pdfUrl = app(UnpaywallService::class)->resolveOaUrl($treffer->doi);
 
@@ -90,6 +95,8 @@ class DownloadPaperJob implements ShouldQueue
 
         $path = 'papers/'.$treffer->projekt_id.'/'.Str::slug($treffer->record_id).'.pdf';
         Storage::put($path, $response->body());
+
+        $downloaded = true;
 
         $treffer->update([
             'retrieval_downloaded' => true,

@@ -193,6 +193,6 @@ test('job setzt text_extraktion_fehlgeschlagen wenn pdf text leer', function () 
 
     $treffer->refresh();
     expect($treffer->retrieval_downloaded)->toBeTrue();
-    expect($treffer->retrieval_status)->toBe('bibliothek_erforderlich');
+    expect($treffer->retrieval_status)->toBe('text_extraktion_fehlgeschlagen');
     Queue::assertNotPushed(IngestPaperJob::class);
 });
