@@ -123,6 +123,12 @@ class BearerAuthMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path.startswith("/.well-known/") or path == "/register":
+                response = Response("Not Found", status_code=404)
+                await response(scope, receive, send)
+                return
+
             token = self._extract_token(scope)
             if not token:
                 response = Response("Unauthorized", status_code=401)
