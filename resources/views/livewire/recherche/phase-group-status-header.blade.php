@@ -85,8 +85,26 @@ new class extends Component {
         }
         $chainStuck = $restartPhase !== null;
 
+        // P5-P8 Stuck-Detection: phase completed but 0 data rows, or failed
+        $restartPhase2 = null;
+        if ($p4Completed && $seg2Started && ! $anyPending) {
+            $countService ??= app(PhaseCountService::class);
+            foreach (range(5, 8) as $i) {
+                $status = $results->get($i)?->status;
+                if ($status === null) {
+                    break;
+                }
+                $hasData = $countService->countByPhase($this->projekt, $i) > 0;
+                if (($status === 'completed' && ! $hasData) || $status === 'failed') {
+                    $restartPhase2 = $i;
+                    break;
+                }
+            }
+        }
+        $chainStuck2 = $restartPhase2 !== null;
+
         return [
-            'results'        => $results,           // keyed by phase_nr
+            'results'        => $results,
             'anyPending'     => $anyPending,
             'p4Completed'    => $p4Completed,
             'seg1Started'    => $seg1Started,
@@ -94,6 +112,8 @@ new class extends Component {
             'completedCount' => $completedCount,
             'chainStuck'     => $chainStuck,
             'restartPhase'   => $restartPhase,
+            'chainStuck2'    => $chainStuck2,
+            'restartPhase2'  => $restartPhase2,
         ];
     }
 }; ?>
@@ -192,15 +212,32 @@ new class extends Component {
                 </div>
             @endif
 
-            {{-- Segment 2: P5–P8 (after P4 done, manual paper import required) --}}
+            {{-- Segment 2: P5–P8 --}}
             @if ($p4Completed && ! $seg2Started && ! $anyPending)
                 <button
                     wire:click="startPipeline(5)"
                     class="w-full rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-800 shadow transition hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
                 >
                     ▶ Analyse P5–P8 starten
-                    <span class="block text-xs font-normal text-indigo-600 dark:text-indigo-400">(Nach Paper-Import)</span>
                 </button>
+            @elseif ($chainStuck2)
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-900/20">
+                        <svg class="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">P{{ $restartPhase2 }} blockiert — keine Daten gespeichert</p>
+                            <p class="text-xs text-red-600 dark:text-red-400">Der Agent hat keine Ergebnisse persistiert. Bitte P{{ $restartPhase2 }} neu starten.</p>
+                        </div>
+                    </div>
+                    <button
+                        wire:click="startPipeline({{ $restartPhase2 }})"
+                        class="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    >
+                        ↺ P{{ $restartPhase2 }} neu starten
+                    </button>
+                </div>
             @endif
         </div>
 

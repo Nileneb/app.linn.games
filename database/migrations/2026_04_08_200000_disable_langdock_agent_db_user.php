@@ -30,7 +30,12 @@ return new class extends Migration
 
         $role = $this->roleName;
 
-        // Safety guard: Hauptdatenbankbenutzer niemals deaktivieren
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $role)) {
+            Log::warning("Migration: Ungültiger Rollenname '{$role}' — übersprungen.");
+
+            return;
+        }
+
         if ($role === env('DB_USERNAME', 'linn_games')) {
             Log::warning("Migration: LANGDOCK_DB_USERNAME ist identisch mit DB_USERNAME ('{$role}') — Migration wird übersprungen um Datenbankzugriff nicht zu sperren.");
 
@@ -38,13 +43,10 @@ return new class extends Migration
         }
 
         try {
-            // Alle aktiven Sessions des Benutzers beenden (außer der eigenen)
-            DB::statement("
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE usename = '{$role}'
-                  AND pid <> pg_backend_pid()
-            ");
+            DB::statement(
+                'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = ? AND pid <> pg_backend_pid()',
+                [$role]
+            );
 
             // Login-Recht entziehen — keine neuen Verbindungen mehr möglich
             DB::statement("ALTER ROLE \"{$role}\" NOLOGIN");

@@ -48,7 +48,8 @@ class ClaudeService
             $systemPrompt .= "\n\n".$contextBlock;
         }
 
-        $model = config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+        $model = config("services.anthropic.agent_models.{$configKey}")
+            ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
         $maxTok = $maxTokens > 0 ? $maxTokens : (int) config('services.anthropic.max_tokens', 8192);
         $workspace = $this->resolveWorkspace($context);
 
@@ -58,7 +59,6 @@ class ClaudeService
 
         $startedAt = microtime(true);
 
-        // Mayring-Agent: Abo-Gate — nur für aktive Abonnenten (mayring_active = true oder enterprise)
         if ($configKey === 'mayring_agent' && $workspace !== null && ! $workspace->hasMayringAccess()) {
             throw new ClaudeAgentException('Mayring-Agent erfordert aktives Abo. Bitte unter Einstellungen → Mayring-Abo abonnieren.');
         }
@@ -138,7 +138,8 @@ class ClaudeService
             $systemPrompt .= "\n\n".$contextBlock;
         }
 
-        $model = config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+        $model = config("services.anthropic.agent_models.{$configKey}")
+            ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
         $maxTok = $maxTokens > 0 ? $maxTokens : (int) config('services.anthropic.max_tokens', 8192);
         $workspace = $this->resolveWorkspace($context);
 
@@ -146,23 +147,48 @@ class ClaudeService
             $this->creditService->assertHasBalance($workspace);
         }
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'anthropic-beta' => 'prompt-caching-2024-07-31',
-            'content-type' => 'application/json',
-        ])->withOptions(['stream' => true])
-          ->timeout(120)
-          ->post(self::API_URL, [
-              'model' => $model,
-              'max_tokens' => $maxTok,
-              'stream' => true,
-              'system' => [['type' => 'text', 'text' => $systemPrompt, 'cache_control' => ['type' => 'ephemeral']]],
-              'messages' => $messages,
-          ]);
+        $attempts = (int) config('services.anthropic.retry_attempts', 3);
+        $sleepMs = (int) config('services.anthropic.retry_sleep_ms', 500);
+        $response = null;
 
-        if ($response->failed()) {
-            throw new ClaudeAgentException("Claude API Fehler {$response->status()}");
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'anthropic-beta' => 'prompt-caching-2024-07-31',
+                'content-type' => 'application/json',
+            ])->withOptions(['stream' => true])
+              ->timeout(120)
+              ->post(self::API_URL, [
+                  'model' => $model,
+                  'max_tokens' => $maxTok,
+                  'stream' => true,
+                  'system' => [['type' => 'text', 'text' => $systemPrompt, 'cache_control' => ['type' => 'ephemeral']]],
+                  'messages' => $messages,
+              ]);
+
+            if ($response->successful()) {
+                break;
+            }
+
+            if ($response->status() === 429) {
+                $retryAfter = (int) $response->header('Retry-After', (int) ceil($sleepMs / 1000));
+                Log::warning("callStreaming 429 — backing off {$retryAfter}s (attempt {$attempt}/{$attempts})");
+                usleep($retryAfter * 1_000_000);
+                continue;
+            }
+
+            if ($response->status() < 500) {
+                throw new ClaudeAgentException("Claude API Fehler {$response->status()}");
+            }
+
+            if ($attempt < $attempts) {
+                usleep($sleepMs * (2 ** ($attempt - 1)) * 1000);
+            }
+        }
+
+        if ($response === null || $response->failed()) {
+            throw new ClaudeAgentException('Claude API Fehler nach '.$attempts.' Versuchen: '.($response?->status() ?? 'no response'));
         }
 
         $body = $response->toPsrResponse()->getBody();

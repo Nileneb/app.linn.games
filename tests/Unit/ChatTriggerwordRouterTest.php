@@ -7,7 +7,7 @@ test('it falls back when no trigger is present', function () {
 
     $r = $router->route('Hello world');
 
-    expect($r['config_key'])->toBe('agent_id')
+    expect($r['config_key'])->toBe('chat-agent')
         ->and($r['structured_output'])->toBeFalse()
         ->and($r['triggerword'])->toBeNull();
 });
