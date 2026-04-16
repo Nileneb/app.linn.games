@@ -759,7 +759,12 @@ new class extends Component {
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ str()->limit($t->titel ?? $t->record_id, 80) }}</span>
+                                    @php $trefferUrl = $t->retrieval_source_url ?: ($t->doi ? "https://doi.org/{$t->doi}" : null); @endphp
+                                    @if ($trefferUrl)
+                                        <a href="{{ $trefferUrl }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400">{{ str()->limit($t->titel ?? $t->record_id, 80) }}</a>
+                                    @else
+                                        <span class="text-sm font-medium text-neutral-900 dark:text-neutral-100">{{ str()->limit($t->titel ?? $t->record_id, 80) }}</span>
+                                    @endif
                                     @if ($t->ist_duplikat)
                                         <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Duplikat</span>
                                     @endif
@@ -769,6 +774,12 @@ new class extends Component {
                                     @if ($t->jahr) · {{ $t->jahr }} @endif
                                     @if ($t->journal) · {{ $t->journal }} @endif
                                     @if ($t->datenbank_quelle) · {{ $t->datenbank_quelle }} @endif
+                                    @if ($t->doi)
+                                        · <a href="https://doi.org/{{ $t->doi }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">DOI</a>
+                                    @endif
+                                    @if ($t->retrieval_source_url && str_starts_with($t->retrieval_source_url, 'http'))
+                                        · <a href="{{ $t->retrieval_source_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">Quelle</a>
+                                    @endif
                                 </p>
                                 @if ($t->screeningEntscheidungen->isNotEmpty())
                                     <div class="mt-1.5 flex flex-wrap gap-1">
