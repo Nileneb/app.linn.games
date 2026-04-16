@@ -24,7 +24,7 @@ class McpTokenService
         $config = [
             'mcpServers' => [
                 'paper-search' => [
-                    'type' => 'streamable-http',
+                    'type' => 'http',
                     'url' => "{$baseUrl}?token={$plainTextToken}",
                 ],
             ],

@@ -1163,49 +1163,41 @@ def create_app() -> Starlette:
 
 
 def create_streamable_app():
-    """Create a Starlette app with Streamable HTTP transport + Bearer auth."""
+    """Create Streamable HTTP app via FastMCP + REST search + Bearer auth."""
     import json as _json
-    from mcp.server.streamable_http import StreamableHTTPServerTransport
+    from mcp.server.transport_security import TransportSecuritySettings
 
-    transport = StreamableHTTPServerTransport(
-        mcp_path="/mcp",
-        is_json_response_enabled=True,
+    streamable_app = mcp.streamable_http_app(
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=False,
+        ),
     )
-
-    async def handle_mcp(scope: Scope, receive: Receive, send: Send):
-        async with transport.connect(scope, receive, send) as (read_stream, write_stream):
-            await mcp._mcp_server.run(
-                read_stream,
-                write_stream,
-                mcp._mcp_server.create_initialization_options(),
-            )
 
     async def handle_rest_search(request: Request):
         """Plain REST endpoint for PHP (same as SSE version)."""
-        import json as _json2
         try:
             if request.method == "POST":
                 body = await request.body()
-                params = _json2.loads(body) if body else {}
+                params = _json.loads(body) if body else {}
             else:
                 params = dict(request.query_params)
             query = str(params.get("query", "")).strip()
             if not query:
-                return Response(_json2.dumps({"error": "query parameter required"}), media_type="application/json", status_code=400)
+                return Response(_json.dumps({"error": "query parameter required"}), media_type="application/json", status_code=400)
             sources_raw = params.get("sources", ["pubmed", "arxiv", "semantic"])
             if isinstance(sources_raw, str):
                 sources_raw = [s.strip() for s in sources_raw.split(",")]
             max_results = int(params.get("max_results_per_source", params.get("max_results", 5)))
             results = await search_papers_impl(query=query, sources=",".join(sources_raw), max_results_per_source=max_results)
-            return Response(_json2.dumps(results, default=str), media_type="application/json")
+            return Response(_json.dumps(results, default=str), media_type="application/json")
         except Exception as e:
             logging.error(f"REST search error: {e}")
-            return Response(_json2.dumps({"error": str(e)}), media_type="application/json", status_code=500)
+            return Response(_json.dumps({"error": str(e)}), media_type="application/json", status_code=500)
 
     app = Starlette(
         routes=[
-            Mount("/mcp", app=handle_mcp),
             Route("/search", handle_rest_search, methods=["GET", "POST"]),
+            Mount("/", app=streamable_app),
         ],
     )
 
