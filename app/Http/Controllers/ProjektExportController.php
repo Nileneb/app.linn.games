@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\ExportProjectAction;
 use App\Models\Recherche\Projekt;
 use App\Services\MayringSnippetService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ProjektExportController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(
         private readonly ExportProjectAction $exportAction,
         private readonly MayringSnippetService $mayringService,
