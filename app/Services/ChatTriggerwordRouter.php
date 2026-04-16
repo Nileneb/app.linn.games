@@ -36,8 +36,8 @@ class ChatTriggerwordRouter
 
         'pico' => 'pico_agent',
 
-        'db' => 'agent_id',
-        'dully' => 'agent_id',
+        'db' => 'chat-agent',
+        'dully' => 'chat-agent',
     ];
 
     /**
@@ -126,7 +126,7 @@ class ChatTriggerwordRouter
     private function fallback(string $message): array
     {
         return [
-            'config_key' => 'agent_id',
+            'config_key' => 'chat-agent',
             'cleaned_message' => $message,
             'projekt_id' => null,
             'triggerword' => null,

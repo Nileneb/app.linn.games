@@ -83,7 +83,6 @@ return [
             'synthesis_agent' => 3.0,
             'mayring_agent' => 3.0,
             'chat-agent' => 2.0,
-            'agent_id' => 2.0,
             'default' => 3.0,
         ],
 

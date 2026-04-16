@@ -171,6 +171,11 @@ services:
       - DOWNLOAD_PATH=/data/papers
       - LARAVEL_INGEST_URL=http://php-fpm/api/papers/ingest
       - LARAVEL_MCP_TOKEN=${MCP_AUTH_TOKEN}
+      - LARAVEL_DB_HOST=postgres
+      - LARAVEL_DB_PORT=5432
+      - LARAVEL_DB_USER=${POSTGRES_USERNAME}
+      - LARAVEL_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - LARAVEL_DB_NAME=${POSTGRES_DATABASE}
       - PAPER_SEARCH_MCP_UNPAYWALL_EMAIL=${PAPER_SEARCH_MCP_UNPAYWALL_EMAIL}
       - PAPER_SEARCH_MCP_CORE_API_KEY=${PAPER_SEARCH_MCP_CORE_API_KEY}
       - PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY=${PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY}
@@ -186,6 +191,8 @@ services:
     depends_on:
       php-fpm:
         condition: service_started
+      postgres:
+        condition: service_healthy
 
   mayring-api:
     build:

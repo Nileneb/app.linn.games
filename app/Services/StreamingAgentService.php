@@ -26,7 +26,7 @@ class StreamingAgentService
                     $fullText = '';
                     $index = 0;
 
-                    foreach ($this->claudeService->callStreaming('chat-agent', $builtMessages, $context) as $event) {
+                    foreach ($this->claudeService->callStreaming($agentId, $builtMessages, $context) as $event) {
                         if ($event['type'] === 'content') {
                             $fullText .= $event['text'];
                             $this->sendChunk([
