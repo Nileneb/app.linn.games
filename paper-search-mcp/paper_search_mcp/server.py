@@ -1165,13 +1165,8 @@ def create_app() -> Starlette:
 def create_streamable_app():
     """Create Streamable HTTP app via FastMCP + REST search + Bearer auth."""
     import json as _json
-    from mcp.server.transport_security import TransportSecuritySettings
 
-    streamable_app = mcp.streamable_http_app(
-        transport_security=TransportSecuritySettings(
-            enable_dns_rebinding_protection=False,
-        ),
-    )
+    streamable_app = mcp.streamable_http_app()
 
     async def handle_rest_search(request: Request):
         """Plain REST endpoint for PHP (same as SSE version)."""
