@@ -107,8 +107,8 @@ test('ingest paper job handles text shorter than chunk size', function () {
 
     $job->handle();
 
-    // Ollama wurde genau einmal aufgerufen (1 Chunk)
-    Http::assertSentCount(1);
+    // Ollama embedding (1 chunk) + MayringCoder ingest (1 call)
+    Http::assertSentCount(2);
 
     $this->assertDatabaseHas('paper_embeddings', [
         'paper_id' => 'paper-short',

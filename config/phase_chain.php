@@ -47,6 +47,11 @@ return [
         'agent_config_key' => 'review_agent',
         'label' => '📋 KI: Dokumentation finalisieren',
     ],
+    8 => [
+        'next_phase' => null,
+        'agent_config_key' => 'review_agent',
+        'label' => '📋 KI: Final Report',
+    ],
 
     'thresholds' => [
         1 => [

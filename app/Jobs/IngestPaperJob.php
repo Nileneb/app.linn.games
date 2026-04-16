@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Services\EmbeddingService;
+use App\Services\MayringMcpClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -70,10 +71,23 @@ class IngestPaperJob implements ShouldQueue
             }
         }, attempts: 3);
 
-        Log::info('Paper ingested successfully', [
+        Log::info('Paper ingested to local embeddings', [
             'paper_id' => $this->paperId,
             'chunk_count' => count($chunks),
         ]);
+
+        try {
+            app(MayringMcpClient::class)->ingestAndCategorize(
+                $this->text,
+                "paper:{$this->paperId}",
+            );
+            Log::info('Paper ingested to MayringCoder RAG', ['paper_id' => $this->paperId]);
+        } catch (\Throwable $e) {
+            Log::warning('MayringCoder RAG ingest failed (non-fatal)', [
+                'paper_id' => $this->paperId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function chunkText(string $text): array
