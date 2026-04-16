@@ -20,14 +20,12 @@ class McpTokenService
     public function writeTempMcpConfig(string $plainTextToken): string
     {
         $path = sys_get_temp_dir().'/mcp-'.Str::uuid().'.json';
+        $baseUrl = rtrim(config('services.paper_search.mcp_url', 'http://mcp-paper-search:8089/sse/'), '/');
         $config = [
             'mcpServers' => [
                 'paper-search' => [
                     'type' => 'sse',
-                    'url' => config('services.paper_search.mcp_url', 'http://mcp-paper-search:8089/sse/'),
-                    'headers' => [
-                        'Authorization' => "Bearer {$plainTextToken}",
-                    ],
+                    'url' => "{$baseUrl}?token={$plainTextToken}",
                 ],
             ],
         ];

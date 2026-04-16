@@ -108,16 +108,26 @@ class BearerAuthMiddleware:
             logging.warning(f"Sanctum DB lookup failed: {e}")
         return False
 
+    def _extract_token(self, scope) -> Optional[str]:
+        headers = dict(scope.get("headers", []))
+        auth_value = headers.get(b"authorization", b"").decode()
+        if auth_value.startswith("Bearer "):
+            return auth_value[7:]
+        query_string = scope.get("query_string", b"").decode()
+        from urllib.parse import parse_qs
+        params = parse_qs(query_string)
+        token_list = params.get("token", [])
+        if token_list:
+            return token_list[0]
+        return None
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "http":
-            headers = dict(scope.get("headers", []))
-            auth_value = headers.get(b"authorization", b"").decode()
-            if not auth_value.startswith("Bearer "):
+            token = self._extract_token(scope)
+            if not token:
                 response = Response("Unauthorized", status_code=401)
                 await response(scope, receive, send)
                 return
-
-            token = auth_value[7:]
 
             if hmac.compare_digest(token, self.static_token):
                 await self.app(scope, receive, send)
