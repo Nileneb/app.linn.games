@@ -23,6 +23,11 @@ services:
       context: .
       dockerfile: ./docker/common/php-fpm/dockerfile
       target: production
+      args:
+        VITE_REVERB_APP_KEY: ${VITE_REVERB_APP_KEY}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST:-app.linn.games}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT:-443}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME:-https}
     restart: unless-stopped
     volumes:
       - linn-storage-production:/var/www/storage
