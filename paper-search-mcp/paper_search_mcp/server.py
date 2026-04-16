@@ -1211,7 +1211,10 @@ def main():
     elif transport == "streamable-http":
         host = os.getenv("PAPERSEARCH_HOST", "0.0.0.0")
         port = int(os.getenv("PAPERSEARCH_PORT", "8089"))
-        uvicorn.run(create_streamable_app(), host=host, port=port)
+        # mcp.run() handles session manager init; auth via query param ?token=
+        mcp.settings.host = host
+        mcp.settings.port = port
+        mcp.run(transport="streamable-http")
     else:
         host = os.getenv("PAPERSEARCH_HOST", "0.0.0.0")
         port = int(os.getenv("PAPERSEARCH_PORT", "8089"))
