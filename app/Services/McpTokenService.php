@@ -20,11 +20,11 @@ class McpTokenService
     public function writeTempMcpConfig(string $plainTextToken): string
     {
         $path = sys_get_temp_dir().'/mcp-'.Str::uuid().'.json';
-        $baseUrl = rtrim(config('services.paper_search.mcp_url', 'http://mcp-paper-search:8089/sse/'), '/');
+        $baseUrl = rtrim(config('services.paper_search.mcp_url', 'http://mcp-paper-search:8089/mcp'), '/');
         $config = [
             'mcpServers' => [
                 'paper-search' => [
-                    'type' => 'sse',
+                    'type' => 'streamable-http',
                     'url' => "{$baseUrl}?token={$plainTextToken}",
                 ],
             ],

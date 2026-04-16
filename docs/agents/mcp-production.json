@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "paper-search": {
-      "type": "sse",
-      "url": "http://mcp-paper-search:8089/sse/?token=${MCP_AUTH_TOKEN}"
+      "type": "streamable-http",
+      "url": "http://mcp-paper-search:8089/mcp?token=${MCP_AUTH_TOKEN}"
     }
   }
 }
