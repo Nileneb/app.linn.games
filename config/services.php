@@ -68,8 +68,6 @@ return [
         'default_agent_daily_limit_cents' => (int) env('LANGDOCK_DEFAULT_AGENT_DAILY_LIMIT_CENTS', 500),
         'agent_daily_limits' => [
             // Konfigurierbare Tageslimits pro Agent in Cents (0 = kein Limit)
-            // Default: 500 Cents = 5 EUR pro Agent/Tag (Schutz vor Token-Explosionen)
-            'agent_id' => (int) env('LANGDOCK_DAILY_LIMIT_DASHBOARD', 500),
             'scoping_mapping_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SCOPING', 500),
             'search_agent' => (int) env('LANGDOCK_DAILY_LIMIT_SEARCH', 500),
             'review_agent' => (int) env('LANGDOCK_DAILY_LIMIT_REVIEW', 500),
@@ -138,7 +136,6 @@ return [
         ],
 
         'agent_daily_limits' => [
-            'agent_id' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 1000),
             'chat-agent' => (int) env('CLAUDE_DAILY_LIMIT_DASHBOARD', 1000),
             'scoping_mapping_agent' => (int) env('CLAUDE_DAILY_LIMIT_SCOPING', 2000),
             'search_agent' => (int) env('CLAUDE_DAILY_LIMIT_SEARCH', 2000),
@@ -168,6 +165,7 @@ return [
     'mcp' => [
         'auth_token' => env('MCP_AUTH_TOKEN'),
         'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),
+        'restrict_to_internal' => (bool) env('MCP_RESTRICT_TO_INTERNAL', true),
     ],
 
     'ollama' => [

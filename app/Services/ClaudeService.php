@@ -147,7 +147,20 @@ class ClaudeService
                     'content-type' => 'application/json',
                 ])->timeout(120)->post(self::API_URL, $body);
 
-                if ($response->successful() || $response->status() < 500) {
+                if ($response->successful()) {
+                    return $response;
+                }
+
+                if ($response->status() === 429) {
+                    $retryAfter = (int) $response->header('Retry-After', (int) ceil($sleepMs / 1000));
+                    Log::warning("Claude API 429 — backing off {$retryAfter}s (attempt {$attempt}/{$attempts})", [
+                        'config_key' => $configKey,
+                    ]);
+                    usleep($retryAfter * 1_000_000);
+                    continue;
+                }
+
+                if ($response->status() < 500) {
                     return $response;
                 }
 

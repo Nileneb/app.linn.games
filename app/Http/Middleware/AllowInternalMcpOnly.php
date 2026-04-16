@@ -34,10 +34,7 @@ class AllowInternalMcpOnly
     public function handle(Request $request, Closure $next): Response
     {
         // Restriction nur aktiv wenn MCP_RESTRICT_TO_INTERNAL=true (Standard: true)
-        $restrictToInternal = filter_var(
-            env('MCP_RESTRICT_TO_INTERNAL', true),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        $restrictToInternal = (bool) config('services.mcp.restrict_to_internal', true);
 
         if (! $restrictToInternal) {
             return $next($request);
