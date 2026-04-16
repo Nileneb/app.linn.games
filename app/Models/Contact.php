@@ -20,10 +20,12 @@ class Contact extends Model
         'project_type',
         'message',
         'timeline',
+        'is_spam',
     ];
 
     protected $casts = [
         'email' => 'string',
+        'is_spam' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
