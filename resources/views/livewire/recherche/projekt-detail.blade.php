@@ -17,6 +17,7 @@ new class extends Component {
         $this->projekt = $projekt->load('phasen');
     }
 
+    #[On('sidebar-switch-tab')]
     public function switchTab(int $tab): void
     {
         $this->activeTab = max(1, min(8, $tab));

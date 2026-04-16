@@ -50,6 +50,14 @@
                 @endrole
             </nav>
 
+            {{-- Phase Navigation (nur auf Recherche-Detailseite) --}}
+            @if(request()->route('projekt') && request()->route('projekt') instanceof \App\Models\Recherche\Projekt)
+                <div class="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+                    <p class="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Phasen</p>
+                    <livewire:recherche.sidebar-phases :projekt="request()->route('projekt')" />
+                </div>
+            @endif
+
             {{-- Spacer --}}
             <div class="flex-1"></div>
 
