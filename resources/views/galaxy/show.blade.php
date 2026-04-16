@@ -507,7 +507,8 @@ function spawnEnemy(type='anomaly',pos=null){
   const mesh=new THREE.Mesh(geo,mat);
   if(pos)mesh.position.copy(pos);
   else{const r=80+Math.random()*50,a=Math.random()*Math.PI*2,b=(Math.random()-.5)*.8;mesh.position.set(camera.position.x+r*Math.cos(a)*Math.cos(b),camera.position.y+r*Math.sin(b)*20,camera.position.z+r*Math.sin(a)*Math.cos(b));}
-  mesh.userData={uid:crypto.randomUUID(),type,hp,maxHp:hp,pts,size,speed,vel:new THREE.Vector3((Math.random()-.5)*.02,(Math.random()-.5)*.02,(Math.random()-.5)*.02),spinX:(Math.random()-.5)*.07,spinY:(Math.random()-.5)*.08,teleportTimer:type==='dark'?80+Math.random()*40:999999,wanderTarget:null,wanderTimer:0};
+  const rc=clusters.length?clusters[Math.floor(Math.random()*clusters.length)]:null;
+  mesh.userData={uid:crypto.randomUUID(),type,hp,maxHp:hp,pts,size,speed,vel:new THREE.Vector3((Math.random()-.5)*.02,(Math.random()-.5)*.02,(Math.random()-.5)*.02),spinX:(Math.random()-.5)*.07,spinY:(Math.random()-.5)*.08,teleportTimer:type==='dark'?80+Math.random()*40:999999,wanderTarget:null,wanderTimer:0,clusterId:rc?.id||null,paperId:rc?.papers?.[Math.floor(Math.random()*(rc?.papers?.length||1))]?.id||null,spawnedAt:performance.now()};
   scene.add(mesh);enemies.push(mesh);enemyCountEl.textContent=enemies.length;
 }
 
@@ -706,6 +707,7 @@ function animate(now=0){
             soundHit();addScore(e.userData.pts);kills++;waveKills++;killsEl.textContent=kills;
             bumpCombo();if(shots>0)precisionEl.textContent=Math.round(hits/shots*100)+'%';
             updateEvidence();
+            fetch('/game/actions',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]')?.content||''},body:JSON.stringify({action:'kill',enemy_type:e.userData.type,cluster_id:e.userData.clusterId,paper_id:e.userData.paperId,reaction_ms:Math.round(performance.now()-e.userData.spawnedAt),wave,projekt_id:PROJEKT_ID,session_id:currentSessionCode||null})}).catch(()=>{});
             if(big){for(let b=0;b<5;b++)spawnEnemy('anomaly');}
             scene.remove(e);enemies.splice(j,1);enemyCountEl.textContent=enemies.length;
             if(waveKills===waveTarget)setTimeout(()=>startWave(wave+1),2500);

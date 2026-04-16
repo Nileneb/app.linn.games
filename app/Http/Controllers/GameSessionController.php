@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GameAction;
 use App\Models\GameSession;
 use App\Services\GameRewardService;
 use Illuminate\Http\JsonResponse;
@@ -119,6 +120,28 @@ class GameSessionController extends Controller
                 ]);
             }
         }
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function logAction(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|string|max:50',
+            'session_id' => 'nullable|uuid',
+            'projekt_id' => 'nullable|uuid',
+            'enemy_type' => 'nullable|string|max:50',
+            'cluster_id' => 'nullable|string|max:100',
+            'paper_id' => 'nullable|uuid',
+            'reaction_ms' => 'nullable|integer|min:0',
+            'wave' => 'nullable|integer|min:0',
+            'metadata' => 'nullable|array',
+        ]);
+
+        GameAction::create([
+            ...$validated,
+            'user_id' => auth()->id(),
+        ]);
 
         return response()->json(['ok' => true]);
     }

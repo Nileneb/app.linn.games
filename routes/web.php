@@ -98,6 +98,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('game.sessions.score');
     Route::patch('/game/sessions/{code}/end', [\App\Http\Controllers\GameSessionController::class, 'end'])
         ->name('game.sessions.end');
+    Route::post('/game/actions', [\App\Http\Controllers\GameSessionController::class, 'logAction'])
+        ->name('game.actions.log');
 
     // Credits
     Route::get('credits', \App\Livewire\Credits\Purchase::class)->name('credits.purchase');
