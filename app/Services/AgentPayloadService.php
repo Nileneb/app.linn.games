@@ -43,36 +43,35 @@ class AgentPayloadService
                 throw new \InvalidArgumentException("Invalid projekt_id format: {$projektId}");
             }
 
-            // SET LOCAL gilt nur innerhalb einer Transaktion — ohne transaction() wäre der Kontext sofort weg
-            DB::transaction(function () use ($tables, $projektId, &$tablesWritten, &$rowsWritten, &$errors): void {
-                // PostgreSQL unterstützt keine Bindings bei SET LOCAL — UUID ist bereits durch Regex validiert
-                DB::statement("SET LOCAL app.current_projekt_id = '{$projektId}'");
-
-                foreach ($tables as $tableName => $rows) {
-                    if (! is_string($tableName) || ! is_array($rows) || empty($rows)) {
-                        continue;
-                    }
-
-                    try {
-                        $rowsWritten += $this->insertRows($tableName, $rows, $projektId);
-                        $tablesWritten++;
-
-                        Log::info("AgentPayloadService: Rows written to {$tableName}", [
-                            'table' => $tableName,
-                            'row_count' => count($rows),
-                            'projekt_id' => $projektId,
-                        ]);
-                    } catch (\Throwable $e) {
-                        $error = "Table {$tableName}: ".$e->getMessage();
-                        $errors[] = $error;
-                        Log::warning("AgentPayloadService: Failed to write to {$tableName}", [
-                            'table' => $tableName,
-                            'exception' => $e->getMessage(),
-                            'projekt_id' => $projektId,
-                        ]);
-                    }
+            // Each table gets its own transaction so one failure doesn't abort all others.
+            // SET LOCAL is per-transaction, so it must be repeated for each.
+            foreach ($tables as $tableName => $rows) {
+                if (! is_string($tableName) || ! is_array($rows) || empty($rows)) {
+                    continue;
                 }
-            });
+
+                try {
+                    DB::transaction(function () use ($tableName, $rows, $projektId, &$rowsWritten): void {
+                        DB::statement("SET LOCAL app.current_projekt_id = '{$projektId}'");
+                        $rowsWritten += $this->insertRows($tableName, $rows, $projektId);
+                    });
+                    $tablesWritten++;
+
+                    Log::info("AgentPayloadService: Rows written to {$tableName}", [
+                        'table' => $tableName,
+                        'row_count' => count($rows),
+                        'projekt_id' => $projektId,
+                    ]);
+                } catch (\Throwable $e) {
+                    $error = "Table {$tableName}: ".$e->getMessage();
+                    $errors[] = $error;
+                    Log::warning("AgentPayloadService: Failed to write to {$tableName}", [
+                        'table' => $tableName,
+                        'exception' => $e->getMessage(),
+                        'projekt_id' => $projektId,
+                    ]);
+                }
+            }
 
             return [
                 'success' => empty($errors),
