@@ -35,29 +35,57 @@ class DownloadPaperJob implements ShouldQueue
             return;
         }
 
-        $unpaywallService = app(UnpaywallService::class);
-        $pdfUrl = $unpaywallService->resolveOaUrl($treffer->doi);
+        // 1. Try full PDF via Unpaywall
+        $text = $this->tryUnpaywallPdf($treffer);
 
-        if ($pdfUrl === null) {
-            $treffer->update([
-                'retrieval_status' => 'nicht_verfuegbar',
-                'retrieval_checked_at' => now(),
-                'retrieval_last_response' => 'Kein Open-Access-Volltext gefunden (Unpaywall).',
-            ]);
+        if ($text !== null) {
+            $this->dispatchIngest($treffer, $text, 'fulltext');
 
             return;
+        }
+
+        // 2. Fallback: use abstract (even if PDF was downloaded but text extraction failed)
+        $treffer->refresh();
+        if (! blank($treffer->abstract)) {
+            $wasDownloaded = (bool) $treffer->retrieval_downloaded;
+            $treffer->update([
+                'retrieval_status' => $wasDownloaded ? 'text_extraktion_fehlgeschlagen' : 'abstract_only',
+                'retrieval_checked_at' => now(),
+                'retrieval_last_response' => $wasDownloaded
+                    ? 'PDF heruntergeladen, Textextraktion fehlgeschlagen — Abstract wird für Analyse verwendet.'
+                    : 'Volltext nicht verfügbar — Abstract wird für Analyse verwendet.',
+            ]);
+
+            $this->dispatchIngest($treffer, $treffer->abstract, 'abstract');
+
+            return;
+        }
+
+        // 3. Neither fulltext nor abstract → keep current status or set bibliothek_erforderlich
+        $fresh = P5Treffer::find($this->trefferId);
+        if ($fresh && $fresh->retrieval_status !== 'text_extraktion_fehlgeschlagen') {
+            $treffer->update([
+                'retrieval_status' => 'bibliothek_erforderlich',
+                'retrieval_checked_at' => now(),
+                'retrieval_last_response' => 'Weder Volltext noch Abstract verfügbar. Bitte manuell über Bibliothek beschaffen.',
+            ]);
+        }
+    }
+
+    private function tryUnpaywallPdf(P5Treffer $treffer): ?string
+    {
+        $pdfUrl = app(UnpaywallService::class)->resolveOaUrl($treffer->doi);
+
+        if ($pdfUrl === null) {
+            return null;
         }
 
         $response = Http::timeout(30)->get($pdfUrl);
 
         if ($response->failed()) {
-            $treffer->update([
-                'retrieval_status' => 'fehler',
-                'retrieval_checked_at' => now(),
-                'retrieval_last_response' => "HTTP {$response->status()} beim Download von {$pdfUrl}.",
-            ]);
+            Log::info('PDF download failed', ['doi' => $treffer->doi, 'status' => $response->status()]);
 
-            return;
+            return null;
         }
 
         $path = 'papers/'.$treffer->projekt_id.'/'.Str::slug($treffer->record_id).'.pdf';
@@ -72,32 +100,33 @@ class DownloadPaperJob implements ShouldQueue
             'retrieval_last_response' => null,
         ]);
 
-        // Extract text using dedicated service
-        $parserService = app(PdfParserService::class);
-        $text = $parserService->extractText($response->body());
+        $text = app(PdfParserService::class)->extractText($response->body());
 
         if (blank($text)) {
-            Log::warning('PDF text extraction returned empty', [
-                'treffer_id' => $this->trefferId,
-                'path' => $path,
-                'doi' => $treffer->doi,
-            ]);
-
             $treffer->update([
                 'retrieval_status' => 'text_extraktion_fehlgeschlagen',
                 'retrieval_last_response' => 'PDF heruntergeladen, aber Textextraktion lieferte kein Ergebnis.',
             ]);
 
-            return;
+            return null;
         }
 
+        return $text;
+    }
+
+    private function dispatchIngest(P5Treffer $treffer, string $text, string $source): void
+    {
         IngestPaperJob::dispatch(
             paperId: $treffer->record_id,
             source: $treffer->datenbank_quelle ?? 'retrieval',
             title: $treffer->titel ?? '',
             text: $text,
             projektId: $treffer->projekt_id,
-            metadata: ['doi' => $treffer->doi, 'treffer_id' => $treffer->id],
+            metadata: [
+                'doi' => $treffer->doi,
+                'treffer_id' => $treffer->id,
+                'retrieval_type' => $source,
+            ],
         );
     }
 }

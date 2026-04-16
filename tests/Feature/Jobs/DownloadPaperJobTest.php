@@ -107,8 +107,26 @@ test('job lädt pdf herunter und startet ingest wenn unpaywall url liefert', fun
     Storage::assertExists($treffer->retrieval_storage_path);
 });
 
-test('job setzt nicht_verfuegbar wenn unpaywall keine url liefert', function () {
-    $treffer = makeTreffer(['retrieval_status' => 'pending']);
+test('job nutzt abstract wenn unpaywall kein pdf hat', function () {
+    $treffer = makeTreffer(['retrieval_status' => 'pending', 'abstract' => 'This study examines the use of AI in nursing homes.']);
+
+    Http::fake([
+        'api.unpaywall.org/*' => Http::response([
+            'best_oa_location' => null,
+        ], 200),
+    ]);
+
+    Queue::fake([IngestPaperJob::class]);
+
+    (new DownloadPaperJob($treffer->id))->handle();
+
+    $treffer->refresh();
+    expect($treffer->retrieval_status)->toBe('abstract_only');
+    Queue::assertPushed(IngestPaperJob::class);
+});
+
+test('job setzt bibliothek_erforderlich wenn weder pdf noch abstract', function () {
+    $treffer = makeTreffer(['retrieval_status' => 'pending', 'abstract' => null]);
 
     Http::fake([
         'api.unpaywall.org/*' => Http::response([
@@ -119,13 +137,12 @@ test('job setzt nicht_verfuegbar wenn unpaywall keine url liefert', function () 
     (new DownloadPaperJob($treffer->id))->handle();
 
     $treffer->refresh();
-    expect($treffer->retrieval_status)->toBe('nicht_verfuegbar');
-    expect($treffer->retrieval_downloaded)->toBeNull();
+    expect($treffer->retrieval_status)->toBe('bibliothek_erforderlich');
     Queue::assertNotPushed(IngestPaperJob::class);
 });
 
-test('job setzt fehler wenn pdf-download fehlschlägt', function () {
-    $treffer = makeTreffer(['retrieval_status' => 'pending']);
+test('job nutzt abstract wenn pdf-download fehlschlägt', function () {
+    $treffer = makeTreffer(['retrieval_status' => 'pending', 'abstract' => 'Fallback abstract text here.']);
 
     Http::fake([
         'api.unpaywall.org/*' => Http::response([
@@ -134,15 +151,17 @@ test('job setzt fehler wenn pdf-download fehlschlägt', function () {
         'example.com/paper.pdf' => Http::response('', 503),
     ]);
 
+    Queue::fake([IngestPaperJob::class]);
+
     (new DownloadPaperJob($treffer->id))->handle();
 
     $treffer->refresh();
-    expect($treffer->retrieval_status)->toBe('fehler');
-    expect($treffer->retrieval_downloaded)->toBeNull();
+    expect($treffer->retrieval_status)->toBe('abstract_only');
+    Queue::assertPushed(IngestPaperJob::class);
 });
 
-test('job setzt nicht_verfuegbar wenn unpaywall api nicht erreichbar', function () {
-    $treffer = makeTreffer(['retrieval_status' => 'pending']);
+test('job setzt bibliothek_erforderlich wenn unpaywall api nicht erreichbar und kein abstract', function () {
+    $treffer = makeTreffer(['retrieval_status' => 'pending', 'abstract' => null]);
 
     Http::fake([
         'api.unpaywall.org/*' => Http::response(null, 500),
@@ -151,7 +170,7 @@ test('job setzt nicht_verfuegbar wenn unpaywall api nicht erreichbar', function 
     (new DownloadPaperJob($treffer->id))->handle();
 
     $treffer->refresh();
-    expect($treffer->retrieval_status)->toBe('nicht_verfuegbar');
+    expect($treffer->retrieval_status)->toBe('bibliothek_erforderlich');
 });
 
 test('job setzt text_extraktion_fehlgeschlagen wenn pdf text leer', function () {
@@ -173,8 +192,7 @@ test('job setzt text_extraktion_fehlgeschlagen wenn pdf text leer', function () 
     (new DownloadPaperJob($treffer->id))->handle();
 
     $treffer->refresh();
-    expect($treffer->retrieval_status)->toBe('text_extraktion_fehlgeschlagen');
-    expect($treffer->retrieval_last_response)->toContain('Textextraktion');
     expect($treffer->retrieval_downloaded)->toBeTrue();
+    expect($treffer->retrieval_status)->toBe('bibliothek_erforderlich');
     Queue::assertNotPushed(IngestPaperJob::class);
 });
