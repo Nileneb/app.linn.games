@@ -44,7 +44,7 @@ beforeEach(function () {
 test('callByConfigKey gibt content und tokens zurück', function () {
     $service = app(ClaudeService::class);
 
-    $result = $service->callByConfigKey('agent_id', [
+    $result = $service->callByConfigKey('chat-agent', [
         ['role' => 'user', 'content' => 'Hallo'],
     ], [
         'workspace_id' => $this->workspace->id,
@@ -66,7 +66,7 @@ test('callByConfigKey wirft exception bei unbekanntem config-key', function () {
 });
 
 test('callByConfigKey sendet korrekte anthropic-request-struktur', function () {
-    app(ClaudeService::class)->callByConfigKey('agent_id', [
+    app(ClaudeService::class)->callByConfigKey('chat-agent', [
         ['role' => 'user', 'content' => 'Test'],
     ], ['workspace_id' => $this->workspace->id, 'user_id' => $this->userId]);
 
@@ -85,7 +85,7 @@ test('callByConfigKey sendet korrekte anthropic-request-struktur', function () {
 test('callByConfigKey zieht credits ab', function () {
     $balanceBefore = $this->workspace->credits_balance_cents;
 
-    app(ClaudeService::class)->callByConfigKey('agent_id', [
+    app(ClaudeService::class)->callByConfigKey('chat-agent', [
         ['role' => 'user', 'content' => 'Test'],
     ], ['workspace_id' => $this->workspace->id, 'user_id' => $this->userId]);
 
@@ -95,7 +95,7 @@ test('callByConfigKey zieht credits ab', function () {
 test('callByConfigKey wirft exception bei 401', function () {
     $this->claudeStatus = 401;
 
-    expect(fn () => app(ClaudeService::class)->callByConfigKey('agent_id', [
+    expect(fn () => app(ClaudeService::class)->callByConfigKey('chat-agent', [
         ['role' => 'user', 'content' => 'test'],
     ]))->toThrow(ClaudeAgentException::class);
 });
@@ -104,7 +104,7 @@ test('callByConfigKey wirft exception bei 401 und zieht keine credits ab', funct
     $this->claudeStatus = 401;
     $balanceBefore = $this->workspace->credits_balance_cents;
 
-    expect(fn () => app(ClaudeService::class)->callByConfigKey('agent_id', [
+    expect(fn () => app(ClaudeService::class)->callByConfigKey('chat-agent', [
         ['role' => 'user', 'content' => 'test'],
     ], [
         'workspace_id' => $this->workspace->id,
