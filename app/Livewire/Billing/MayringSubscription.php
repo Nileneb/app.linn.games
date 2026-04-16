@@ -10,6 +10,8 @@ class MayringSubscription extends Component
 {
     public bool $showSuccess = false;
 
+    public string $newTokenName = '';
+
     public function mount(): void
     {
         $this->showSuccess = (bool) request('success');
@@ -37,27 +39,34 @@ class MayringSubscription extends Component
         $this->dispatch('notify', type: 'warning', message: 'Abo gekündigt. Zugang bleibt bis Ende des Abrechnungszeitraums.');
     }
 
-    public function regenerateToken(): void
+    public function createToken(): void
     {
-        $user = auth()->user();
-        // Altes MayringCoder-Token löschen, neues generieren
-        $user->tokens()->where('name', 'MayringCoder External')->delete();
-        $token = $user->createToken('MayringCoder External', ['mayring:access']);
+        $name = trim($this->newTokenName) ?: 'MayringCoder '.now()->format('Y-m-d H:i');
+        $token = auth()->user()->createToken($name, ['mayring:access']);
 
         session()->flash('mcp_token', $token->plainTextToken);
-        $this->dispatch('notify', type: 'success', message: 'Neues API-Token generiert.');
+        $this->newTokenName = '';
+        $this->dispatch('notify', type: 'success', message: "Token \"{$name}\" erstellt.");
+    }
+
+    public function deleteToken(int $tokenId): void
+    {
+        auth()->user()->tokens()->where('id', $tokenId)->delete();
+        $this->dispatch('notify', type: 'warning', message: 'Token gelöscht.');
     }
 
     public function render(): View
     {
         $workspace = auth()->user()->currentWorkspace();
-        $hasToken = auth()->user()->tokens()->where('name', 'MayringCoder External')->exists();
+        $tokens = auth()->user()->tokens()
+            ->where('abilities', 'like', '%mayring:access%')
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('livewire.billing.mayring-subscription', [
             'workspace' => $workspace,
-            'hasToken' => $hasToken,
+            'tokens' => $tokens,
             'mcpToken' => session('mcp_token'),
-            'mcpEndpoint' => config('services.mayring_mcp.endpoint', 'https://app.linn.games:8090'),
         ]);
     }
 }

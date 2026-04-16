@@ -10,7 +10,7 @@
     @if ($showSuccess)
         <div class="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
             <p class="text-sm font-medium text-green-800 dark:text-green-300">
-                Abo aktiviert! Generiere dir unten einen API-Token für deinen externen Claude.
+                Abo aktiviert! Erstelle unten einen API-Token um deinen Claude zu verbinden.
             </p>
         </div>
     @endif
@@ -28,42 +28,104 @@
             </x-filament::button>
         </div>
 
-        {{-- Externer Claude-Zugang --}}
-        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <h3 class="font-medium text-gray-900 dark:text-white">Eigenen Claude verbinden</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                Füge MayringCoder Memory deinem Claude Desktop, Claude Web oder Claude Code hinzu.
-                Generiere einmalig einen API-Token und trage ihn in deine Claude-Konfiguration ein.
-            </p>
+        {{-- Neuen Token erstellt --}}
+        @if ($mcpToken)
+            <div class="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4 space-y-3">
+                <p class="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    Dein neuer API-Token — nur jetzt sichtbar, danach nicht mehr:
+                </p>
+                <code class="block text-sm font-mono break-all text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/40 rounded p-2 select-all">{{ $mcpToken }}</code>
+            </div>
+        @endif
 
-            @if ($mcpToken)
-                <div class="rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-3">
-                    <p class="text-xs font-medium text-amber-800 dark:text-amber-300 mb-1">
-                        Dein API-Token — nur jetzt sichtbar, danach nicht mehr:
-                    </p>
-                    <code class="block text-xs font-mono break-all text-amber-900 dark:text-amber-200 select-all">{{ $mcpToken }}</code>
+        {{-- Token-Verwaltung --}}
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+            <h3 class="font-medium text-gray-900 dark:text-white">API-Tokens</h3>
+
+            @if ($tokens->isNotEmpty())
+                <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                    @foreach ($tokens as $token)
+                        <div class="flex items-center justify-between py-2">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $token->name }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Erstellt {{ $token->created_at->diffForHumans() }}
+                                    @if ($token->last_used_at)
+                                        · Zuletzt genutzt {{ $token->last_used_at->diffForHumans() }}
+                                    @else
+                                        · Noch nie genutzt
+                                    @endif
+                                </p>
+                            </div>
+                            <x-filament::button wire:click="deleteToken({{ $token->id }})" color="danger" size="xs"
+                                wire:confirm="Token '{{ $token->name }}' wirklich löschen? Verbundene Clients verlieren sofort den Zugang.">
+                                Löschen
+                            </x-filament::button>
+                        </div>
+                    @endforeach
                 </div>
+            @else
+                <p class="text-sm text-gray-500 dark:text-gray-400">Noch keine Tokens erstellt.</p>
             @endif
 
-            <div class="rounded bg-gray-50 dark:bg-gray-800 p-3">
-                <p class="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Claude Desktop — <code>claude_desktop_config.json</code>:</p>
-                <pre class="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto">{
+            <div class="flex gap-2 pt-2">
+                <input type="text" wire:model="newTokenName" placeholder="Token-Name (optional)"
+                    class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <x-filament::button wire:click="createToken" color="primary" size="sm">
+                    Token erstellen
+                </x-filament::button>
+            </div>
+        </div>
+
+        {{-- Verbindungsanleitung --}}
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+            <h3 class="font-medium text-gray-900 dark:text-white">Claude verbinden</h3>
+
+            {{-- Claude Web (claude.ai) --}}
+            <div class="space-y-2">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Claude Web (claude.ai)</p>
+                <div class="rounded bg-gray-50 dark:bg-gray-800 p-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Einstellungen → Connectors → Add MCP Server:</p>
+                    <div class="text-xs font-mono text-gray-700 dark:text-gray-300 space-y-1">
+                        <p><span class="text-gray-400">URL:</span> https://mcp.linn.games/sse</p>
+                        <p><span class="text-gray-400">OAuth Client ID:</span> bene-workspace</p>
+                        <p><span class="text-gray-400">OAuth Client Secret:</span> (aus Ersteinrichtung)</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Claude Code --}}
+            <div class="space-y-2">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Claude Code (CLI / VS Code)</p>
+                <div class="rounded bg-gray-50 dark:bg-gray-800 p-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Projekt-Datei <code>.mcp.json</code>:</p>
+                    <pre class="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto">{
+  "mcpServers": {
+    "memory": {
+      "url": "https://mcp.linn.games/sse"
+    }
+  }
+}</pre>
+                </div>
+            </div>
+
+            {{-- Claude Desktop --}}
+            <div class="space-y-2">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Claude Desktop</p>
+                <div class="rounded bg-gray-50 dark:bg-gray-800 p-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2"><code>claude_desktop_config.json</code>:</p>
+                    <pre class="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto">{
   "mcpServers": {
     "mayring-memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
-      "env": {
-        "MCP_ENDPOINT": "{{ $mcpEndpoint }}",
-        "MCP_AUTH_TOKEN": "{{ $mcpToken ?? '<dein-token-hier>' }}"
+      "url": "https://mcp.linn.games/sse",
+      "headers": {
+        "Authorization": "Bearer &lt;dein-token&gt;"
       }
     }
   }
 }</pre>
+                </div>
             </div>
-
-            <x-filament::button wire:click="regenerateToken" color="gray" size="sm">
-                {{ $hasToken ? 'Token erneuern' : 'API-Token generieren' }}
-            </x-filament::button>
         </div>
 
     @else
