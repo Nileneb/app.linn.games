@@ -19,6 +19,8 @@ class ClaudeCliService
         $mcpConfig = base_path('.claude/mcp-production.json');
 
         return array_filter([
+            file_exists($mcpConfig) ? '--mcp-config' : null,
+            file_exists($mcpConfig) ? escapeshellarg($mcpConfig) : null,
             '--allowedTools', implode(',', [
                 'mcp__memory__search_memory',
                 'mcp__memory__put',
@@ -27,8 +29,6 @@ class ClaudeCliService
                 'mcp__memory__invalidate',
             ]),
             '--agents', $this->buildAllowedAgentsJson(),
-            file_exists($mcpConfig) ? '--mcp-config' : null,
-            file_exists($mcpConfig) ? $mcpConfig : null,
         ]);
     }
 
@@ -40,9 +40,7 @@ class ClaudeCliService
      */
     private function productionWorkerFlags(?string $mcpConfigOverride = null): array
     {
-        // Paper-Search Tools: Suche + Read + Ingest. Kein Download (macht DownloadPaperJob).
         $paperSearchTools = [
-            // Search
             'mcp__paper-search__search_papers',
             'mcp__paper-search__search_arxiv',
             'mcp__paper-search__search_pubmed',
@@ -53,7 +51,6 @@ class ClaudeCliService
             'mcp__paper-search__search_crossref',
             'mcp__paper-search__search_iacr',
             'mcp__paper-search__get_crossref_paper_by_doi',
-            // Read (Text aus Paper extrahieren für Analyse)
             'mcp__paper-search__read_arxiv_paper',
             'mcp__paper-search__read_pubmed_paper',
             'mcp__paper-search__read_biorxiv_paper',
@@ -61,17 +58,18 @@ class ClaudeCliService
             'mcp__paper-search__read_iacr_paper',
             'mcp__paper-search__read_semantic_paper',
             'mcp__paper-search__read_crossref_paper',
-            // Ingest + RAG
             'mcp__paper-search__ingest_paper',
             'mcp__paper-search__search_rag_papers',
         ];
 
         $mcpConfig = $mcpConfigOverride ?? base_path('.claude/mcp-production.json');
 
+        // --mcp-config is variadic (<configs...>) — must come BEFORE --allowedTools
+        // to prevent it from swallowing subsequent arguments as config paths.
         return array_filter([
-            '--allowedTools', implode(',', $paperSearchTools),
             file_exists($mcpConfig) ? '--mcp-config' : null,
-            file_exists($mcpConfig) ? $mcpConfig : null,
+            file_exists($mcpConfig) ? escapeshellarg($mcpConfig) : null,
+            '--allowedTools', implode(',', $paperSearchTools),
         ]);
     }
 
@@ -266,6 +264,7 @@ class ClaudeCliService
             ...$this->productionChatFlags(),
             $systemSuffix !== '' ? '--append-system-prompt' : null,
             $systemSuffix !== '' ? escapeshellarg($systemSuffix) : null,
+            '--',
             escapeshellarg($userMessage),
         ]);
 
@@ -346,6 +345,7 @@ class ClaudeCliService
             ...$this->productionWorkerFlags($mcpConfigPath),
             $systemPrompt !== '' ? '--append-system-prompt' : null,
             $systemPrompt !== '' ? escapeshellarg($systemPrompt) : null,
+            '--',
             escapeshellarg($userMessage),
         ]);
 
