@@ -214,6 +214,25 @@ services:
       postgres:
         condition: service_healthy
 
+  mayring-mcp:
+    build:
+      context: ./MayringCoder
+      dockerfile: docker/Dockerfile
+    command: ["python", "-m", "src.mcp_server"]
+    restart: unless-stopped
+    environment:
+      - MCP_TRANSPORT=http
+      - MCP_HTTP_PORT=8092
+      - MCP_AUTH_ENABLED=true
+      - MCP_AUTH_SECRET=${MAYRING_MCP_JWT_SECRET}
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
+      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
+      - CHROMA_PATH=/app/cache/chroma
+    volumes:
+      - linn-mayring-cache:/app/cache
+    networks:
+      - linn-network
+
   mayring-pi:
     build:
       context: ./MayringCoder
