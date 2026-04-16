@@ -19,6 +19,11 @@ echo "Database is ready!"
 # Running them in the entrypoint caused double execution and DNS failures
 # when deploy.sh already orchestrates these steps via `docker compose run --rm php-cli`.
 
+# Resolve env vars in MCP config (Claude CLI doesn't do envsubst)
+if [ -f /var/www/.claude/mcp-production.json ] && [ -n "$MCP_AUTH_TOKEN" ]; then
+    sed -i "s|\${MCP_AUTH_TOKEN}|$MCP_AUTH_TOKEN|g" /var/www/.claude/mcp-production.json
+fi
+
 # Fix ownership after root-executed artisan commands so www-data can write
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
