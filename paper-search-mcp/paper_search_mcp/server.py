@@ -1209,11 +1209,14 @@ def main():
     if transport == "stdio":
         mcp.run(transport="stdio")
     elif transport == "streamable-http":
+        from mcp.server.transport_security import TransportSecuritySettings
         host = os.getenv("PAPERSEARCH_HOST", "0.0.0.0")
         port = int(os.getenv("PAPERSEARCH_PORT", "8089"))
-        # mcp.run() handles session manager init; auth via query param ?token=
         mcp.settings.host = host
         mcp.settings.port = port
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False,
+        )
         mcp.run(transport="streamable-http")
     else:
         host = os.getenv("PAPERSEARCH_HOST", "0.0.0.0")
