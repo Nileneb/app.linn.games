@@ -4,6 +4,7 @@ use App\Jobs\ProcessPhaseAgentJob;
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Services\AgentPromptBuilder;
+use App\Services\PhaseCountService;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -67,11 +68,16 @@ new class extends Component {
         $completedCount = $this->projekt->phasen()->where('status', 'abgeschlossen')->count();
 
         // Detect stuck state: pipeline started, nothing pending, P4 not done
-        // Find the first non-completed phase in P1–P4 to know where to restart
+        // Find the first phase in P1–P4 that has no data OR is not completed.
+        // A phase marked "completed" but with 0 data rows means the agent
+        // responded but didn't persist anything — restart from there.
         $restartPhase = null;
         if ($seg1Started && ! $anyPending && ! $p4Completed) {
+            $countService = app(PhaseCountService::class);
             foreach (range(1, 4) as $i) {
-                if ($results->get($i)?->status !== 'completed') {
+                $status = $results->get($i)?->status;
+                $hasData = $countService->countByPhase($this->projekt, $i) > 0;
+                if ($status !== 'completed' || ! $hasData) {
                     $restartPhase = $i;
                     break;
                 }
