@@ -276,6 +276,7 @@ services:
       - CHROMA_PATH=/app/cache/chroma
       - UI_AUTH_USER=${MAYRING_UI_AUTH_USER:-admin}
       - UI_AUTH_PASS=${MAYRING_UI_AUTH_PASS}
+      - GRADIO_ROOT_PATH=/ui
     volumes:
       - linn-mayring-cache:/app/cache
     networks:
