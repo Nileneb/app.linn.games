@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Events\WorkspaceLowBalance;
 use App\Exceptions\CloneLimitExceededException;
 use App\Models\CreditTransaction;
 use App\Models\PhaseAgentResult;
 use App\Models\Workspace;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -121,6 +123,12 @@ class CreditService
                 'percent_remaining' => $percentRemaining,
                 'threshold_percent' => $thresholdPercent,
             ]);
+
+            $lockKey = "low_balance_alert:{$workspace->id}";
+            if (! Cache::has($lockKey)) {
+                Cache::put($lockKey, true, now()->addHours(24));
+                WorkspaceLowBalance::dispatch($workspace, $currentBalance, $thresholdPercent);
+            }
 
             return true;
         }

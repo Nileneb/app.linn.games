@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class MayringMcpClient
 {
@@ -86,8 +88,49 @@ class MayringMcpClient
                 throw new \RuntimeException("MayringMcpClient: ingestAndCategorize fehlgeschlagen ({$response->status()})");
             }
 
-            return $response->json();
+            $data = $response->json();
+
+            if (empty($data) || ! isset($data['source_id'])) {
+                Log::warning('MayringMcpClient: leere/ungültige Ingest-Response — wird nicht gecacht', [
+                    'source_id' => $sourceId,
+                    'response_keys' => array_keys($data ?? []),
+                ]);
+                throw new \RuntimeException('MayringMcpClient: ungültige Ingest-Response (leerer Body oder fehlende source_id)');
+            }
+
+            return $data;
         });
+    }
+
+    public function clearCacheForSource(string $sourceId): int
+    {
+        $prefix = config('cache.prefix', 'laravel_cache');
+        $pattern = "{$prefix}:mayring_ingest:*:{$sourceId}";
+        $deleted = 0;
+
+        foreach (Redis::keys($pattern) as $key) {
+            $cacheKey = str_replace("{$prefix}:", '', $key);
+            Cache::forget($cacheKey);
+            $deleted++;
+        }
+
+        return $deleted;
+    }
+
+    public function clearAllCache(): int
+    {
+        $prefix = config('cache.prefix', 'laravel_cache');
+        $deleted = 0;
+
+        foreach (['mayring_ingest:*', 'mayring_search:*'] as $pattern) {
+            foreach (Redis::keys("{$prefix}:{$pattern}") as $key) {
+                $cacheKey = str_replace("{$prefix}:", '', $key);
+                Cache::forget($cacheKey);
+                $deleted++;
+            }
+        }
+
+        return $deleted;
     }
 
     /**
