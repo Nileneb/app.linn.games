@@ -1,9 +1,11 @@
 # paper_search_mcp/server.py
 import asyncio
+import hashlib
 import hmac
 import logging
 import os
 from typing import Any, Dict, List, Optional
+import asyncpg
 import httpx
 import uvicorn
 from dotenv import load_dotenv
@@ -57,23 +59,77 @@ LARAVEL_MCP_TOKEN = os.environ.get("LARAVEL_MCP_TOKEN", "")
 
 
 class BearerAuthMiddleware:
-    """ASGI middleware that validates Bearer token on every HTTP request."""
+    """ASGI middleware — validates static token OR Sanctum token from DB."""
 
-    def __init__(self, app: ASGIApp, token: str):
+    def __init__(self, app: ASGIApp, static_token: str):
         self.app = app
-        self.token = token
+        self.static_token = static_token
+        self._db_pool: Optional[asyncpg.Pool] = None
+
+    async def _get_pool(self) -> asyncpg.Pool:
+        if self._db_pool is None:
+            db_host = os.environ.get("LARAVEL_DB_HOST", "postgres")
+            db_port = int(os.environ.get("LARAVEL_DB_PORT", "5432"))
+            db_user = os.environ.get("LARAVEL_DB_USER")
+            db_pass = os.environ.get("LARAVEL_DB_PASSWORD")
+            db_name = os.environ.get("LARAVEL_DB_NAME")
+            if db_user and db_pass and db_name:
+                self._db_pool = await asyncpg.create_pool(
+                    host=db_host, port=db_port, user=db_user,
+                    password=db_pass, database=db_name,
+                    min_size=1, max_size=3,
+                )
+            else:
+                raise RuntimeError("LARAVEL_DB_* env vars not set for Sanctum auth")
+        return self._db_pool
+
+    async def _validate_sanctum_token(self, token: str) -> bool:
+        if "|" not in token:
+            return False
+        token_id_str, raw = token.split("|", 1)
+        try:
+            token_id = int(token_id_str)
+        except ValueError:
+            return False
+        token_hash = hashlib.sha256(raw.encode()).hexdigest()
+        try:
+            pool = await self._get_pool()
+            row = await pool.fetchrow(
+                "SELECT id FROM personal_access_tokens WHERE id = $1 AND token = $2",
+                token_id, token_hash,
+            )
+            if row:
+                await pool.execute(
+                    "UPDATE personal_access_tokens SET last_used_at = NOW() WHERE id = $1",
+                    token_id,
+                )
+                return True
+        except Exception as e:
+            logging.warning(f"Sanctum DB lookup failed: {e}")
+        return False
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "http":
             headers = dict(scope.get("headers", []))
             auth_value = headers.get(b"authorization", b"").decode()
-            if (
-                not auth_value.startswith("Bearer ")
-                or not hmac.compare_digest(auth_value[7:], self.token)
-            ):
+            if not auth_value.startswith("Bearer "):
                 response = Response("Unauthorized", status_code=401)
                 await response(scope, receive, send)
                 return
+
+            token = auth_value[7:]
+
+            if hmac.compare_digest(token, self.static_token):
+                await self.app(scope, receive, send)
+                return
+
+            if await self._validate_sanctum_token(token):
+                await self.app(scope, receive, send)
+                return
+
+            response = Response("Unauthorized", status_code=401)
+            await response(scope, receive, send)
+            return
         await self.app(scope, receive, send)
 
 

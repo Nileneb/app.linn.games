@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Services\AgentDailyLimitExceededException;
 use App\Services\AgentPayloadService;
@@ -11,6 +12,7 @@ use App\Services\AgentResponseParser;
 use App\Services\ClaudeCliService;
 use App\Services\CreditService;
 use App\Services\ArtifactService;
+use App\Services\McpTokenService;
 use App\Services\PaperSearchService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
@@ -33,6 +35,10 @@ class ProcessPhaseAgentJob implements ShouldQueue
 
     /** @var array<object>|null Retrieved chunks for synthesis */
     private ?array $retrievedChunks = null;
+
+    private ?int $sanctumTokenId = null;
+
+    private ?string $mcpConfigPath = null;
 
     public function __construct(
         public readonly string $projektId,
@@ -108,11 +114,28 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 'agent_config_key' => $this->agentConfigKey,
             ]);
 
-            $cliResult = app(ClaudeCliService::class)->callForPhase(
-                $this->agentConfigKey,
-                $messages,
-                $contextWithOutput,
-            );
+            $mcpTokenService = app(McpTokenService::class);
+            $user = User::find($this->context['user_id'] ?? $projekt->user_id);
+            if ($user) {
+                $sanctumToken = $mcpTokenService->createWorkerToken($user, $this->phaseNr);
+                $this->mcpConfigPath = $mcpTokenService->writeTempMcpConfig($sanctumToken->plainTextToken);
+                $this->sanctumTokenId = $sanctumToken->accessToken->id;
+            }
+
+            try {
+                $cliResult = app(ClaudeCliService::class)->callForPhase(
+                    $this->agentConfigKey,
+                    $messages,
+                    $contextWithOutput,
+                    mcpConfigPath: $this->mcpConfigPath,
+                );
+            } finally {
+                if ($this->sanctumTokenId) {
+                    $mcpTokenService->cleanup($this->sanctumTokenId, $this->mcpConfigPath);
+                    $this->sanctumTokenId = null;
+                    $this->mcpConfigPath = null;
+                }
+            }
 
             $rawContent = $cliResult['content'];
 
@@ -230,6 +253,12 @@ class ProcessPhaseAgentJob implements ShouldQueue
      */
     public function failed(?\Throwable $exception = null): void
     {
+        if ($this->sanctumTokenId) {
+            app(McpTokenService::class)->cleanup($this->sanctumTokenId, $this->mcpConfigPath);
+            $this->sanctumTokenId = null;
+            $this->mcpConfigPath = null;
+        }
+
         $result = PhaseAgentResult::where('projekt_id', $this->projektId)
             ->where('phase_nr', $this->phaseNr)
             ->where('agent_config_key', $this->agentConfigKey)

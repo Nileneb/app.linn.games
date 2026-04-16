@@ -12,6 +12,7 @@ Artisan::addCommands([
     \App\Console\Commands\BackupExport::class,
     \App\Console\Commands\BackupImport::class,
     \App\Console\Commands\CleanupExpiredInvitations::class,
+    \App\Console\Commands\CleanupStaleWorkerTokens::class,
     \App\Console\Commands\GenerateGalaxyData::class,
 ]);
 
@@ -22,6 +23,7 @@ Artisan::command('inspire', function () {
 // ── Geplante Tasks ────────────────────────────────────────────────
 
 Schedule::command('invitations:cleanup')->daily();
+Schedule::command('mcp:cleanup-stale-tokens')->hourly();
 
 // ── Deploy Sub-Commands ──────────────────────────────────────────
 

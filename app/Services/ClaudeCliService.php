@@ -38,7 +38,7 @@ class ClaudeCliService
      *
      * @return string[]
      */
-    private function productionWorkerFlags(): array
+    private function productionWorkerFlags(?string $mcpConfigOverride = null): array
     {
         // Paper-Search Tools: Suche + Read + Ingest. Kein Download (macht DownloadPaperJob).
         $paperSearchTools = [
@@ -66,7 +66,7 @@ class ClaudeCliService
             'mcp__paper-search__search_rag_papers',
         ];
 
-        $mcpConfig = base_path('.claude/mcp-production.json');
+        $mcpConfig = $mcpConfigOverride ?? base_path('.claude/mcp-production.json');
 
         return array_filter([
             '--allowedTools', implode(',', $paperSearchTools),
@@ -319,6 +319,7 @@ class ClaudeCliService
         array $messages,
         array $context = [],
         int $timeout = 300,
+        ?string $mcpConfigPath = null,
     ): array {
         $model = config("services.anthropic.agent_models.{$agentConfigKey}")
             ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
@@ -342,7 +343,7 @@ class ClaudeCliService
             '--print',
             '--output-format', 'json',
             '--model', escapeshellarg($model),
-            ...$this->productionWorkerFlags(),
+            ...$this->productionWorkerFlags($mcpConfigPath),
             $systemPrompt !== '' ? '--append-system-prompt' : null,
             $systemPrompt !== '' ? escapeshellarg($systemPrompt) : null,
             escapeshellarg($userMessage),

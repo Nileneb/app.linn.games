@@ -119,6 +119,7 @@ return [
     'paper_search' => [
         'url' => env('PAPER_SEARCH_URL', 'http://host.docker.internal:8089'),
         'token' => env('PAPER_SEARCH_TOKEN', ''),
+        'mcp_url' => env('PAPER_SEARCH_MCP_URL', 'http://mcp-paper-search:8089/sse/'),
     ],
 
     'mayring_mcp' => [
