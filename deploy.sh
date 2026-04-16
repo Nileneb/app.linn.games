@@ -191,6 +191,9 @@ docker volume rm applinngames_linn-build-assets 2>/dev/null || true
 echo "==> Starting all services..."
 "${DC[@]}" up -d
 
+echo "==> Reloading nginx (refresh upstream DNS after container recreate)..."
+"${DC[@]}" exec -T web nginx -s reload 2>/dev/null || true
+
 # ── Verify ─────────────────────────────────────
 echo "==> Waiting for services to settle..."
 sleep 5
