@@ -67,7 +67,6 @@ return [
             'synthesis_agent' => 'synthesis-agent',
             'mayring_agent' => 'mayring-agent',
             'chat-agent' => 'chat-agent',
-            'agent_id' => 'chat-agent',
         ],
 
         // Pricing: Haiku 4.5 — $0.80/$4.00 per M tokens = 0.08/0.40 Cents per 1K tokens
