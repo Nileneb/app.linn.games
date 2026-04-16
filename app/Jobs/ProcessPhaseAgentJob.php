@@ -10,7 +10,7 @@ use App\Services\AgentPayloadService;
 use App\Services\AgentResponseParser;
 use App\Services\ClaudeCliService;
 use App\Services\CreditService;
-use App\Services\LangdockArtifactService;
+use App\Services\ArtifactService;
 use App\Services\PaperSearchService;
 use App\Services\PhaseChainService;
 use App\Services\RetrieverService;
@@ -183,7 +183,7 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 $this->retrievedChunks ?? []
             );
 
-            $artifact = app(LangdockArtifactService::class)->persistFromAgentResponse(
+            $artifact = app(ArtifactService::class)->persistFromAgentResponse(
                 $enhancedContent,
                 $this->context,
                 [

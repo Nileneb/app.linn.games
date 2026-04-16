@@ -87,7 +87,7 @@
 
   <h3>Eingebundene Drittdienste</h3>
   <ul>
-    <li><strong>Langdock (KI-Recherche-Agent):</strong> Für eingeloggte Nutzer wird ein KI-gestützter Recherche-Dienst über Langdock bereitgestellt. Dabei werden Projekt- und Nutzerdaten via Webhook an Langdock übermittelt. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</li>
+    <li><strong>Claude (KI-Recherche-Agent):</strong> Für eingeloggte Nutzer wird ein KI-gestützter Recherche-Dienst über Anthropic Claude bereitgestellt. Dabei werden Projekt- und Nutzerdaten via API an Anthropic übermittelt. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</li>
   </ul>
 
   <h2 id="dsgvo-rechte">Datenexport und Kontolöschung</h2>

@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\LangdockArtifactService;
+use App\Services\ArtifactService;
 use Illuminate\Support\Facades\Storage;
 
 uses(Tests\TestCase::class);
@@ -8,7 +8,7 @@ uses(Tests\TestCase::class);
 test('it stores markdown artifact when always_write_md is enabled', function () {
     Storage::fake();
 
-    $svc = app(LangdockArtifactService::class);
+    $svc = app(ArtifactService::class);
 
     $r = $svc->persistFromAgentResponse(
         "# Hallo\n\nDas ist ein Test.\n",
@@ -43,7 +43,7 @@ test('it parses structured output and stores md_files when present', function ()
         'warnings' => [],
     ];
 
-    $svc = app(LangdockArtifactService::class);
+    $svc = app(ArtifactService::class);
 
     $r = $svc->persistFromAgentResponse(
         json_encode($payload, JSON_UNESCAPED_UNICODE),

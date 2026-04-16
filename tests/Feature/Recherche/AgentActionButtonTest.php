@@ -20,8 +20,8 @@ function voltAgentButton(array $overrides = []): \Livewire\Features\SupportTesti
 }
 
 beforeEach(function () {
-    Config::set('services.langdock.api_key', 'test-api-key');
-    Config::set('services.langdock.scoping_mapping_agent', 'scoping-uuid');
+    Config::set('services.anthropic.api_key', 'test-api-key');
+    Config::set('services.anthropic.models.scoping_mapping_agent', 'scoping-uuid');
 
     $this->user = User::factory()->withoutTwoFactor()->create();
     $this->projekt = Projekt::factory()->create(['user_id' => $this->user->id]);

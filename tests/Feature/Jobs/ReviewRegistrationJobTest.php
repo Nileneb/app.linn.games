@@ -4,18 +4,22 @@ use App\Jobs\ReviewRegistrationJob;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 
+beforeEach(function () {
+    config(['services.anthropic.api_key' => 'test-key']);
+});
+
 test('job does nothing when user not found', function () {
     ReviewRegistrationJob::dispatchSync(999999999);
 
     expect(User::find(999999999))->toBeNull();
 });
 
-test('job suspends user when langdock returns spam probability >= 0.80', function () {
+test('job suspends user when Claude returns spam probability >= 0.80', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
 
     Http::fake([
-        config('services.langdock.base_url').'*' => Http::response([
-            'choices' => [['message' => ['content' => '0.95']]],
+        'https://api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => '0.95']],
         ]),
     ]);
 
@@ -24,12 +28,12 @@ test('job suspends user when langdock returns spam probability >= 0.80', functio
     expect($user->fresh()->status)->toBe('suspended');
 });
 
-test('job does not suspend user when langdock returns low probability', function () {
+test('job does not suspend user when Claude returns low probability', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
 
     Http::fake([
-        config('services.langdock.base_url').'*' => Http::response([
-            'choices' => [['message' => ['content' => '0.20']]],
+        'https://api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => '0.20']],
         ]),
     ]);
 
@@ -38,7 +42,7 @@ test('job does not suspend user when langdock returns low probability', function
     expect($user->fresh()->status)->toBe('waitlisted');
 });
 
-test('job does not suspend when langdock call throws', function () {
+test('job does not suspend when Claude call throws', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
     Http::fake(fn () => throw new \RuntimeException('connection refused'));
     ReviewRegistrationJob::dispatchSync($user->id);
@@ -48,8 +52,8 @@ test('job does not suspend when langdock call throws', function () {
 test('job suspends at exact 0.80 threshold', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
     Http::fake([
-        config('services.langdock.base_url').'*' => Http::response([
-            'choices' => [['message' => ['content' => '0.80']]],
+        'https://api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => '0.80']],
         ]),
     ]);
     ReviewRegistrationJob::dispatchSync($user->id);
@@ -59,8 +63,8 @@ test('job suspends at exact 0.80 threshold', function () {
 test('job does not suspend at 0.79', function () {
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
     Http::fake([
-        config('services.langdock.base_url').'*' => Http::response([
-            'choices' => [['message' => ['content' => '0.79']]],
+        'https://api.anthropic.com/*' => Http::response([
+            'content' => [['type' => 'text', 'text' => '0.79']],
         ]),
     ]);
     ReviewRegistrationJob::dispatchSync($user->id);

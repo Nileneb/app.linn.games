@@ -30,7 +30,7 @@ class ReviewRegistrationJob implements ShouldQueue
 
         $spamProbability = $this->assessSpamProbability($user);
 
-        $threshold = (float) config('services.langdock.spam_threshold', 0.80);
+        $threshold = (float) config('services.anthropic.spam_threshold', 0.80);
         if ($spamProbability >= $threshold) {
             $user->update(['status' => 'suspended']);
             Log::warning('Registration spam detected — account suspended', [
@@ -44,10 +44,9 @@ class ReviewRegistrationJob implements ShouldQueue
 
     private function assessSpamProbability(User $user): float
     {
-        $apiKey = config('services.langdock.api_key');
-        $baseUrl = config('services.langdock.base_url');
+        $apiKey = config('services.anthropic.api_key');
 
-        if (! $apiKey || ! $baseUrl) {
+        if (! $apiKey) {
             return 0.0;
         }
 
@@ -62,27 +61,30 @@ class ReviewRegistrationJob implements ShouldQueue
 
         try {
             $response = Http::timeout(15)
-                ->withToken($apiKey)
-                ->post($baseUrl, [
-                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                ->withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'content-type' => 'application/json',
+                ])
+                ->post('https://api.anthropic.com/v1/messages', [
+                    'model' => config('services.anthropic.models.chat-agent', 'claude-haiku-4-5-20251001'),
                     'max_tokens' => 10,
-                    'agent_id' => config('services.langdock.agent_id'),
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
                 ]);
 
             if ($response->failed()) {
-                Log::warning('ReviewRegistrationJob: Langdock HTTP error', [
+                Log::warning('ReviewRegistrationJob: Claude API error', [
                     'status' => $response->status(),
-                    'body' => $response->body(),
                 ]);
 
                 return 0.0;
             }
 
-            $content = trim($response->json('choices.0.message.content') ?? '0');
+            $content = trim($response->json('content.0.text') ?? '0');
 
             return min(1.0, max(0.0, (float) $content));
         } catch (\Throwable $e) {
-            Log::warning('ReviewRegistrationJob: Langdock call failed', ['error' => $e->getMessage()]);
+            Log::warning('ReviewRegistrationJob: Claude API call failed', ['error' => $e->getMessage()]);
 
             return 0.0;
         }

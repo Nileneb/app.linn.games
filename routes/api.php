@@ -21,7 +21,6 @@ Route::middleware([VerifyMcpToken::class, SecureMcpHeaders::class, 'throttle:mcp
     Route::post('/mcp/agent-call', [McpAgentController::class, 'call'])->name('mcp.agent-call');
 
     // SSE-Streaming: nur interne/lokale IPs (127.0.0.1, Docker-Netz, RFC-1918)
-    // Externe Langdock-Cloud-Agents werden via AllowInternalMcpOnly mit 403 abgewiesen.
     Route::post('/mcp/agent-call/stream', [StreamingMcpController::class, 'call'])
         ->middleware('mcp.internal')
         ->name('mcp.agent-stream');

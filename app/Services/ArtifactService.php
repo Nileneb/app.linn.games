@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class LangdockArtifactService
+class ArtifactService
 {
     /**
      * @return array{display_content: string, stored_paths: array<int, string>}
@@ -78,7 +78,7 @@ class LangdockArtifactService
 
     private function baseDir(array $context, array $options): string
     {
-        $parts = ['langdock', 'artifacts'];
+        $parts = ['agent', 'artifacts'];
 
         if (! empty($context['projekt_id'])) {
             $parts[] = 'projekte';

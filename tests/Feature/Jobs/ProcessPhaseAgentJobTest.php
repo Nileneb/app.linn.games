@@ -5,7 +5,7 @@ use App\Models\PhaseAgentResult;
 use App\Models\Recherche\Projekt;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Services\LangdockArtifactService;
+use App\Services\ArtifactService;
 use App\Services\PromptLoaderService;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
@@ -59,7 +59,7 @@ test('ProcessPhaseAgentJob creates pending result record and completes', functio
         ),
     ]);
 
-    $this->mock(LangdockArtifactService::class, function ($mock) {
+    $this->mock(ArtifactService::class, function ($mock) {
         $mock->shouldReceive('persistFromAgentResponse')
             ->once()
             ->andReturn(['display_content' => 'Test response', 'stored_paths' => []]);
@@ -96,7 +96,7 @@ test('ProcessPhaseAgentJob marks result as completed on success', function () {
         ),
     ]);
 
-    $this->mock(LangdockArtifactService::class, function ($mock) {
+    $this->mock(ArtifactService::class, function ($mock) {
         $mock->shouldReceive('persistFromAgentResponse')
             ->once()
             ->andReturn(['display_content' => 'Successful response', 'stored_paths' => []]);
