@@ -24,6 +24,12 @@ new class extends Component {
         $this->loadSnippets();
     }
 
+    public function onTextSelected(string $text): void
+    {
+        $this->selectedText = $text;
+        $this->showForm = true;
+    }
+
     public function saveSnippet(): void
     {
         $this->validate([
