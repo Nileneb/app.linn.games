@@ -19,6 +19,10 @@ Route::middleware('guest')->group(function () {
 
 Route::view('/pending-approval', 'livewire.auth.pending-approval')->name('pending-approval');
 
+Route::get('/register/verify/{token}', \App\Http\Controllers\VerifyPendingRegistrationController::class)
+    ->name('register.verify')
+    ->middleware('guest');
+
 Route::get('/accept-invitation/{token}', \App\Livewire\Auth\AcceptInvitation::class)
     ->name('invitation.accept')
     ->middleware('guest');
