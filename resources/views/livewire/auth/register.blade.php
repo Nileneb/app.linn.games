@@ -16,6 +16,12 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
+        @if (session('status') === 'verification-link-sent')
+            <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800/50 dark:bg-green-950/30 dark:text-green-300">
+                Wir haben dir einen Bestätigungslink geschickt. Bitte prüfe dein Postfach (auch Spam).
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">
             @csrf
             <!-- Name -->
@@ -93,6 +99,10 @@
                 <input type="text" name="website" id="website" autocomplete="off" tabindex="-1">
             </div>
 
+            {{-- Bot-Detection: JS-Signale --}}
+            <input type="hidden" name="_timing" id="_timing" value="0">
+            <input type="hidden" name="_tz" id="_tz" value="">
+
             <div class="flex items-center justify-end">
                 <button type="submit" data-test="register-user-button" class="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                     {{ __('Create account') }}
@@ -109,5 +119,21 @@
             Bug gefunden?
             <a href="https://github.com/Nileneb/app.linn.games/issues/new" target="_blank" rel="noopener" class="underline hover:text-zinc-600 dark:hover:text-zinc-300">Direkt als GitHub-Issue melden</a>
         </p>
+        <script>
+            (function () {
+                var _start = Date.now();
+                var form = document.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', function () {
+                        var timingEl = document.getElementById('_timing');
+                        var tzEl = document.getElementById('_tz');
+                        if (timingEl) timingEl.value = Date.now() - _start;
+                        if (tzEl) {
+                            try { tzEl.value = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+                        }
+                    });
+                }
+            })();
+        </script>
     </div>
 </x-layouts.auth>
