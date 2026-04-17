@@ -14,6 +14,8 @@ Artisan::addCommands([
     \App\Console\Commands\CleanupExpiredInvitations::class,
     \App\Console\Commands\CleanupStaleWorkerTokens::class,
     \App\Console\Commands\GenerateGalaxyData::class,
+    \App\Console\Commands\SyncTorNodes::class,
+    \App\Console\Commands\PrunePendingRegistrations::class,
 ]);
 
 Artisan::command('inspire', function () {
@@ -24,6 +26,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('invitations:cleanup')->daily();
 Schedule::command('mcp:cleanup-stale-tokens')->hourly();
+Schedule::command('security:sync-tor-nodes')->everySixHours();
+Schedule::command('disposable:update')->weekly();
+Schedule::command('security:prune-pending-registrations')->daily();
 
 // ── Deploy Sub-Commands ──────────────────────────────────────────
 
