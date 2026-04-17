@@ -20,6 +20,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/volt": "^1.7.0",
         "predis/predis": "^3.4",
+        "propaganistas/laravel-disposable-email": "*",
         "pusher/pusher-php-server": "*",
         "smalot/pdfparser": "^2.12",
         "spatie/laravel-activitylog": "^5.0",
