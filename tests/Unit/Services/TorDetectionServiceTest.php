@@ -1,52 +1,31 @@
 <?php
 
-namespace Tests\Unit\Services;
-
 use App\Services\TorDetectionService;
 use Illuminate\Support\Facades\Redis;
-use PHPUnit\Framework\TestCase;
 
-class TorDetectionServiceTest extends TestCase
-{
-    public function test_isKnownTorOrVpnIp_gibt_false_zurück_wenn_redis_set_leer(): void
-    {
-        $redisMock = \Mockery::mock('alias:Illuminate\Support\Facades\Redis');
-        $redisMock->shouldReceive('sismember')
-            ->with('security:tor_nodes', '1.2.3.4')
-            ->andReturn(0);
+test('isKnownTorOrVpnIp gibt false zurück wenn Redis-Set leer', function () {
+    Redis::shouldReceive('sismember')
+        ->with('security:tor_nodes', '1.2.3.4')
+        ->andReturn(0);
 
-        $service = new TorDetectionService();
-        $this->assertFalse($service->isKnownTorOrVpnIp('1.2.3.4'));
-    }
+    $service = app(TorDetectionService::class);
+    expect($service->isKnownTorOrVpnIp('1.2.3.4'))->toBeFalse();
+});
 
-    public function test_isKnownTorOrVpnIp_erkennt_bekannte_tor_ip(): void
-    {
-        $redisMock = \Mockery::mock('alias:Illuminate\Support\Facades\Redis');
-        $redisMock->shouldReceive('sismember')
-            ->with('security:tor_nodes', '185.220.101.144')
-            ->andReturn(1);
-        $redisMock->shouldReceive('sismember')
-            ->with('security:tor_nodes', '1.2.3.4')
-            ->andReturn(0);
+test('isKnownTorOrVpnIp erkennt bekannte Tor-IP', function () {
+    Redis::shouldReceive('sismember')
+        ->with('security:tor_nodes', '185.220.101.144')
+        ->once()
+        ->andReturn(1);
 
-        $service = new TorDetectionService();
-        $this->assertTrue($service->isKnownTorOrVpnIp('185.220.101.144'));
-        $this->assertFalse($service->isKnownTorOrVpnIp('1.2.3.4'));
-    }
+    $service = app(TorDetectionService::class);
+    expect($service->isKnownTorOrVpnIp('185.220.101.144'))->toBeTrue();
+});
 
-    public function test_isKnownTorOrVpnIp_gibt_false_zurück_bei_redis_fehler(): void
-    {
-        $redisMock = \Mockery::mock('alias:Illuminate\Support\Facades\Redis');
-        $redisMock->shouldReceive('sismember')
-            ->andThrow(new \Exception('Redis error'));
+test('isKnownTorOrVpnIp gibt false zurück bei Redis-Fehler', function () {
+    Redis::shouldReceive('sismember')
+        ->andThrow(new \Exception('Redis connection error'));
 
-        $service = new TorDetectionService();
-        $this->assertFalse($service->isKnownTorOrVpnIp('185.220.101.144'));
-    }
-
-    protected function tearDown(): void
-    {
-        \Mockery::close();
-        parent::tearDown();
-    }
-}
+    $service = app(TorDetectionService::class);
+    expect($service->isKnownTorOrVpnIp('185.220.101.144'))->toBeFalse();
+});
