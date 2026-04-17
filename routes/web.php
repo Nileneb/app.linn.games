@@ -107,6 +107,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('credits/success', fn () => view('credits.success'))->name('credits.success');
     Route::post('credits/checkout', [\App\Http\Controllers\CreditCheckoutController::class, 'redirect'])->name('credits.checkout');
 
+    // MCP OAuth 2.0 — Claude Web connector auth (PKCE flow)
+    Route::get('mcp/authorize', [\App\Http\Controllers\McpOAuthController::class, 'authorize'])
+        ->name('mcp.oauth.authorize');
+
     // MayringCoder Subscription (kein Gate — jeder Auth-User kann abonnieren)
     Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
 
