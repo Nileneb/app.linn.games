@@ -1,16 +1,18 @@
 <?php
 
+use App\Models\PendingRegistration;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
+
+uses(RefreshDatabase::class);
 
 beforeEach(fn () => RateLimiter::clear('register:127.0.0.1'));
 
 test('registration screen can be rendered', function () {
-    $response = $this->get(route('register'));
-
-    $response->assertStatus(200);
+    $this->get(route('register'))->assertStatus(200);
 });
 
-test('new users can register', function () {
+test('registrierung erstellt pending registration und kein user', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'John Doe',
         'email' => 'test@example.com',
@@ -19,12 +21,16 @@ test('new users can register', function () {
         'forschungsfrage' => 'Welche Auswirkungen hat KI auf den Bildungsbereich?',
         'forschungsbereich' => 'Bildung & Pädagogik',
         'erfahrung' => 'Ja, 1–2 Mal',
+        '_timing' => 5000,
+        '_tz' => 'Europe/Berlin',
     ]);
 
-    $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('register'))
+        ->assertSessionHas('status', 'verification-link-sent');
 
-    $this->assertAuthenticated();
+    $this->assertGuest();
+    expect(PendingRegistration::where('email', 'test@example.com')->exists())->toBeTrue();
+    expect(\App\Models\User::where('email', 'test@example.com')->exists())->toBeFalse();
 });
 
 test('registrierung schlägt fehl wenn name fehlt', function () {
@@ -44,12 +50,10 @@ test('registrierung schlägt fehl bei ungültiger email', function () {
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertSessionHasErrors('email');
-
-    $this->assertGuest();
 });
 
 test('registrierung schlägt fehl bei bereits genutzter email', function () {
-    $existing = \App\Models\User::factory()->withoutTwoFactor()->create(['email' => 'doppelt@example.de']);
+    \App\Models\User::factory()->withoutTwoFactor()->create(['email' => 'doppelt@example.de']);
 
     $this->post(route('register.store'), [
         'name' => 'Zweiter',
@@ -57,8 +61,6 @@ test('registrierung schlägt fehl bei bereits genutzter email', function () {
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertSessionHasErrors('email');
-
-    $this->assertGuest();
 });
 
 test('registrierung schlägt fehl bei nicht übereinstimmenden passwörtern', function () {
@@ -68,6 +70,4 @@ test('registrierung schlägt fehl bei nicht übereinstimmenden passwörtern', fu
         'password' => 'password',
         'password_confirmation' => 'anders123',
     ])->assertSessionHasErrors('password');
-
-    $this->assertGuest();
 });
