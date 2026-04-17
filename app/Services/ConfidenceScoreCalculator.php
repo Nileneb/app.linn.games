@@ -7,11 +7,11 @@ class ConfidenceScoreCalculator
     public function __construct(private readonly TorDetectionService $torDetection) {}
 
     /**
-     * @return array{score: int, breakdown: array{timing: int, timezone: int, tor: int, disposable: int}}
+     * @return array{score: int, breakdown: array{timing: int, timezone: int, tor: int, disposable: int, captcha: int}}
      */
     public function calculate(array $input, string $ip, string $geoCountryCode): array
     {
-        $breakdown = ['timing' => 0, 'timezone' => 0, 'tor' => 0, 'disposable' => 0];
+        $breakdown = ['timing' => 0, 'timezone' => 0, 'tor' => 0, 'disposable' => 0, 'captcha' => 0];
 
         $timing = isset($input['_timing']) ? (int) $input['_timing'] : 0;
         if ($timing < 2000) {
@@ -30,6 +30,11 @@ class ConfidenceScoreCalculator
         $email = trim($input['email'] ?? '');
         if ($email && $this->isDisposableEmail($email)) {
             $breakdown['disposable'] = 40;
+        }
+
+        $captchaSolved = (int) ($input['_captcha_solved'] ?? 0) === 1;
+        if (!$captchaSolved) {
+            $breakdown['captcha'] = 30;
         }
 
         return [

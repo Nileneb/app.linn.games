@@ -21,12 +21,13 @@ beforeEach(function () {
 
 test('sauberer nutzer erhält score 0', function () {
     $calc = app(ConfidenceScoreCalculator::class);
-    $result = $calc->calculate(baseInput(), '127.0.0.1', 'DE');
+    $result = $calc->calculate(baseInput(['_captcha_solved' => '1']), '127.0.0.1', 'DE');
 
     expect($result['score'])->toBe(0)
         ->and($result['breakdown']['timing'])->toBe(0)
         ->and($result['breakdown']['tor'])->toBe(0)
-        ->and($result['breakdown']['disposable'])->toBe(0);
+        ->and($result['breakdown']['disposable'])->toBe(0)
+        ->and($result['breakdown']['captcha'])->toBe(0);
 });
 
 test('timing unter 2000ms ergibt +50', function () {
@@ -76,11 +77,31 @@ test('kombinierter score summiert alle beiträge', function () {
 
     $calc = app(ConfidenceScoreCalculator::class);
     $result = $calc->calculate(
-        baseInput(['_timing' => 500, '_tz' => 'America/New_York', 'email' => 'test@mailinator.com']),
+        baseInput(['_timing' => 500, '_tz' => 'America/New_York', 'email' => 'test@mailinator.com', '_captcha_solved' => '0']),
         '185.220.101.144',
         'DE'
     );
 
-    // 50 (timing) + 20 (tz) + 15 (tor) + 40 (disposable) = 125
-    expect($result['score'])->toBe(125);
+    // 50 (timing) + 20 (tz) + 15 (tor) + 40 (disposable) + 30 (captcha) = 155
+    expect($result['score'])->toBe(155);
+});
+
+test('captcha nicht gelöst erhöht score um 30', function () {
+    $result = app(ConfidenceScoreCalculator::class)
+        ->calculate(baseInput(['_captcha_solved' => '0']), '1.1.1.1', 'DE');
+    expect($result['breakdown']['captcha'])->toBe(30);
+});
+
+test('captcha gelöst ergibt captcha-score 0', function () {
+    $result = app(ConfidenceScoreCalculator::class)
+        ->calculate(baseInput(['_captcha_solved' => '1']), '1.1.1.1', 'DE');
+    expect($result['breakdown']['captcha'])->toBe(0);
+});
+
+test('fehlendes captcha-feld zählt als nicht gelöst', function () {
+    $input = baseInput();
+    unset($input['_captcha_solved']);
+    $result = app(ConfidenceScoreCalculator::class)
+        ->calculate($input, '1.1.1.1', 'DE');
+    expect($result['breakdown']['captcha'])->toBe(30);
 });

@@ -103,6 +103,53 @@
             <input type="hidden" name="_timing" id="_timing" value="0">
             <input type="hidden" name="_tz" id="_tz" value="">
 
+            {{-- Gamified CAPTCHA: Rotations-Rätsel --}}
+            <div
+                x-data="{
+                    rotation: [60, 90, 120, 150, 180, 210, 240, 270, 300, 330][Math.floor(Math.random() * 10)],
+                    solved: false,
+                    tolerance: 15,
+                    check() {
+                        const normalized = ((this.rotation % 360) + 360) % 360;
+                        this.solved = normalized <= this.tolerance || normalized >= (360 - this.tolerance);
+                    },
+                    rotateLeft() { this.rotation = (this.rotation - 45 + 360) % 360; this.check(); },
+                    rotateRight() { this.rotation = (this.rotation + 45) % 360; this.check(); },
+                }"
+                x-init="check()"
+                x-cloak
+            >
+                <p class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    Sicherheitsprüfung — Drehe das Bild in die richtige Position
+                </p>
+                <div class="flex flex-col items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                    <div
+                        class="size-28 transition-transform duration-300 ease-in-out"
+                        :class="solved ? 'ring-2 ring-green-500 rounded-full' : ''"
+                        :style="`transform: rotate(${rotation}deg)`"
+                    >
+                        <img src="{{ asset('images/captcha-icon.svg') }}" alt="Rotations-Rätsel" class="size-full select-none">
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" @click="rotateLeft()" aria-label="45 Grad nach links drehen"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                            ← Drehen
+                        </button>
+                        <button type="button" @click="rotateRight()" aria-label="45 Grad nach rechts drehen"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                            Drehen →
+                        </button>
+                    </div>
+                    <p x-show="solved" x-cloak class="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                        ✓ Bestätigt
+                    </p>
+                    <p x-show="!solved" class="text-xs text-zinc-400 dark:text-zinc-500">
+                        Drehe das Bild bis der Pfeil nach oben zeigt
+                    </p>
+                </div>
+                <input type="hidden" name="_captcha_solved" :value="solved ? '1' : '0'">
+            </div>
+
             <div class="flex items-center justify-end">
                 <button type="submit" data-test="register-user-button" class="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                     {{ __('Create account') }}

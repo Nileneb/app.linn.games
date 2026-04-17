@@ -19,6 +19,7 @@ $validPayload = fn () => [
     'erfahrung' => 'Ja, 1–2 Mal',
     '_timing' => 5000,
     '_tz' => 'Europe/Berlin',
+    '_captcha_solved' => '1',
 ];
 
 test('nutzer kann sich registrieren und erhält pending-registration mit verification-link-sent status', function () use ($validPayload) {
