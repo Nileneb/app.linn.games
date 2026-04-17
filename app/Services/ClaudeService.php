@@ -371,16 +371,37 @@ class ClaudeService
                 'tools' => $tools,
             ];
 
-            // Kein Retry hier — Tool-Use-Loop ist stateful; Transient-Error wirft ClaudeAgentException
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-                'anthropic-beta' => 'prompt-caching-2024-07-31',
-                'content-type' => 'application/json',
-            ])->timeout(120)->post(self::API_URL, $body);
+            // 429-Retry ist hier sicher: Nachricht wird erst NACH erfolgreicher Response angehängt.
+            // Transiente 5xx nach Retries werfen ClaudeAgentException.
+            $maxApiRetries = 3;
+            $response = null;
 
-            if ($response->failed()) {
-                throw new ClaudeAgentException("Claude API Tool-Use Fehler {$response->status()}: ".$response->body());
+            for ($apiAttempt = 1; $apiAttempt <= $maxApiRetries; $apiAttempt++) {
+                $response = Http::withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'anthropic-beta' => 'prompt-caching-2024-07-31',
+                    'content-type' => 'application/json',
+                ])->timeout(120)->post(self::API_URL, $body);
+
+                if ($response->successful()) {
+                    break;
+                }
+
+                if ($response->status() === 429 && $apiAttempt < $maxApiRetries) {
+                    $retryAfter = max(5, (int) $response->header('Retry-After', 30));
+                    Log::warning("callWithToolUse 429 — backing off {$retryAfter}s (attempt {$apiAttempt}/{$maxApiRetries}, iteration {$iteration})", [
+                        'config_key' => $configKey,
+                    ]);
+                    sleep($retryAfter);
+                    continue;
+                }
+
+                break;
+            }
+
+            if ($response === null || $response->failed()) {
+                throw new ClaudeAgentException("Claude API Tool-Use Fehler {$response?->status()}: ".($response?->body() ?? 'no response'));
             }
 
             $raw = $response->json() ?? [];
