@@ -697,3 +697,292 @@
   opacity: 0.5;
   margin-bottom: -40px;
 }
+
+/* ============================================================
+   REVENUE FLOW DIAGRAM (slide 8)
+   ============================================================ */
+.flow-wrap {
+  position: relative;
+  width: 100%;
+  height: 640px;
+}
+.flow-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.flow-node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  z-index: 3;
+  width: 360px;
+}
+.flow-node.in { flex-direction: row; }
+.flow-node.out { flex-direction: row-reverse; }
+.flow-node-pct {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--zinc-950);
+  flex-shrink: 0;
+  min-width: 110px;
+  text-align: center;
+  padding: 18px 0;
+  background: #fff;
+  border: 1px solid var(--zinc-200);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.flow-node.in .flow-node-pct {
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-color: #7c3aed;
+}
+.flow-node.out.cost .flow-node-pct {
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border-color: #dc2626;
+}
+.flow-node.out.invest .flow-node-pct {
+  color: #fff;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border-color: #16a34a;
+}
+.flow-node-body {
+  flex: 1;
+  min-width: 0;
+}
+.flow-node.out .flow-node-body { text-align: right; }
+.flow-node-kind {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--zinc-400);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.flow-node-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--zinc-950);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.flow-node-sub {
+  font-size: 14px;
+  color: var(--zinc-500);
+  line-height: 1.4;
+}
+.flow-col-label {
+  position: absolute;
+  top: -18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--zinc-400);
+  font-weight: 600;
+  z-index: 4;
+}
+.flow-col-label.left { left: 0; }
+.flow-col-label.right { right: 0; }
+
+/* ============================================================
+   POSITIONING QUADRANT (slide 5)
+   ============================================================ */
+.quadrant-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 1660px;
+  margin: 0 auto;
+  height: 680px;
+  padding: 40px 40px 50px 120px;
+  box-sizing: border-box;
+}
+.q-axis {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--zinc-400);
+  font-weight: 600;
+  z-index: 5;
+}
+.q-y-label {
+  left: 0;
+  top: 50%;
+  transform: rotate(-90deg) translateX(50%);
+  transform-origin: left center;
+  white-space: nowrap;
+}
+.q-x-label {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.q-tick {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--zinc-400);
+  font-weight: 500;
+  z-index: 5;
+}
+.q-y-low { left: 70px; bottom: 60px; }
+.q-y-high { left: 70px; top: 40px; }
+.q-x-low { bottom: 28px; left: 150px; }
+.q-x-high { bottom: 28px; right: 70px; }
+
+.q-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  border: 1.5px solid var(--zinc-300);
+  border-radius: 4px;
+  background: #fff;
+  overflow: visible;
+}
+.q-cell {
+  position: relative;
+  padding: 28px 32px;
+  border: 0;
+}
+/* grid order: top-left (Q2 expensive), top-right (Q1 ideal), bottom-left (Q3 useless), bottom-right (Q4 grind)
+   But we want it so Q1 ideal = top-LEFT (low effort, high quality)
+   In the CSS I authored Q1 ideal, Q2 expensive, Q3 useless, Q4 grind — but grid iterates row-major.
+   Row 1: Q2(TL), Q1(TR)  BUT we want ideal = TOP-LEFT. Need to reorder HTML.
+*/
+/* colour overlays */
+.q-ideal {
+  background:
+    radial-gradient(ellipse at top left, rgba(22,163,74,0.22), rgba(22,163,74,0.06) 70%);
+}
+.q-expensive {
+  background: radial-gradient(ellipse at top right, rgba(234,179,8,0.18), rgba(234,179,8,0.04) 70%);
+}
+.q-useless {
+  background: radial-gradient(ellipse at bottom left, rgba(220,38,38,0.14), rgba(220,38,38,0.03) 70%);
+}
+.q-grind {
+  background: radial-gradient(ellipse at bottom right, rgba(234,88,12,0.18), rgba(234,88,12,0.04) 70%);
+}
+.q-cell-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  z-index: 2;
+  font-weight: 700;
+}
+.q-cell.q-ideal .q-cell-label { right: 24px; top: 20px; color: #15803d; }
+.q-cell.q-expensive .q-cell-label { left: 24px; top: 20px; color: #a16207; }
+.q-cell.q-useless .q-cell-label { right: 24px; bottom: 20px; color: #991b1b; }
+.q-cell.q-grind .q-cell-label { left: 24px; bottom: 20px; color: #9a3412; }
+.q-cell-tag {
+  font-weight: 800;
+  padding: 4px 10px;
+  background: currentColor;
+  color: #fff !important;
+  border-radius: 5px;
+  letter-spacing: 0.1em;
+}
+.q-cell-tag::selection { color: #fff; }
+.q-cell.q-ideal .q-cell-tag { background: #15803d; color: #fff; }
+.q-cell.q-expensive .q-cell-tag { background: #a16207; color: #fff; }
+.q-cell.q-useless .q-cell-tag { background: #991b1b; color: #fff; }
+.q-cell.q-grind .q-cell-tag { background: #9a3412; color: #fff; }
+.q-cell-name {
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.q-axis-line {
+  position: absolute;
+  background: var(--zinc-300);
+  z-index: 1;
+}
+.q-axis-line.horizontal {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--zinc-300) 0, var(--zinc-300) 6px, transparent 6px, transparent 12px);
+}
+.q-axis-line.vertical {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: repeating-linear-gradient(180deg, var(--zinc-300) 0, var(--zinc-300) 6px, transparent 6px, transparent 12px);
+}
+
+.q-point {
+  position: absolute;
+  transform: translate(-50%, 50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.q-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--zinc-500);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px var(--zinc-400);
+  flex-shrink: 0;
+}
+.q-point.hero .q-dot {
+  width: 20px;
+  height: 20px;
+  background: var(--zinc-950);
+  box-shadow: 0 0 0 1.5px var(--zinc-950), 0 0 24px rgba(124,58,237,0.5);
+}
+.q-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--zinc-700);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  padding: 3px 10px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+.q-point.hero .q-label {
+  color: var(--zinc-950);
+  font-weight: 700;
+  background: rgba(255,255,255,0.95);
+  border: 1.5px solid var(--zinc-950);
+  font-size: 16px;
+}
+.q-label.right {
+  order: -1;
+}
+.q-label.below {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+}

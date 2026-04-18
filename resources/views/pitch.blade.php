@@ -7,8 +7,8 @@
 <link rel="icon" type="image/png" href="/favicon-96x96.png?v=20260402" sizes="96x96">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260402">
 <link rel="shortcut icon" href="/favicon.ico?v=20260402">
-<link rel="stylesheet" href="{{ asset('pitch-assets/assets/deck.css') }}?v=3">
-<script src="{{ asset('pitch-assets/assets/i18n.js') }}?v=2"></script>
+<link rel="stylesheet" href="{{ asset('pitch-assets/assets/deck.css') }}?v=8">
+<script src="{{ asset('pitch-assets/assets/i18n.js') }}?v=5"></script>
 </head>
 <body>
 
@@ -52,7 +52,7 @@
       <span>·</span>
       <span data-i18n="chrome.event">IMPACT SPRINT LAB · BERLIN</span>
       <span>·</span>
-      <span class="page-num">01 / 15</span>
+      <span class="page-num">01 / 16</span>
     </div>
   </div>
 
@@ -120,24 +120,53 @@
     <div class="meta">
       <span data-i18n="s2.kicker">01 — Das Problem</span>
       <span>·</span>
-      <span class="page-num">02 / 15</span>
+      <span class="page-num">02 / 16</span>
     </div>
   </div>
 
-  <div class="section-numeral">01</div>
+  <div class="section-numeral" style="right: 6%;">01</div>
 
-  <div class="slide-pad" style="justify-content: center;">
-    <div class="eyebrow-line">
-      <span class="bar"></span>
-      <span data-i18n="s2.kicker">01 — Das Problem</span>
+  <div class="slide-pad" style="justify-content: center; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; padding-left: 120px; padding-right: 120px;">
+
+    <!-- LEFT: text column -->
+    <div>
+      <div class="eyebrow-line">
+        <span class="bar"></span>
+        <span data-i18n="s2.kicker">01 — Das Problem</span>
+      </div>
+      <h2 class="hero-title" style="font-size: clamp(64px, 6.6vw, 104px);">
+        <span data-i18n="s2.title_1">Forschungszugang</span><br>
+        <span class="grad" data-i18n="s2.title_2">ist blockiert.</span>
+      </h2>
+      <p class="lead" style="margin-top: 44px; font-size: 22px; max-width: 560px;" data-i18n="s2.sub">
+        Qualitative Forschung — Literaturreviews, Inhaltsanalysen — ist der Goldstandard für evidenzbasierte Entscheidungen. Und sie bleibt für die meisten unerreichbar.
+      </p>
     </div>
-    <h2 class="hero-title">
-      <span data-i18n="s2.title_1">Forschungszugang</span><br>
-      <span class="grad" data-i18n="s2.title_2">ist blockiert.</span>
-    </h2>
-    <p class="lead" style="margin-top: 56px;" data-i18n="s2.sub">
-      Qualitative Forschung — Literaturreviews, Inhaltsanalysen — ist der Goldstandard für evidenzbasierte Entscheidungen. Und sie bleibt für die meisten unerreichbar.
-    </p>
+
+    <!-- RIGHT: comic column -->
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <!-- sandy floor beneath the comic: warm beige plane, fading into the dark bg -->
+      <div aria-hidden="true" style="position: absolute; left: -4%; right: -4%; bottom: 4%; height: 44%; z-index: 0; background:
+          radial-gradient(ellipse 62% 75% at 50% 0%, rgba(222, 194, 146, 0.55), rgba(196, 161, 108, 0.32) 55%, rgba(120, 92, 58, 0) 85%),
+          linear-gradient(180deg, rgba(232, 206, 164, 0.28) 0%, rgba(180, 146, 96, 0.18) 50%, rgba(40, 30, 18, 0) 100%);
+          filter: blur(2px);
+          mix-blend-mode: screen;
+          border-radius: 60% 60% 12% 12% / 35% 35% 12% 12%;"></div>
+
+      <!-- grounding shadow directly under the figures -->
+      <div aria-hidden="true" style="position: absolute; left: 8%; right: 8%; bottom: 16%; height: 20px; z-index: 0; background: radial-gradient(ellipse 55% 100% at 50% 50%, rgba(0,0,0,0.55), transparent 70%); filter: blur(6px);"></div>
+
+      <!-- soft cool rim glow so the paywall still reads as menacing -->
+      <div aria-hidden="true" style="position: absolute; inset: -6% -6% 30% -6%; background: radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.14), rgba(139,92,246,0.10) 40%, transparent 72%); filter: blur(22px); z-index: 0;"></div>
+
+      <img src="{{ asset('pitch-assets/assets/paywall-comic.png') }}" alt="Wissenschaftler kämpfen gegen eine Paywall-Monster-Festung" style="position: relative; z-index: 1; width: 100%; max-width: 620px; height: auto; filter: drop-shadow(0 22px 34px rgba(0,0,0,0.55));">
+
+      <!-- attribution caption, subtle -->
+      <div style="position: relative; z-index: 1; margin-top: 18px; display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--zinc-500);">
+        <span style="width: 24px; height: 1px; background: var(--zinc-600);"></span>
+        <span data-i18n="s2.caption">Feldnotiz · Paywall-Realität</span>
+      </div>
+    </div>
   </div>
 
   <div class="chrome-bottom">
@@ -159,7 +188,7 @@
     <div class="meta">
       <span data-i18n="s3.kicker">Drei Barrieren</span>
       <span>·</span>
-      <span class="page-num">03 / 15</span>
+      <span class="page-num">03 / 16</span>
     </div>
   </div>
 
@@ -225,7 +254,7 @@
     <div class="meta">
       <span data-i18n="s4.kicker">02 — Die Lösung</span>
       <span>·</span>
-      <span class="page-num">04 / 15</span>
+      <span class="page-num">04 / 16</span>
     </div>
   </div>
 
@@ -267,7 +296,125 @@
 </section>
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     SLIDE 5 · PRODUCT A · app.linn.games (light)
+     SLIDE 5 · POSITIONING QUADRANT (light)
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="slide light" data-label="Positioning" data-om-validate>
+  <div class="grid-bg"></div>
+  <div class="chrome">
+    <div class="brand-lock">
+      <span class="logo-wrap" data-logo></span>
+      <span class="brand-name">Linn<span class="dot-grad">.</span>Games</span>
+    </div>
+    <div class="meta">
+      <span data-i18n="s5q.kicker">Positioning · Aufwand vs. Qualität</span>
+      <span>·</span>
+      <span class="page-num">05 / 16</span>
+    </div>
+  </div>
+
+  <div class="slide-pad" style="padding: 180px 96px 128px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px;">
+      <div>
+        <div class="eyebrow-line">
+          <span class="bar"></span>
+          <span data-i18n="s5q.kicker">Positioning · Aufwand vs. Qualität</span>
+        </div>
+        <h2 class="sub-title" data-i18n="s5q.title">Wenig Aufwand. Hohe Qualität.</h2>
+      </div>
+      <p style="font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--zinc-500); max-width: 380px; text-align: right; line-height: 1.5;" data-i18n="s5q.caption">
+        Forschungstools im<br>Aufwand-/Qualitäts-Raster
+      </p>
+    </div>
+
+    <div class="quadrant-wrap">
+      <!-- Axis labels -->
+      <div class="q-axis q-y-label"><span data-i18n="s5q.y_label">Ergebnis-Qualität</span></div>
+      <div class="q-axis q-x-label"><span data-i18n="s5q.x_label">Aufwand</span></div>
+
+      <div class="q-tick q-y-low"><span data-i18n="s5q.y_low">Niedrig</span></div>
+      <div class="q-tick q-y-high"><span data-i18n="s5q.y_high">Hoch</span></div>
+      <div class="q-tick q-x-low"><span data-i18n="s5q.x_low">Wenig</span></div>
+      <div class="q-tick q-x-high"><span data-i18n="s5q.x_high">Viel</span></div>
+
+      <!-- Quadrant grid -->
+      <div class="q-grid">
+        <div class="q-cell q-ideal">
+          <div class="q-cell-label">
+            <span class="q-cell-tag" data-i18n="s5q.q1_tag">Q1</span>
+            <span class="q-cell-name" data-i18n="s5q.q1_name">Ideal Zone</span>
+          </div>
+        </div>
+        <div class="q-cell q-expensive">
+          <div class="q-cell-label">
+            <span class="q-cell-tag" data-i18n="s5q.q2_tag">Q2</span>
+            <span class="q-cell-name" data-i18n="s5q.q2_name">Zu aufwendig</span>
+          </div>
+        </div>
+        <div class="q-cell q-useless">
+          <div class="q-cell-label">
+            <span class="q-cell-tag" data-i18n="s5q.q3_tag">Q3</span>
+            <span class="q-cell-name" data-i18n="s5q.q3_name">Nicht brauchbar</span>
+          </div>
+        </div>
+        <div class="q-cell q-grind">
+          <div class="q-cell-label">
+            <span class="q-cell-tag" data-i18n="s5q.q4_tag">Q4</span>
+            <span class="q-cell-name" data-i18n="s5q.q4_name">Grind Zone</span>
+          </div>
+        </div>
+
+        <!-- Origin axes lines drawn via CSS -->
+        <div class="q-axis-line horizontal"></div>
+        <div class="q-axis-line vertical"></div>
+
+        <!-- Data points. Coords: left = x * 100%, bottom = y * 100% -->
+        <!-- app.linn.games (0.12, 0.90) - top-left corner of ideal zone -->
+        <div class="q-point hero" style="left: 12%; bottom: 90%;">
+          <span class="q-dot"></span>
+          <span class="q-label" data-i18n="s5q.p1">app.linn.games</span>
+        </div>
+        <!-- MayringCoder (0.32, 0.75) - lower-right of ideal zone -->
+        <div class="q-point hero" style="left: 32%; bottom: 75%;">
+          <span class="q-dot"></span>
+          <span class="q-label" data-i18n="s5q.p2">MayringCoder</span>
+        </div>
+        <!-- Manueller Review (0.88, 0.80) -->
+        <div class="q-point" style="left: 88%; bottom: 80%;">
+          <span class="q-dot"></span>
+          <span class="q-label below" data-i18n="s5q.p3">Manueller Review</span>
+        </div>
+        <!-- ChatGPT freestyle (0.25, 0.35) -->
+        <div class="q-point" style="left: 25%; bottom: 35%;">
+          <span class="q-dot"></span>
+          <span class="q-label" data-i18n="s5q.p4">ChatGPT freestyle</span>
+        </div>
+        <!-- Günstige LLMs (0.30, 0.28) -->
+        <div class="q-point" style="left: 30%; bottom: 28%;">
+          <span class="q-dot"></span>
+          <span class="q-label below" data-i18n="s5q.p5">Günstige LLMs</span>
+        </div>
+        <!-- Excel + Zotero (0.78, 0.50) -->
+        <div class="q-point" style="left: 78%; bottom: 50%;">
+          <span class="q-dot"></span>
+          <span class="q-label below" data-i18n="s5q.p6">Excel + Zotero</span>
+        </div>
+        <!-- Keine Analyse (0.05, 0.08) -->
+        <div class="q-point" style="left: 5%; bottom: 8%;">
+          <span class="q-dot"></span>
+          <span class="q-label" data-i18n="s5q.p7">Keine Analyse</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chrome-bottom">
+    <span data-i18n="chrome.foot_left">PITCH DECK · 04·2026</span>
+    <span data-i18n="chrome.foot_right">INTERACTIVE · AI · WEB</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SLIDE 6 · PRODUCT A · app.linn.games (light)
      ══════════════════════════════════════════════════════════════════ -->
 <section class="slide light" data-label="app.linn.games">
   <div class="grid-bg"></div>
@@ -279,12 +426,13 @@
     <div class="meta">
       <span data-i18n="s5.kicker">Produkt A · Cloud</span>
       <span>·</span>
-      <span class="page-num">05 / 15</span>
+      <span class="page-num">06 / 16</span>
     </div>
   </div>
 
   <div class="slide-pad" style="padding: 180px 128px 112px;">
     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; flex: 1;">
+      <!-- Left: headline + stack -->
       <div style="display: flex; flex-direction: column;">
         <div class="eyebrow-line">
           <span class="bar"></span>
@@ -318,6 +466,7 @@
         </div>
       </div>
 
+      <!-- Right: 8 phases visual -->
       <div style="background: #fff; border: 1px solid var(--zinc-200); border-radius: 18px; padding: 40px; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 32px;">
           <h4 style="font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--zinc-950);" data-i18n="s5.phase_title">Die 8 Phasen</h4>
@@ -381,12 +530,13 @@
     <div class="meta">
       <span data-i18n="s6.kicker">Produkt B · Local / SaaS</span>
       <span>·</span>
-      <span class="page-num">06 / 15</span>
+      <span class="page-num">07 / 16</span>
     </div>
   </div>
 
   <div class="slide-pad" style="padding: 180px 128px 112px;">
     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; flex: 1;">
+      <!-- Left: headline + license -->
       <div style="display: flex; flex-direction: column;">
         <div class="eyebrow-line">
           <span class="bar"></span>
@@ -416,6 +566,7 @@
         </div>
       </div>
 
+      <!-- Right: capabilities -->
       <div style="background: #fff; border: 1px solid var(--zinc-200); border-radius: 18px; padding: 44px 44px 40px; display: flex; flex-direction: column;">
         <h4 style="font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--zinc-950); margin-bottom: 28px;" data-i18n="s6.cap_title">Was es kann</h4>
 
@@ -467,7 +618,7 @@
     <div class="meta">
       <span data-i18n="s7.kicker">03 — Geschäftsmodell</span>
       <span>·</span>
-      <span class="page-num">07 / 15</span>
+      <span class="page-num">08 / 16</span>
     </div>
   </div>
 
@@ -486,6 +637,7 @@
       Claude ist teuer — aber das einzige Modell, das wissenschaftliche Analyse zuverlässig liefert. MayringCoder SaaS finanziert die API-Kosten von app.linn.games.
     </p>
 
+    <!-- simple flow diagram -->
     <div style="display: flex; align-items: center; gap: 32px; margin-top: 80px; font-family: var(--font-mono); font-size: 16px;">
       <div style="padding: 20px 28px; border: 1px solid rgba(168,85,247,0.4); border-radius: 14px; background: rgba(168,85,247,0.08); color: #fff;">
         <div style="color: var(--accent-2); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px;">Revenue</div>
@@ -513,7 +665,7 @@
 <!-- ══════════════════════════════════════════════════════════════════════
      SLIDE 8 · REVENUE TABLE (light)
      ══════════════════════════════════════════════════════════════════ -->
-<section class="slide light" data-label="Revenue streams">
+<section class="slide light" data-label="Revenue flow" data-om-validate>
   <div class="grid-bg"></div>
   <div class="chrome">
     <div class="brand-lock">
@@ -521,50 +673,128 @@
       <span class="brand-name">Linn<span class="dot-grad">.</span>Games</span>
     </div>
     <div class="meta">
-      <span data-i18n="s8.kicker">Vier Revenue Streams</span>
+      <span data-i18n="s8.kicker">Revenue Flow · Querfinanzierung</span>
       <span>·</span>
-      <span class="page-num">08 / 15</span>
+      <span class="page-num">09 / 16</span>
     </div>
   </div>
 
-  <div class="slide-pad" style="padding: 180px 160px 140px;">
+  <div class="slide-pad" style="padding: 180px 96px 128px;">
     <div class="eyebrow-line">
       <span class="bar"></span>
-      <span data-i18n="s8.kicker">Vier Revenue Streams</span>
+      <span data-i18n="s8.kicker">Revenue Flow · Querfinanzierung</span>
     </div>
-    <h2 class="sub-title" style="margin-bottom: 72px;" data-i18n="s8.title">Ein Produkt finanziert das andere.</h2>
+    <h2 class="sub-title" style="margin-bottom: 48px;" data-i18n="s8.title">Ein Produkt finanziert das andere.</h2>
 
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th style="width: 24%;" data-i18n="s8.th_stream">Stream</th>
-          <th style="width: 30%;" data-i18n="s8.th_product">Produkt</th>
-          <th data-i18n="s8.th_model">Modell</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong data-i18n="s8.r1_stream">Credits</strong></td>
-          <td class="mono" data-i18n="s8.r1_product">app.linn.games</td>
-          <td data-i18n="s8.r1_model">Token → Cent, nutzungsbasiert</td>
-        </tr>
-        <tr>
-          <td><strong data-i18n="s8.r2_stream">Hosted SaaS</strong></td>
-          <td class="mono" data-i18n="s8.r2_product">MayringCoder</td>
-          <td data-i18n="s8.r2_model">Subscription (kein lokales Ollama nötig)</td>
-        </tr>
-        <tr>
-          <td><strong data-i18n="s8.r3_stream">Kommerzielle Lizenz</strong></td>
-          <td class="mono" data-i18n="s8.r3_product">MayringCoder</td>
-          <td data-i18n="s8.r3_model">Einmalig / Jahresvertrag</td>
-        </tr>
-        <tr>
-          <td><strong data-i18n="s8.r4_stream">Campuslizenz</strong></td>
-          <td class="mono" data-i18n="s8.r4_product">MayringCoder</td>
-          <td data-i18n="s8.r4_model">Universitäten · auf Anfrage</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="flow-wrap">
+      <svg class="flow-svg" viewBox="0 0 1728 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs>
+          <linearGradient id="flowIn" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.08"/>
+            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.55"/>
+          </linearGradient>
+          <linearGradient id="flowOutCost" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#dc2626" stop-opacity="0.28"/>
+          </linearGradient>
+          <linearGradient id="flowOutInvest" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#16a34a" stop-opacity="0.3"/>
+          </linearGradient>
+          <radialGradient id="poolGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#a855f7" stop-opacity="0.85"/>
+            <stop offset="60%" stop-color="#7c3aed" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#4f46e5" stop-opacity="1"/>
+          </radialGradient>
+          <filter id="poolShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="16"/>
+            <feColorMatrix values="0 0 0 0 0.53  0 0 0 0 0.28  0 0 0 0 0.96  0 0 0 0.35 0"/>
+          </filter>
+        </defs>
+
+        <!-- Inflow paths (left → pool) -->
+        <path d="M 290,90  C 620,90  620,240  820,260  C 820,260  864,275  864,280" fill="none" stroke="url(#flowIn)" stroke-width="48" stroke-linecap="round"/>
+        <path d="M 290,255 C 620,255 620,270 820,278 C 820,278 864,280 864,280" fill="none" stroke="url(#flowIn)" stroke-width="32" stroke-linecap="round"/>
+        <path d="M 290,420 C 620,420 620,320 820,298 C 820,298 864,285 864,280" fill="none" stroke="url(#flowIn)" stroke-width="26" stroke-linecap="round"/>
+
+        <!-- Outflow paths (pool → right) -->
+        <path d="M 864,280 C 864,280 906,275 906,275 C 1108,255 1108,120 1438,120" fill="none" stroke="url(#flowOutCost)" stroke-width="42" stroke-linecap="round"/>
+        <path d="M 864,280 C 906,280 906,280 1108,235 C 1108,235 1108,235 1438,235" fill="none" stroke="url(#flowOutInvest)" stroke-width="22" stroke-linecap="round"/>
+        <path d="M 864,280 C 906,285 906,290 1108,320 C 1108,320 1108,320 1438,320" fill="none" stroke="url(#flowOutInvest)" stroke-width="26" stroke-linecap="round"/>
+        <path d="M 864,280 C 906,290 906,370 1108,420 C 1108,420 1108,420 1438,420" fill="none" stroke="url(#flowOutInvest)" stroke-width="16" stroke-linecap="round"/>
+
+        <!-- Center pool -->
+        <circle cx="864" cy="280" r="104" fill="url(#poolGlow)" filter="url(#poolShadow)"/>
+        <circle cx="864" cy="280" r="104" fill="none" stroke="#fff" stroke-width="2" opacity="0.25"/>
+        <text x="864" y="258" text-anchor="middle" fill="#fff" font-family="JetBrains Mono,monospace" font-size="13" font-weight="600" letter-spacing="2.5">REVENUE</text>
+        <text x="864" y="288" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="42" font-weight="800" letter-spacing="-1">POOL</text>
+        <text x="864" y="316" text-anchor="middle" fill="#fff" font-family="JetBrains Mono,monospace" font-size="13" font-weight="500" opacity="0.75" letter-spacing="1.5">100 %</text>
+      </svg>
+
+      <!-- LEFT · inflow nodes (HTML overlay positioned over SVG) -->
+      <div class="flow-node in" style="top: 12%; left: 0;">
+        <div class="flow-node-pct">45 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.in1_kind">Stream A</div>
+          <div class="flow-node-name" data-i18n="s8.in1_name">MayringCoder SaaS</div>
+          <div class="flow-node-sub" data-i18n="s8.in1_sub">Subscriptions · Starter → Pro</div>
+        </div>
+      </div>
+      <div class="flow-node in" style="top: 41%; left: 0;">
+        <div class="flow-node-pct">30 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.in2_kind">Stream B</div>
+          <div class="flow-node-name" data-i18n="s8.in2_name">Campuslizenzen</div>
+          <div class="flow-node-sub" data-i18n="s8.in2_sub">Universitäten, NGOs</div>
+        </div>
+      </div>
+      <div class="flow-node in" style="top: 70%; left: 0;">
+        <div class="flow-node-pct">25 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.in3_kind">Stream C</div>
+          <div class="flow-node-name" data-i18n="s8.in3_name">app.linn.games</div>
+          <div class="flow-node-sub" data-i18n="s8.in3_sub">Credits, nutzungsbasiert</div>
+        </div>
+      </div>
+
+      <!-- RIGHT · outflow nodes -->
+      <div class="flow-node out cost" style="top: 10%; right: 0;">
+        <div class="flow-node-pct">40 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.out1_kind">Kosten</div>
+          <div class="flow-node-name" data-i18n="s8.out1_name">Claude API</div>
+          <div class="flow-node-sub" data-i18n="s8.out1_sub">Anthropic · pro Token</div>
+        </div>
+      </div>
+      <div class="flow-node out invest" style="top: 32%; right: 0;">
+        <div class="flow-node-pct">20 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.out2_kind">Infrastruktur</div>
+          <div class="flow-node-name" data-i18n="s8.out2_name">Hosting & Ops</div>
+          <div class="flow-node-sub" data-i18n="s8.out2_sub">Server, CDN, Backups</div>
+        </div>
+      </div>
+      <div class="flow-node out invest" style="top: 54%; right: 0;">
+        <div class="flow-node-pct">25 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.out3_kind">Investition</div>
+          <div class="flow-node-name" data-i18n="s8.out3_name">Weiterentwicklung</div>
+          <div class="flow-node-sub" data-i18n="s8.out3_sub">R&D, Features, Models</div>
+        </div>
+      </div>
+      <div class="flow-node out invest" style="top: 77%; right: 0;">
+        <div class="flow-node-pct">15 %</div>
+        <div class="flow-node-body">
+          <div class="flow-node-kind" data-i18n="s8.out4_kind">Reserve</div>
+          <div class="flow-node-name" data-i18n="s8.out4_name">Rücklagen</div>
+          <div class="flow-node-sub" data-i18n="s8.out4_sub">Runway, Impact-Fond</div>
+        </div>
+      </div>
+
+      <!-- Column labels -->
+      <div class="flow-col-label left"><span data-i18n="s8.col_in">Einnahmen</span></div>
+      <div class="flow-col-label right"><span data-i18n="s8.col_out">Verwendung</span></div>
+    </div>
   </div>
 
   <div class="chrome-bottom">
@@ -586,7 +816,7 @@
     <div class="meta">
       <span data-i18n="s9.kicker">Pricing · MayringCoder SaaS</span>
       <span>·</span>
-      <span class="page-num">09 / 15</span>
+      <span class="page-num">10 / 16</span>
     </div>
   </div>
 
@@ -647,12 +877,13 @@
     <div class="meta">
       <span data-i18n="s10.kicker">Kein VC · Non-Dilutive</span>
       <span>·</span>
-      <span class="page-num">10 / 15</span>
+      <span class="page-num">11 / 16</span>
     </div>
   </div>
 
   <div class="slide-pad" style="padding: 180px 128px 120px;">
     <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; flex: 1; align-items: stretch;">
+      <!-- Quote column -->
       <div style="display: flex; flex-direction: column; justify-content: center;">
         <div class="eyebrow-line">
           <span class="bar"></span>
@@ -664,6 +895,7 @@
         </p>
       </div>
 
+      <!-- Funding sources -->
       <div style="display: flex; flex-direction: column;">
         <h3 style="font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 32px; font-weight: 600;" data-i18n="s10.funding_title">Stattdessen · Non-Dilutive Funding</h3>
 
@@ -730,7 +962,7 @@
     <div class="meta">
       <span data-i18n="s11.kicker">04 — Impact Fit</span>
       <span>·</span>
-      <span class="page-num">11 / 15</span>
+      <span class="page-num">12 / 16</span>
     </div>
   </div>
 
@@ -806,7 +1038,7 @@
     <div class="meta">
       <span data-i18n="s12.kicker">05 — Proof of Work</span>
       <span>·</span>
-      <span class="page-num">12 / 15</span>
+      <span class="page-num">13 / 16</span>
     </div>
   </div>
 
@@ -873,7 +1105,7 @@
     <div class="meta">
       <span data-i18n="s13.kicker">Tech-Stack</span>
       <span>·</span>
-      <span class="page-num">13 / 15</span>
+      <span class="page-num">14 / 16</span>
     </div>
   </div>
 
@@ -952,7 +1184,7 @@
     <div class="meta">
       <span data-i18n="s14.kicker">06 — Was wir suchen</span>
       <span>·</span>
-      <span class="page-num">14 / 15</span>
+      <span class="page-num">15 / 16</span>
     </div>
   </div>
 
@@ -967,6 +1199,7 @@
     </h2>
 
     <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; flex: 1; align-items: stretch;">
+      <!-- Primary -->
       <div style="background: var(--zinc-950); color: #fff; border-radius: 20px; padding: 48px 48px 44px; position: relative; overflow: hidden; display: flex; flex-direction: column;">
         <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient-brand); opacity: 0.9;"></div>
         <div style="font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; font-weight: 600;" data-i18n="s14.primary_label">Primärer Ask</div>
@@ -975,6 +1208,7 @@
         </p>
       </div>
 
+      <!-- Secondary -->
       <div style="display: flex; flex-direction: column;">
         <div style="font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--zinc-500); margin-bottom: 24px; font-weight: 600;" data-i18n="s14.s_label">Sekundär</div>
 
@@ -1014,7 +1248,7 @@
     <div class="meta">
       <span data-i18n="s15.kicker">Kontakt</span>
       <span>·</span>
-      <span class="page-num">15 / 15</span>
+      <span class="page-num">16 / 16</span>
     </div>
   </div>
 
@@ -1096,6 +1330,7 @@
     b.addEventListener('click', () => applyLang(b.dataset.lang));
   });
 
+  // Apply saved lang on load
   applyLang(currentLang);
 })();
 </script>

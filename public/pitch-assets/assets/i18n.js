@@ -15,8 +15,8 @@ window.PITCH_I18N = {
   "s1.title_2": { de: "Forschungs-", en: "research" },
   "s1.title_3": { de: "infrastruktur.", en: "infrastructure." },
   "s1.sub": {
-    de: "Keine PowerPoint-Konzepte. Laufende Systeme. Zwei Produkte, eine Codebasis, eine Vision — qualitative Forschung radikal zugänglich machen.",
-    en: "Not PowerPoint concepts — working systems. Two products, one codebase, one vision: make qualitative research radically accessible."
+    de: "Keine PowerPoint-Konzepte. Laufende Systeme. Zwei Produkte, eine Codebasis, eine Vision — Forschung radikal zugänglich machen.",
+    en: "Not PowerPoint concepts — working systems. Two products, one codebase, one vision: make research radically accessible."
   },
   "s1.meta_1": { de: "PITCH · Impact Sprint Lab", en: "PITCH · Impact Sprint Lab" },
   "s1.meta_2": { de: "Valuedfriends Workspaces · Berlin", en: "Valuedfriends Workspaces · Berlin" },
@@ -27,8 +27,12 @@ window.PITCH_I18N = {
   "s2.title_1": { de: "Forschungszugang", en: "Research access" },
   "s2.title_2": { de: "ist blockiert.", en: "is blocked." },
   "s2.sub": {
-    de: "Qualitative Forschung — Literaturreviews, Inhaltsanalysen — ist der Goldstandard für evidenzbasierte Entscheidungen. Und sie bleibt für die meisten unerreichbar.",
-    en: "Qualitative research — literature reviews, content analysis — is the gold standard for evidence-based decisions. And it stays out of reach for most people."
+    de: "Wissenschaftliche Forschung — Literaturreviews, Inhaltsanalysen — ist der Goldstandard für evidenzbasierte Entscheidungen. Und sie bleibt für die meisten unerreichbar.",
+    en: "Scientific research — literature reviews, content analysis — is the gold standard for evidence-based decisions. And it stays out of reach for most people."
+  },
+  "s2.caption": {
+    de: "Feldnotiz · Paywall-Realität",
+    en: "Field note · paywall reality"
   },
 
   // ────────── SLIDE 3 · PROBLEM DETAIL ──────────
@@ -236,5 +240,58 @@ window.PITCH_I18N = {
   "s15.web_label": { de: "Web", en: "Web" },
   "s15.github_label": { de: "GitHub", en: "GitHub" },
   "s15.tagline": { de: "Interactive Games · AI Solutions · Web-Apps", en: "Interactive Games · AI Solutions · Web Apps" },
-  "s15.thanks": { de: "Danke.", en: "Thank you." }
+  "s15.thanks": { de: "Danke.", en: "Thank you." },
+
+  // ────────── SLIDE 5 · POSITIONING QUADRANT ──────────
+  "s5q.kicker": { de: "Positioning · Aufwand vs. Qualität", en: "Positioning · Effort vs. Quality" },
+  "s5q.title": { de: "Wenig Aufwand. Hohe Qualität.", en: "Low effort. High quality." },
+  "s5q.caption": { de: "Forschungstools im\nAufwand-/Qualitäts-Raster", en: "Research tools in the\neffort-vs-quality matrix" },
+  "s5q.y_label": { de: "Ergebnis-Qualität", en: "Result Quality" },
+  "s5q.x_label": { de: "Aufwand", en: "Effort" },
+  "s5q.y_low": { de: "Niedrig", en: "Low" },
+  "s5q.y_high": { de: "Hoch", en: "High" },
+  "s5q.x_low": { de: "Wenig", en: "Low" },
+  "s5q.x_high": { de: "Viel", en: "High" },
+  "s5q.q1_tag": { de: "Q1", en: "Q1" },
+  "s5q.q1_name": { de: "Ideal Zone", en: "Ideal Zone" },
+  "s5q.q2_tag": { de: "Q2", en: "Q2" },
+  "s5q.q2_name": { de: "Zu aufwendig", en: "Too expensive" },
+  "s5q.q3_tag": { de: "Q3", en: "Q3" },
+  "s5q.q3_name": { de: "Nicht brauchbar", en: "Not usable" },
+  "s5q.q4_tag": { de: "Q4", en: "Q4" },
+  "s5q.q4_name": { de: "Grind Zone", en: "Grind zone" },
+  "s5q.p1": { de: "app.linn.games", en: "app.linn.games" },
+  "s5q.p2": { de: "MayringCoder", en: "MayringCoder" },
+  "s5q.p3": { de: "Manueller Review", en: "Manual review" },
+  "s5q.p4": { de: "ChatGPT freestyle", en: "ChatGPT freestyle" },
+  "s5q.p5": { de: "Günstige LLMs", en: "Cheap LLMs" },
+  "s5q.p6": { de: "Excel + Zotero", en: "Excel + Zotero" },
+  "s5q.p7": { de: "Keine Analyse", en: "No analysis" },
+
+  // ────────── SLIDE 8 · REVENUE FLOW ──────────
+  "s8.kicker": { de: "Revenue Flow · Querfinanzierung", en: "Revenue flow · Cross-funding" },
+  "s8.title": { de: "Ein Produkt finanziert das andere.", en: "One product funds the other." },
+  "s8.col_in": { de: "Einnahmen", en: "Inflows" },
+  "s8.col_out": { de: "Verwendung", en: "Allocation" },
+  "s8.in1_kind": { de: "Stream A", en: "Stream A" },
+  "s8.in1_name": { de: "MayringCoder SaaS", en: "MayringCoder SaaS" },
+  "s8.in1_sub": { de: "Subscriptions · Starter → Pro", en: "Subscriptions · Starter → Pro" },
+  "s8.in2_kind": { de: "Stream B", en: "Stream B" },
+  "s8.in2_name": { de: "Campuslizenzen", en: "Campus licences" },
+  "s8.in2_sub": { de: "Universitäten, NGOs", en: "Universities, NGOs" },
+  "s8.in3_kind": { de: "Stream C", en: "Stream C" },
+  "s8.in3_name": { de: "app.linn.games", en: "app.linn.games" },
+  "s8.in3_sub": { de: "Credits, nutzungsbasiert", en: "Credits · usage-based" },
+  "s8.out1_kind": { de: "Kosten", en: "Cost" },
+  "s8.out1_name": { de: "Claude API", en: "Claude API" },
+  "s8.out1_sub": { de: "Anthropic · pro Token", en: "Anthropic · per token" },
+  "s8.out2_kind": { de: "Infrastruktur", en: "Infra" },
+  "s8.out2_name": { de: "Hosting & Ops", en: "Hosting & ops" },
+  "s8.out2_sub": { de: "Server, CDN, Backups", en: "Servers, CDN, backups" },
+  "s8.out3_kind": { de: "Investition", en: "Invest" },
+  "s8.out3_name": { de: "Weiterentwicklung", en: "R&D" },
+  "s8.out3_sub": { de: "R&D, Features, Models", en: "R&D, features, models" },
+  "s8.out4_kind": { de: "Reserve", en: "Reserve" },
+  "s8.out4_name": { de: "Rücklagen", en: "Reserves" },
+  "s8.out4_sub": { de: "Runway, Impact-Fond", en: "Runway, impact fund" }
 };
