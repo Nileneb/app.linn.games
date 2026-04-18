@@ -141,6 +141,10 @@ return [
         'url' => env('OLLAMA_URL', 'http://localhost:11434'),
     ],
 
+    'retriever' => [
+        'top_n_chunks' => (int) env('RETRIEVER_TOP_N_CHUNKS', 3),
+    ],
+
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
