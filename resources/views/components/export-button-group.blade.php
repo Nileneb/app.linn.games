@@ -114,18 +114,49 @@
         Markdown
     </a>
 
-    <!-- LaTeX Export -->
-    <a
-        href="{{ route('recherche.export.latex', $projekt->id) }}"
-        class="export-btn"
-        title="Exportiere Projekt als LaTeX"
-        download
-    >
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3-8.75H18a2.25 2.25 0 0 1 2.25 2.25V15a2.25 2.25 0 0 1-2.25 2.25H9.75A2.25 2.25 0 0 1 7.5 15V9.75A2.25 2.25 0 0 1 9.75 7.5" />
-        </svg>
-        LaTeX
-    </a>
+    <!-- LaTeX Export mit Stil-Auswahl -->
+    <div x-data="{ open: false }" class="relative">
+        <button
+            @click="open = !open"
+            class="export-btn"
+            title="LaTeX-Export — Formatierungsstil wählen"
+        >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3-8.75H18a2.25 2.25 0 0 1 2.25 2.25V15a2.25 2.25 0 0 1-2.25 2.25H9.75A2.25 2.25 0 0 1 7.5 15V9.75A2.25 2.25 0 0 1 9.75 7.5" />
+            </svg>
+            LaTeX
+            <svg class="h-3 w-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+
+        <div
+            x-show="open"
+            x-transition
+            @click.outside="open = false"
+            class="absolute top-full left-0 z-50 mt-1 min-w-[10rem] rounded border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        >
+            <p class="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Stil wählen</p>
+            <a href="{{ route('recherche.export.latex', $projekt->id) }}?style=generic"
+               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+               download>
+                <span class="h-2 w-2 rounded-full bg-gray-400"></span>
+                Generic
+            </a>
+            <a href="{{ route('recherche.export.latex', $projekt->id) }}?style=apa"
+               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+               download>
+                <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                APA 7th
+            </a>
+            <a href="{{ route('recherche.export.latex', $projekt->id) }}?style=ieee"
+               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+               download>
+                <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                IEEE
+            </a>
+        </div>
+    </div>
 
     <!-- Mayring Export -->
     <a

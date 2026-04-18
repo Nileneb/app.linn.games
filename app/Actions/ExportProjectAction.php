@@ -34,13 +34,13 @@ class ExportProjectAction
     /**
      * Exportiert Projekt als LaTeX (Download)
      */
-    public function asLaTeX(Projekt $projekt, ?string $markdown = null): \Illuminate\Http\Response
+    public function asLaTeX(Projekt $projekt, string $style = 'generic'): \Illuminate\Http\Response
     {
-        $latex = $this->exportService->generateLaTeX($projekt, $markdown);
-        $filename = $this->buildFilename($projekt, 'tex');
+        $latex = $this->exportService->generateLaTeX($projekt, $style);
+        $filename = Str::slug($projekt->titel ?? 'review').'-'.$style.'.tex';
 
         return Response::make($latex, 200, [
-            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Type' => 'application/x-latex',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
@@ -56,9 +56,9 @@ class ExportProjectAction
     /**
      * Gibt LaTeX-Inhalts als String
      */
-    public function getLaTeX(Projekt $projekt, ?string $markdown = null): string
+    public function getLaTeX(Projekt $projekt, string $style = 'generic'): string
     {
-        return $this->exportService->generateLaTeX($projekt, $markdown);
+        return $this->exportService->generateLaTeX($projekt, $style);
     }
 
     private function buildFilename(Projekt $projekt, string $format): string

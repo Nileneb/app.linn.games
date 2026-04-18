@@ -31,11 +31,13 @@ class ProjektExportController extends Controller
     /**
      * Exportiert Projekt als LaTeX
      */
-    public function exportLaTeX(Request $request, Projekt $projekt): Response
+    public function exportLaTeX(Request $request, Projekt $projekt): \Symfony\Component\HttpFoundation\Response
     {
         $this->authorize('view', $projekt);
 
-        return $this->exportAction->asLaTeX($projekt);
+        $style = $request->query('style', 'generic');
+
+        return $this->exportAction->asLaTeX($projekt, $style);
     }
 
     /**

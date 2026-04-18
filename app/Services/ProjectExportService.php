@@ -273,46 +273,74 @@ class ProjectExportService
         return implode("\n", $lines);
     }
 
-    public function generateLaTeX(Projekt $projekt, ?string $markdown = null): string
+    public function generateLaTeX(Projekt $projekt, string $style = 'generic'): string
     {
-        $md = $markdown ?? $this->generateMarkdown($projekt);
-        $latex = $md;
+        $allowedStyles = ['generic', 'apa', 'ieee'];
+        $style = in_array($style, $allowedStyles, true) ? $style : 'generic';
 
-        $latex = preg_replace('/^# (.+)$/m', '\\section*{$1}', $latex);
-        $latex = preg_replace('/^## (.+)$/m', '\\subsection*{$1}', $latex);
-        $latex = preg_replace('/^### (.+)$/m', '\\subsubsection*{$1}', $latex);
-        $latex = preg_replace('/\*\*(.+?)\*\*/m', '\\textbf{$1}', $latex);
-        $latex = preg_replace('/\*(.+?)\*/m', '\\textit{$1}', $latex);
-        $latex = preg_replace('/```(.+?)```/s', '\\begin{verbatim}$1\\end{verbatim}', $latex);
-        $latex = preg_replace('/\[(.+?)\]\((.+?)\)/m', '\\href{$2}{$1}', $latex);
-        $latex = str_replace('---', '\\hrule', $latex);
+        $sections = $this->buildLatexSections($projekt);
 
-        $texContent = <<<'TEX'
-\documentclass[12pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[ngerman]{babel}
-\usepackage{hyperref}
-\usepackage{booktabs}
-\usepackage{longtable}
+        return view("exports.latex.{$style}", compact('projekt', 'sections'))->render();
+    }
 
-\title{PROJEKT_TITEL}
-\author{Automatisch generiert via app.linn.games}
-\date{\today}
+    private function buildLatexSections(Projekt $projekt): array
+    {
+        $phaseLabels = [
+            1 => 'P1 --- Strukturierung \& PICO-Mapping',
+            2 => 'P2 --- Review-Typ',
+            3 => 'P3 --- Quellen \& Datenbankmatrix',
+            4 => 'P4 --- Suchstrings',
+            5 => 'P5 --- Screening',
+            6 => 'P6 --- Qualit{\"a}tsbewertung',
+            7 => 'P7 --- Synthese',
+            8 => 'P8 --- Dokumentation',
+        ];
 
-\begin{document}
+        $sections = [];
 
-\maketitle
-\tableofcontents
-\newpage
+        for ($phase = 1; $phase <= 8; $phase++) {
+            $result = \App\Models\PhaseAgentResult::where('projekt_id', $projekt->id)
+                ->where('phase_nr', $phase)
+                ->where('status', 'completed')
+                ->orderByDesc('created_at')
+                ->first();
 
-MARKDOWN_CONTENT
+            if ($result?->content) {
+                $sections[] = [
+                    'title'   => $phaseLabels[$phase],
+                    'content' => $this->escapeLatex($result->content),
+                ];
+            }
+        }
 
-\end{document}
-TEX;
+        return $sections;
+    }
 
-        $texContent = str_replace('PROJEKT_TITEL', $projekt->titel ?? 'Systematisches Literaturreview', $texContent);
-        $texContent = str_replace('MARKDOWN_CONTENT', $latex, $texContent);
+    private function escapeLatex(string $text): string
+    {
+        $text = str_replace('\\', '\\textbackslash{}', $text);
+        $text = str_replace(
+            ['&',  '%',  '$',  '#',  '^',    '{',  '}',  '~',    '_'],
+            ['\&', '\%', '\$', '\#', '\^{}', '\{', '\}', '\~{}', '\_'],
+            $text
+        );
 
-        return $texContent;
+        $text = preg_replace('/^### (.+)$/m', '\\subsubsection{$1}', $text);
+        $text = preg_replace('/^## (.+)$/m', '\\subsection{$1}', $text);
+        $text = preg_replace('/^# (.+)$/m', '', $text);
+
+        $text = preg_replace('/\*\*(.+?)\*\*/s', '\\textbf{$1}', $text);
+        $text = preg_replace('/\*(.+?)\*/s', '\\textit{$1}', $text);
+
+        $text = preg_replace_callback('/^([-*] .+(\n[-*] .+)*)/m', function ($m) {
+            $items = preg_replace('/^[-*] /m', '  \\item ', $m[0]);
+            return "\\begin{itemize}\n{$items}\n\\end{itemize}";
+        }, $text);
+
+        $text = preg_replace('/```[\s\S]+?```/', '', $text);
+
+        $text = preg_replace('/^---$/m', '\\hrule\\vspace{0.5em}', $text);
+
+        return $text;
     }
 }
