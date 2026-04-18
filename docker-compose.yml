@@ -1,3 +1,19 @@
+# Extension fields — must be at top level for Docker Compose v2 validation
+x-mayring-build: &mayring-build
+  build:
+    context: ./MayringCoder
+    dockerfile: docker/Dockerfile
+  image: mayring:latest
+  restart: unless-stopped
+  networks:
+    - linn-network
+
+x-mayring-env: &mayring-env
+  OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
+  OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
+  CHROMA_PATH: /app/cache/chroma
+  MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
+
 services:
   web:
     build:
@@ -200,25 +216,8 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── MayringCoder: gemeinsame Build-Konfiguration ─────────────────────────────
-  # Alle vier Dienste (api, mcp, pi, webui) nutzen dasselbe Image.
-  # Docker Compose baut es einmal, alle vier referenzieren es per image:-Tag.
-  # Rollen: mayring-api schreibt ChromaDB; mcp/pi/webui lesen nur.
-  x-mayring-build: &mayring-build
-    build:
-      context: ./MayringCoder
-      dockerfile: docker/Dockerfile
-    image: mayring:latest
-    restart: unless-stopped
-    networks:
-      - linn-network
-
-  x-mayring-env: &mayring-env
-    OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
-    OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-    CHROMA_PATH: /app/cache/chroma
-    MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
-
+  # Alle vier MayringCoder-Dienste nutzen dasselbe Image (mayring:latest).
+  # Docker Compose baut es einmal; mcp/pi/webui lesen ChromaDB nur, api schreibt.
   mayring-api:
     <<: *mayring-build
     command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
@@ -226,7 +225,6 @@ services:
       - "8090:8090"
     environment:
       <<: *mayring-env
-      # PostgreSQL for Sanctum token validation
       LARAVEL_DB_HOST: postgres
       LARAVEL_DB_PORT: 5432
       LARAVEL_DB_USER: ${POSTGRES_USERNAME}
