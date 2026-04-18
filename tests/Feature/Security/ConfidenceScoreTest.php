@@ -10,6 +10,9 @@ function baseInput(array $overrides = []): array
         '_timing' => 5000,
         '_tz' => 'Europe/Berlin',
         'email' => 'test@example.com',
+        '_captcha_solved' => '1',
+        '_captcha_rotation' => '0',
+        '_captcha_target_zone' => '0',
     ], $overrides);
 }
 
@@ -94,7 +97,7 @@ test('captcha nicht gelöst erhöht score um 30', function () {
 
 test('captcha gelöst ergibt captcha-score 0', function () {
     $result = app(ConfidenceScoreCalculator::class)
-        ->calculate(baseInput(['_captcha_solved' => '1']), '1.1.1.1', 'DE');
+        ->calculate(baseInput(), '1.1.1.1', 'DE');
     expect($result['breakdown']['captcha'])->toBe(0);
 });
 
