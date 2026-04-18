@@ -17,19 +17,21 @@ new class extends Component {
     public bool $dispatched = false;
     public bool $deferred = false;
     public string $deferredMessage = '';
+    public bool $outOfCredits = false;
 
     public function mount(): void
     {
         $latest = PhaseAgentResult::where('projekt_id', $this->projekt->id)
             ->where('phase_nr', $this->phaseNr)
             ->where('agent_config_key', $this->agentConfigKey)
-            ->whereIn('status', ['pending', 'deferred'])
+            ->whereIn('status', ['pending', 'deferred', 'out_of_credits'])
             ->orderByDesc('created_at')
             ->first();
 
         $this->dispatched = $latest?->status === 'pending';
         $this->deferred = $latest?->status === 'deferred';
         $this->deferredMessage = $latest?->error_message ?? '';
+        $this->outOfCredits = $latest?->status === 'out_of_credits';
     }
 
     public function checkStatus(): void
@@ -46,6 +48,11 @@ new class extends Component {
                 ->where('phase_nr', $this->phaseNr)
                 ->where('agent_config_key', $this->agentConfigKey)
                 ->where('status', 'deferred')
+                ->exists();
+            $this->outOfCredits = PhaseAgentResult::where('projekt_id', $this->projekt->id)
+                ->where('phase_nr', $this->phaseNr)
+                ->where('agent_config_key', $this->agentConfigKey)
+                ->where('status', 'out_of_credits')
                 ->exists();
             $this->dispatch('agent-result-ready', phaseNr: $this->phaseNr);
         }
@@ -162,6 +169,34 @@ new class extends Component {
             </svg>
             {{ $deferredMessage ?: __('Tageslimit — automatischer Retry morgen um 00:05') }}
         </p>
+    @elseif ($outOfCredits)
+        <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
+            <div class="flex items-start gap-3">
+                <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Guthaben aufgebraucht</p>
+                    <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                        Diese Phase wurde abgebrochen, weil dein Guthaben nicht ausreichte.
+                        Lade Guthaben auf um fortzufahren.
+                    </p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <a href="{{ route('credits.purchase') }}"
+                           class="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-700">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Guthaben aufladen
+                        </a>
+                        <button wire:click="runAgent"
+                                class="inline-flex items-center rounded-md border border-amber-400 px-3 py-1.5 text-sm text-amber-700 transition hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900">
+                            Erneut versuchen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     @else
         <button
             wire:click="runAgent"

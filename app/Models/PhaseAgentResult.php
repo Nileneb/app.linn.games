@@ -88,4 +88,13 @@ class PhaseAgentResult extends Model
             'content' => null,
         ]);
     }
+
+    public function markOutOfCredits(): void
+    {
+        $this->update([
+            'status'        => 'out_of_credits',
+            'error_message' => 'Guthaben aufgebraucht — bitte Guthaben aufladen um fortzufahren.',
+            'content'       => null,
+        ]);
+    }
 }

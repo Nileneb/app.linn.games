@@ -234,6 +234,14 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 $this->phaseNr,
                 $this->context['user_id'] ?? null,
             );
+        } catch (\App\Services\InsufficientCreditsException $e) {
+            if ($result !== null) {
+                $result->markOutOfCredits();
+            }
+            Log::warning('Phase aborted: insufficient credits', [
+                'projekt_id' => $this->projektId,
+                'phase_nr'   => $this->phaseNr,
+            ]);
         } catch (\Throwable $e) {
             if ($result !== null) {
                 $result->markFailed(__('Verarbeitung fehlgeschlagen: ').$e->getMessage());
