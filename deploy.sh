@@ -51,10 +51,12 @@ fi
 
 # ── Build all images ───────────────────────────
 echo "==> Building all production images (no-cache)..."
+# mayring-api baut das gemeinsame Image (mayring:latest); mcp/pi/webui nutzen es.
 "${DC[@]}" build --no-cache \
   postgres web php-fpm queue-worker php-cli \
   mcp-paper-search \
   mayring-api mayring-mcp mayring-webui mayring-pi
+# Docker Compose baut mayring:latest einmal wegen des gemeinsamen image:-Tags.
 
 # ── Start infrastructure ───────────────────────
 echo "==> Starting postgres & redis..."

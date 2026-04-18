@@ -200,88 +200,79 @@ services:
       postgres:
         condition: service_healthy
 
-  mayring-api:
+  # ── MayringCoder: gemeinsame Build-Konfiguration ─────────────────────────────
+  # Alle vier Dienste (api, mcp, pi, webui) nutzen dasselbe Image.
+  # Docker Compose baut es einmal, alle vier referenzieren es per image:-Tag.
+  # Rollen: mayring-api schreibt ChromaDB; mcp/pi/webui lesen nur.
+  x-mayring-build: &mayring-build
     build:
       context: ./MayringCoder
       dockerfile: docker/Dockerfile
-    command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
+    image: mayring:latest
     restart: unless-stopped
+    networks:
+      - linn-network
+
+  x-mayring-env: &mayring-env
+    OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
+    OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
+    CHROMA_PATH: /app/cache/chroma
+    MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
+
+  mayring-api:
+    <<: *mayring-build
+    command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
     ports:
       - "8090:8090"
     environment:
-      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
-      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-      - MAYRING_MCP_AUTH_TOKEN=${MAYRING_MCP_AUTH_TOKEN}
-      - CHROMA_PATH=/app/cache/chroma
-      # PostgreSQL for Sanctum token validation (external Claude users)
-      - LARAVEL_DB_HOST=postgres
-      - LARAVEL_DB_PORT=5432
-      - LARAVEL_DB_USER=${POSTGRES_USERNAME}
-      - LARAVEL_DB_PASSWORD=${POSTGRES_PASSWORD}
-      - LARAVEL_DB_NAME=${POSTGRES_DATABASE}
+      <<: *mayring-env
+      # PostgreSQL for Sanctum token validation
+      LARAVEL_DB_HOST: postgres
+      LARAVEL_DB_PORT: 5432
+      LARAVEL_DB_USER: ${POSTGRES_USERNAME}
+      LARAVEL_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      LARAVEL_DB_NAME: ${POSTGRES_DATABASE}
     volumes:
       - linn-mayring-cache:/app/cache
-    networks:
-      - linn-network
     depends_on:
       postgres:
         condition: service_healthy
 
   mayring-mcp:
-    build:
-      context: ./MayringCoder
-      dockerfile: docker/Dockerfile
+    <<: *mayring-build
     command: ["python", "-m", "src.mcp_server"]
-    restart: unless-stopped
     environment:
-      - MCP_TRANSPORT=http
-      - MCP_HTTP_PORT=8092
-      - MCP_HTTP_HOST=0.0.0.0
-      - MCP_AUTH_TOKEN=${MAYRING_MCP_AUTH_TOKEN}
-      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
-      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-      - CHROMA_PATH=/app/cache/chroma
+      <<: *mayring-env
+      MCP_TRANSPORT: http
+      MCP_HTTP_PORT: 8092
+      MCP_HTTP_HOST: 0.0.0.0
     volumes:
       - linn-mayring-cache:/app/cache
-      - .:/repo:ro
-    networks:
-      - linn-network
 
   mayring-pi:
-    build:
-      context: ./MayringCoder
-      dockerfile: docker/Dockerfile
+    <<: *mayring-build
     command: ["python", "-m", "src.pi_server"]
-    restart: unless-stopped
     ports:
       - "8091:8091"
     environment:
-      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
-      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-      - PI_PORT=8091
-    networks:
-      - linn-network
+      <<: *mayring-env
+      PI_PORT: 8091
+    volumes:
+      - linn-mayring-cache:/app/cache
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   mayring-webui:
-    build:
-      context: ./MayringCoder
-      dockerfile: docker/Dockerfile
+    <<: *mayring-build
     command: ["python", "-m", "src.web_ui", "--host", "0.0.0.0", "--port", "7860", "--api-url", "http://mayring-api:8090"]
-    restart: unless-stopped
     environment:
-      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.178.11:11434}
-      - OLLAMA_MODEL=${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-      - CHROMA_PATH=/app/cache/chroma
-      - UI_AUTH_USER=${MAYRING_UI_AUTH_USER:-admin}
-      - UI_AUTH_PASS=${MAYRING_UI_AUTH_PASS}
-      - GRADIO_ROOT_PATH=/ui
-      - LARAVEL_INTERNAL_URL=http://nginx
+      <<: *mayring-env
+      UI_AUTH_USER: ${MAYRING_UI_AUTH_USER:-admin}
+      UI_AUTH_PASS: ${MAYRING_UI_AUTH_PASS}
+      GRADIO_ROOT_PATH: /ui
+      LARAVEL_INTERNAL_URL: http://nginx
     volumes:
       - linn-mayring-cache:/app/cache
-    networks:
-      - linn-network
 
 
 networks:
