@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 
+Route::get('/mayring/token-exchange', [\App\Http\Controllers\MayringDashboardController::class, 'exchangeCode'])
+    ->middleware('throttle:10,1')
+    ->name('mayring.token-exchange');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function () {
         return request()->user();
