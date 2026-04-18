@@ -61,8 +61,8 @@ if [ "$MIGRATE_ONLY" = true ]; then
   "${DC[@]}" run --rm php-cli php artisan queue:restart
   "${DC[@]}" up -d --no-deps php-fpm queue-worker $MAYRING_SERVICES
 
-  echo "==> [migrate-only] Reloading nginx (refresh upstream DNS)..."
-  "${DC[@]}" exec -T web nginx -s reload 2>/dev/null || true
+  echo "==> [migrate-only] Restarting nginx (re-processes config template)..."
+  "${DC[@]}" restart web 2>/dev/null || true
 
   echo ""
   echo "==> Migrate-only deploy complete."
@@ -194,8 +194,8 @@ docker volume rm applinngames_linn-build-assets 2>/dev/null || true
 echo "==> Starting all services..."
 "${DC[@]}" up -d
 
-echo "==> Reloading nginx (refresh upstream DNS after container recreate)..."
-"${DC[@]}" exec -T web nginx -s reload 2>/dev/null || true
+echo "==> Restarting nginx (re-processes config template with current env)..."
+"${DC[@]}" restart web 2>/dev/null || true
 
 # ── Verify ─────────────────────────────────────
 echo "==> Waiting for services to settle..."
