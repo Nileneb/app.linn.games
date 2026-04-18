@@ -118,6 +118,17 @@
         <a href="#process">Ablauf</a>
         <a href="#about">Über uns</a>
         <a href="#contact">Kontakt</a>
+        <a href="{{ route('pitch') }}">Pitch Deck</a>
+        <div class="nav-mobile-cta">
+          @auth
+            <a href="{{ url('/dashboard') }}" class="btn-small btn-small-primary">Dashboard</a>
+          @else
+            <a href="{{ route('login') }}" class="btn-small">Login</a>
+            @if (Route::has('register'))
+              <a href="{{ route('register') }}" class="btn-small btn-small-primary">Registrieren</a>
+            @endif
+          @endauth
+        </div>
       </div>
     </header>
 
