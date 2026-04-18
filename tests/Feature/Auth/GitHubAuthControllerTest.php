@@ -50,14 +50,16 @@ test('callback logs in existing active user by provider_id', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-test('callback links github to existing user found by email', function () {
+test('callback links github to existing user found by email without email_verified field', function () {
+    $this->app->get('auth')->forgetGuards();
+
     $user = User::factory()->withoutTwoFactor()->create(['status' => 'active']);
 
     $socialiteUser = Mockery::mock(\Laravel\Socialite\Two\User::class);
     $socialiteUser->allows('getId')->andReturn('github-789');
     $socialiteUser->allows('getEmail')->andReturn($user->email);
     $socialiteUser->allows('getName')->andReturn($user->name);
-    $socialiteUser->allows('getRaw')->andReturn(['email_verified' => true]);
+    $socialiteUser->allows('getRaw')->andReturn([]);
 
     Socialite::shouldReceive('driver->user')->andReturn($socialiteUser);
 
@@ -68,4 +70,31 @@ test('callback links github to existing user found by email', function () {
     expect($user->provider)->toBe('github');
     expect($user->provider_id)->toBe('github-789');
     $this->assertAuthenticatedAs($user);
+});
+
+test('callback redirects to login with error when github returns no email', function () {
+    $this->app->get('auth')->forgetGuards();
+
+    $socialiteUser = Mockery::mock(\Laravel\Socialite\Two\User::class);
+    $socialiteUser->allows('getId')->andReturn('github-000');
+    $socialiteUser->allows('getEmail')->andReturn(null);
+    $socialiteUser->allows('getName')->andReturn('No Email User');
+    $socialiteUser->allows('getNickname')->andReturn('noemail');
+    $socialiteUser->allows('getRaw')->andReturn([]);
+
+    Socialite::shouldReceive('driver->user')->andReturn($socialiteUser);
+
+    $this->get(route('auth.github.callback'))
+        ->assertRedirect(route('login'));
+});
+
+test('callback redirects to login with error on socialite exception', function () {
+    $this->app->get('auth')->forgetGuards();
+
+    $driver = Mockery::mock();
+    $driver->shouldReceive('user')->andThrow(new \Exception('OAuth error'));
+    Socialite::shouldReceive('driver')->andReturn($driver);
+
+    $this->get(route('auth.github.callback'))
+        ->assertRedirect(route('login'));
 });
