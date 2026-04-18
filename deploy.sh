@@ -80,6 +80,14 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+echo "==> Pulling latest MayringCoder source..."
+if [ -d "$(dirname "$0")/MayringCoder/.git" ]; then
+  git -C "$(dirname "$0")/MayringCoder" pull --ff-only origin main || \
+    echo "WARN: MayringCoder git pull failed — continuing with existing code."
+else
+  echo "WARN: MayringCoder/.git not found — skipping pull."
+fi
+
 echo "==> Pulling latest images..."
 "${DC[@]}" pull postgres redis
 
