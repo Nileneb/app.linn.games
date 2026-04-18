@@ -25,7 +25,7 @@
                 <div class="flex-1"></div>
 
                 <nav class="me-1.5 flex items-center gap-1">
-                    <button @click="$nextTick(() => document.documentElement.classList.toggle('dark'))"
+                    <button @click="$nextTick(() => { var d = document.documentElement.classList.toggle('dark'); localStorage.setItem('appearance', d ? 'dark' : 'light'); localStorage.setItem('theme', d ? 'dark' : 'light'); })"
                             class="hidden rounded-md p-2 text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700/30 dark:hover:text-zinc-200 lg:block"
                             title="Design-Modus umschalten">
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

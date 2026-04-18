@@ -68,7 +68,7 @@
 
             {{-- Theme Toggle --}}
             <div class="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700">
-                <button @click="$nextTick(() => document.documentElement.classList.toggle('dark'))" 
+                <button @click="$nextTick(() => { var d = document.documentElement.classList.toggle('dark'); localStorage.setItem('appearance', d ? 'dark' : 'light'); localStorage.setItem('theme', d ? 'dark' : 'light'); })"
                         class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200/50 dark:text-zinc-300 dark:hover:bg-zinc-700/30"
                         title="Design-Modus umschalten">
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

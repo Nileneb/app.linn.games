@@ -69,9 +69,6 @@
           <a href="#games">Games</a>
           <a href="#ai">AI</a>
           <a href="#web">Web</a>
-          <a href="https://mau.linn.games/" target="_blank" rel="noopener"
-            >🐱 MAU</a
-          >
           <a href="#cases">Projekte</a>
           <a href="#process">Ablauf</a>
           <a href="#about">Über uns</a>
@@ -111,9 +108,6 @@
         <a href="#games">Interactive Games</a>
         <a href="#ai">AI Solutions</a>
         <a href="#web">Web-Apps</a>
-        <a href="https://mau.linn.games/" target="_blank" rel="noopener"
-          >🐱 MAU Game</a
-        >
         <a href="#cases">Projekte</a>
         <a href="#process">Ablauf</a>
         <a href="#about">Über uns</a>
@@ -140,27 +134,27 @@
           <div>
             <div class="hero-kicker">
               <div class="hero-kicker-dot"></div>
-              <span>Games · AI · Web</span>
+              <span>Games · AI · Research Tools · Web</span>
             </div>
 
             <h1 class="hero-title">
-              Interaktive Games,<br />
-              <span>KI-Lösungen</span> und Web-Apps<br />
-              für Unternehmen, die mehr wollen.
+              Vom Prototyp zum<br />
+              <span>laufenden System</span> —<br />
+              Games, AI und Web aus einer Hand.
             </h1>
 
             <p class="hero-subtitle">
-              Linn Games entwickelt 3D-Browsergames, praxisnahe AI Solutions und
-              moderne Webanwendungen – fokussiert auf mittelständische
-              Unternehmen, die digitale Erlebnisse und echte Use Cases verbinden
-              wollen.
+              Linn Games baut interaktive 3D-Browsergames, KI-gestützte
+              Forschungsplattformen und moderne Web-Applikationen — mit echtem
+              Fokus auf Betrieb, Skalierbarkeit und Praxistauglichkeit statt
+              Folien-Architektur.
             </p>
 
             <div class="hero-tags">
               <div class="hero-tag">🎮 Unity · 3D-Browsergames</div>
-              <div class="hero-tag">🤖 Object Detection & Tracking</div>
-              <div class="hero-tag">💬 LLM-Chatbots</div>
-              <div class="hero-tag">⚛️ React · APIs · Cloud</div>
+              <div class="hero-tag">🤖 Multi-Agent AI Pipelines</div>
+              <div class="hero-tag">📚 Systematic Review Plattform</div>
+              <div class="hero-tag">⚡ Laravel · Python · Docker</div>
             </div>
 
             <div class="hero-actions">
@@ -168,13 +162,8 @@
                 ✨ Unverbindliches Erstgespräch
                 <span>→</span>
               </a>
-              <a
-                href="https://mau.linn.games/"
-                target="_blank"
-                rel="noopener"
-                class="btn-secondary"
-              >
-                🐱 MAU spielen
+              <a href="{{ route('register') }}" class="btn-secondary">
+                app.linn.games testen
                 <span class="arrow">↗</span>
               </a>
               <a href="#cases" class="btn-secondary">
@@ -184,9 +173,9 @@
             </div>
 
             <p class="hero-meta">
-              <strong>Fokus:</strong> Interaktive Experiences, KI-Prototypen und
-              Web-Apps mit klarem Praxisbezug – keine PowerPoint-Konzepte,
-              sondern laufende Systeme.
+              <strong>Fokus:</strong> Systeme, die wirklich laufen — von der
+              Sensor-Pipeline bis zur KI-gestützten Literaturrecherche. Keine
+              Konzepte ohne Umsetzung.
             </p>
           </div>
 
@@ -204,59 +193,44 @@
                       <div class="code-dots">
                         <span></span><span></span><span></span>
                       </div>
-                      <span>growdash_agent.py</span>
+                      <span>phase_agent.py</span>
                     </div>
                     <div class="code-body">
                       <span class="code-line"
                         ><span class="comment"
-                          ># Hardware-Agent: sichere Verbindung zum
-                          Backend</span
+                          ># Multi-Agent Literaturrecherche</span
                         ></span
                       >
                       <span class="code-line"
                         ><span class="fn">class</span>
-                        <span class="key">GrowDashAgent</span>:</span
+                        <span class="key">PhaseAgentJob</span>:</span
                       >
                       <span class="code-line">
                         <span class="fn">def</span>
-                        <span class="key">sync_sensor_data</span>(<span
-                          class="val"
-                          >self</span
-                        >):</span
+                        <span class="key">run</span>(<span class="val">self</span>):</span
                       >
-                      <span class="code-line"> payload = {</span>
+                      <span class="code-line">  result = <span class="val">claude</span>.<span class="key">invoke</span>(</span>
                       <span class="code-line">
-                        <span class="key">"temperature"</span>:
-                        <span class="val">read_temp()</span>,</span
+                        <span class="key">"worker"</span>:
+                        <span class="val">self.phase</span>,</span
                       >
                       <span class="code-line">
-                        <span class="key">"humidity"</span>:
-                        <span class="val">read_humidity()</span>,</span
+                        <span class="key">"tools"</span>:
+                        <span class="val">mcp_tools</span>,</span
                       >
                       <span class="code-line">
-                        <span class="key">"tds"</span>:
-                        <span class="val">read_tds()</span>,</span
+                        <span class="key">"memory"</span>:
+                        <span class="val">workspace</span>,</span
                       >
-                      <span class="code-line">
-                        <span class="key">"water_level"</span>:
-                        <span class="val">read_level()</span>,</span
-                      >
-                      <span class="code-line"> }</span>
+                      <span class="code-line">  )</span>
                       <span class="code-line">
                         <span class="fn">return</span>
-                        <span class="val">self.post_secure</span>(<span
-                          class="key"
-                          >"/api/telemetry"</span
-                        >, payload)</span
-                      >
+                        <span class="val">self.persist</span>(<span
+                          class="key">result</span>)</span>
                       <span class="code-line"></span>
                       <span class="code-line"
-                        ><span class="fn">def</span>
-                        <span class="key">run</span>():</span
-                      >
-                      <span class="code-line">
-                        <span class="comment"
-                          ># AI + Hardware + Web – eine Pipeline</span
+                        ><span class="comment"
+                          ># P1–P8 voll automatisiert</span
                         ></span
                       >
                     </div>
@@ -264,35 +238,35 @@
 
                   <div class="telemetry-card">
                     <div class="telemetry-header">
-                      <span>GrowDash · Live</span>
+                      <span>app.linn.games · Live</span>
                       <div class="telemetry-badges">
-                        <span class="telemetry-badge">Secure</span>
-                        <span class="telemetry-badge">Realtime</span>
+                        <span class="telemetry-badge">OAuth 2.0</span>
+                        <span class="telemetry-badge">MCP</span>
                       </div>
                     </div>
                     <div class="telemetry-values">
                       <div>
-                        <div class="telemetry-label">Temperature</div>
-                        <div class="telemetry-value">23.4 °C</div>
+                        <div class="telemetry-label">Phasen</div>
+                        <div class="telemetry-value">P1 – P8</div>
                       </div>
                       <div>
-                        <div class="telemetry-label">Humidity</div>
-                        <div class="telemetry-value">54 %</div>
+                        <div class="telemetry-label">Agents</div>
+                        <div class="telemetry-value">4 aktiv</div>
                       </div>
                       <div>
-                        <div class="telemetry-label">TDS</div>
-                        <div class="telemetry-value">830 ppm</div>
+                        <div class="telemetry-label">Papers</div>
+                        <div class="telemetry-value">≥ 50k</div>
                       </div>
                       <div>
-                        <div class="telemetry-label">Water Level</div>
-                        <div class="telemetry-value">OK</div>
+                        <div class="telemetry-label">Export</div>
+                        <div class="telemetry-value">LaTeX / PDF</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="hero-orbit-footer">
-                  <span>Interactive Games · AI · Web</span>
+                  <span>Research Tools · Multi-Agent AI · Web</span>
                   <span class="sub">Linn Games · Lampertheim, DE</span>
                 </div>
               </div>
@@ -342,20 +316,21 @@
             <article class="service-card" id="ai">
               <div class="service-label">🤖 AI Solutions</div>
               <h3 class="service-title">
-                KI, die <span>echte Use Cases</span> löst
+                Multi-Agent KI für <span>echte Workflows</span>
               </h3>
               <p class="service-text">
-                Von Objekterkennung bis LLM-Chatbots – wir bauen KI-Lösungen,
-                die an realen Prozessen ausgerichtet sind, nicht an Folien.
+                Von Objekterkennung bis zu vollautomatisierten
+                Forschungspipelines — KI-Systeme, die in Produktion laufen, nicht
+                nur in Demos existieren.
               </p>
               <ul class="service-list">
-                <li>Object Detection & Tracking für Streams und Kameras</li>
-                <li>LLM-basierte Chatbots für Support & Wissensmanagement</li>
-                <li>Generative KI für Visuals, Prototyping & Content</li>
+                <li>Multi-Agent Pipelines (Claude · MCP · RAG · ChromaDB)</li>
+                <li>Systematische Literaturrecherche als SaaS (app.linn.games)</li>
+                <li>Object Detection & LLM-Integration für reale Datenwege</li>
               </ul>
               <p class="service-meta">
-                Von MVP bis produktivem System – mit klar definierten
-                Datenwegen.
+                Kein Black-Box-Modell — sondern nachvollziehbare Architektur
+                mit klaren Schnittstellen.
               </p>
             </article>
 
@@ -501,21 +476,22 @@
             </article>
 
             <article
-              class="case-card"
-              onclick="window.open('https://mau.linn.games/', '_blank')"
-              style="cursor: pointer"
+              class=”case-card”
+              onclick=”window.location.href='{{ route('register') }}'”
+              style=”cursor: pointer”
             >
-              <div class="case-label">Gamification</div>
-              <h3 class="case-title"><span>MAU</span> · QR Cat Campaign</h3>
-              <p class="case-text">
-                Verspielte Kampagne mit einer „City Cat“, die per QR-Codes
-                auftaucht und Leute in eine digitale Story führt – ideal, um
-                Aufmerksamkeit, Social Posts und Traffic auf Projekte zu ziehen.
+              <div class=”case-label”>SaaS · Research Platform</div>
+              <h3 class=”case-title”><span>app.linn.games</span> · Systematic Review</h3>
+              <p class=”case-text”>
+                Vollständige Plattform für systematische Literaturrecherchen —
+                8 Phasen, vollautomatisiert durch ein 4-Agenten-System mit
+                Claude, MCP-Server, Paper-Search-API und LaTeX-Export. OAuth 2.0,
+                Redis, PostgreSQL, Docker.
               </p>
-              <div class="case-tags">
-                <span class="case-tag">Storytelling</span>
-                <span class="case-tag">QR Campaign</span>
-                <span class="case-tag">Gamified Marketing</span>
+              <div class=”case-tags”>
+                <span class=”case-tag”>Multi-Agent AI</span>
+                <span class=”case-tag”>Laravel · Python</span>
+                <span class=”case-tag”>MCP Protocol</span>
               </div>
             </article>
           </div>
@@ -585,42 +561,41 @@
         <!-- ABOUT + CONTACT -->
 
         <section id="about">
-          <div class="section-header">
-            <div class="section-kicker">🎯 Über Linn Games</div>
-            <h2 class="section-title">
-              Aus einem Game-Portal entstand ein <span>Hybrid-Studio</span>.
+          <div class=”section-header”>
+            <div class=”section-kicker”>🎯 Über Linn Games</div>
+            <h2 class=”section-title”>
+              Systeme, die <span>wirklich laufen</span> —<br />nicht nur
+              auf Folien.
             </h2>
-            <p class="section-lead">
-              Linn Games kommt ursprünglich aus der Welt der Browsergames und
-              kombiniert diese DNA heute mit AI Solutions und Web-Engineering
-              für Unternehmen.
+            <p class=”section-lead”>
+              Linn Games baut produktive Software — von 3D-Browsergames über
+              KI-gestützte Forschungsplattformen bis zu IoT-Dashboards. Alles
+              mit dem gleichen Anspruch: deploybar, wartbar, ehrlich in der
+              Architektur.
             </p>
           </div>
 
-          <div class="split-grid">
-            <article class="about-card">
-              <h3 class="about-title">Was uns ausmacht</h3>
-              <p class="about-text">
-                Wir sitzen in Lampertheim und arbeiten bevorzugt mit
-                Unternehmen, die offen für Experimente sind. Aber zugleich
-                realistische Anforderungen an Stabilität, Datenschutz und
-                Wartbarkeit haben.
+          <div class=”split-grid”>
+            <article class=”about-card”>
+              <h3 class=”about-title”>Was uns ausmacht</h3>
+              <p class=”about-text”>
+                Wir sitzen in Lampertheim und arbeiten mit Organisationen, die
+                echte Probleme lösen wollen — nicht Buzzwords präsentieren.
+                Unsere eigenen Produkte (app.linn.games, MayringCoder) sind der
+                beste Beweis dafür, wie wir bauen.
               </p>
-              <ul class="about-list">
+              <ul class=”about-list”>
                 <li>
-                  Kombination aus Game-Dev, AI Engineering und
-                  Web-Stack-Kompetenz
+                  Eigene Produkte im Betrieb — kein reines Dienstleistungsstudio
                 </li>
                 <li>
-                  Fokus auf mittelständische Unternehmen & praxisnahe Prototypen
+                  Full-Stack: Laravel, Python, Docker, Unity, Claude AI, MCP
                 </li>
                 <li>
-                  Hands-on statt „Enterprise-Pitch“ – klare Strukturen, kurze
-                  Wege
+                  Security-first: OAuth 2.0, PKCE, Rate-Limiting, Bot-Erkennung
                 </li>
                 <li>
-                  Tech-Entscheidungen orientieren sich an Ihrer Situation, nicht
-                  an Buzzwords
+                  Hands-on statt „Enterprise-Pitch” — kurze Wege, klarer Code
                 </li>
               </ul>
             </article>
