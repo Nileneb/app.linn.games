@@ -36,6 +36,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -76,4 +85,6 @@ jobs:
           DB_DATABASE: linn_games
           DB_USERNAME: postgres
           DB_PASSWORD: change-me
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
         run: php -d memory_limit=512M ./vendor/bin/pest
