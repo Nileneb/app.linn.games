@@ -32,7 +32,13 @@ class ConfidenceScoreCalculator
             $breakdown['disposable'] = 40;
         }
 
-        $captchaSolved = (int) ($input['_captcha_solved'] ?? 0) === 1;
+        $captchaSubmitted  = (int) ($input['_captcha_solved'] ?? 0) === 1;
+        $captchaRotation   = (int) ($input['_captcha_rotation'] ?? -1);
+        $captchaTargetZone = (int) ($input['_captcha_target_zone'] ?? -1);
+        $actualZone = (int) floor((($captchaRotation % 360) + 360) % 360 / 30) % 12;
+        $captchaSolved = $captchaSubmitted
+            && $captchaTargetZone >= 0 && $captchaTargetZone <= 11
+            && $actualZone === $captchaTargetZone;
         if (!$captchaSolved) {
             $breakdown['captcha'] = 30;
         }

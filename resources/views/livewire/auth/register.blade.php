@@ -103,51 +103,100 @@
             <input type="hidden" name="_timing" id="_timing" value="0">
             <input type="hidden" name="_tz" id="_tz" value="">
 
-            {{-- Gamified CAPTCHA: Rotations-Rätsel --}}
+            {{-- Gamified CAPTCHA: 12-Zonen-Rätsel --}}
             <div
                 x-data="{
-                    rotation: [60, 90, 120, 150, 180, 210, 240, 270, 300, 330][Math.floor(Math.random() * 10)],
-                    solved: false,
-                    tolerance: 15,
-                    check() {
-                        const normalized = ((this.rotation % 360) + 360) % 360;
-                        this.solved = normalized <= this.tolerance || normalized >= (360 - this.tolerance);
+                    targetZone: Math.floor(Math.random() * 12),
+                    rotation: 0,
+                    confirmed: false,
+                    solved: null,
+                    init() {
+                        let startZone;
+                        do {
+                            startZone = Math.floor(Math.random() * 12);
+                        } while (Math.min(Math.abs(startZone - this.targetZone), 12 - Math.abs(startZone - this.targetZone)) < 4);
+                        this.rotation = startZone * 30;
                     },
-                    rotateLeft() { this.rotation = (this.rotation - 45 + 360) % 360; this.check(); },
-                    rotateRight() { this.rotation = (this.rotation + 45) % 360; this.check(); },
+                    rotateLeft()  { if (!this.confirmed) this.rotation = (this.rotation - 30 + 360) % 360; },
+                    rotateRight() { if (!this.confirmed) this.rotation = (this.rotation + 30) % 360; },
+                    confirm() {
+                        this.confirmed = true;
+                        const zone = Math.floor(((this.rotation % 360) + 360) % 360 / 30) % 12;
+                        this.solved = zone === this.targetZone;
+                    },
+                    reset() { this.confirmed = false; this.solved = null; this.init(); },
                 }"
-                x-init="check()"
                 x-cloak
             >
                 <p class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Sicherheitsprüfung — Drehe das Bild in die richtige Position
+                    Sicherheitsprüfung — Drehe den Pfeil zum markierten Punkt
                 </p>
                 <div class="flex flex-col items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-                    <div
-                        class="size-28 transition-transform duration-300 ease-in-out"
-                        :class="solved ? 'ring-2 ring-green-500 rounded-full' : ''"
-                        :style="`transform: rotate(${rotation}deg)`"
-                    >
-                        <img src="{{ asset('images/captcha-icon.svg') }}" alt="Rotations-Rätsel" class="size-full select-none">
+
+                    {{-- Zone-Ring + Kompass --}}
+                    <div class="relative flex items-center justify-center" style="width:160px;height:160px;">
+                        {{-- 12 Zonenpunkte --}}
+                        <template x-for="i in 12" :key="i">
+                            <div
+                                class="absolute rounded-full transition-all duration-200"
+                                :class="(i-1) === targetZone
+                                    ? 'bg-indigo-500 w-4 h-4 shadow-md shadow-indigo-300'
+                                    : 'bg-zinc-300 dark:bg-zinc-600 w-2.5 h-2.5'"
+                                :style="`
+                                    left: 50%; top: 50%;
+                                    transform: translate(-50%, -50%) rotate(${(i-1)*30}deg) translateY(-72px);
+                                `"
+                            ></div>
+                        </template>
+                        {{-- Rotierendes Kompass-Bild --}}
+                        <div
+                            class="size-24 transition-transform duration-200 ease-in-out z-10"
+                            :style="`transform: rotate(${rotation}deg)`"
+                        >
+                            <img src="{{ asset('images/captcha-icon.svg') }}" alt="Kompass" class="size-full select-none pointer-events-none">
+                        </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button type="button" @click="rotateLeft()" aria-label="45 Grad nach links drehen"
+
+                    {{-- Drehen-Buttons --}}
+                    <div class="flex gap-3" x-show="!confirmed">
+                        <button type="button" @click="rotateLeft()"
                             class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
                             ← Drehen
                         </button>
-                        <button type="button" @click="rotateRight()" aria-label="45 Grad nach rechts drehen"
+                        <button type="button" @click="rotateRight()"
                             class="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
                             Drehen →
                         </button>
                     </div>
-                    <p x-show="solved" x-cloak class="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
-                        ✓ Bestätigt
+
+                    {{-- Bestätigen-Button --}}
+                    <button type="button" @click="confirm()" x-show="!confirmed"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-300">
+                        Bestätigen
+                    </button>
+
+                    {{-- Feedback nach Bestätigen --}}
+                    <p x-show="confirmed && solved === true" x-cloak
+                        class="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                        ✓ Richtig — Sicherheitsprüfung bestanden
                     </p>
-                    <p x-show="!solved" class="text-xs text-zinc-400 dark:text-zinc-500">
-                        Drehe das Bild bis der Pfeil nach oben zeigt
+                    <div x-show="confirmed && solved === false" x-cloak class="flex flex-col items-center gap-2">
+                        <p class="flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400">
+                            ✗ Falsche Position
+                        </p>
+                        <button type="button" @click="reset()"
+                            class="text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300">
+                            Nochmal versuchen
+                        </button>
+                    </div>
+
+                    <p x-show="!confirmed" class="text-xs text-zinc-400 dark:text-zinc-500">
+                        Drehe den Pfeil zum <strong>markierten Punkt</strong>, dann "Bestätigen"
                     </p>
                 </div>
-                <input type="hidden" name="_captcha_solved" :value="solved ? '1' : '0'">
+                <input type="hidden" name="_captcha_solved"      :value="solved === true ? '1' : '0'">
+                <input type="hidden" name="_captcha_rotation"    :value="rotation">
+                <input type="hidden" name="_captcha_target_zone" :value="targetZone">
             </div>
 
             <div class="flex items-center justify-end">
