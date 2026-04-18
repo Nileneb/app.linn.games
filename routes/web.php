@@ -12,7 +12,7 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::get('/pitch', fn () => view('pitch'))->name('pitch');
+Route::get('/pitchdeck', fn () => view('pitch'))->name('pitch');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/github', [\App\Http\Controllers\GitHubAuthController::class, 'redirect'])->name('auth.github');

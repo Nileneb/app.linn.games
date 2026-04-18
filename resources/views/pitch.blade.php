@@ -7,8 +7,8 @@
 <link rel="icon" type="image/png" href="/favicon-96x96.png?v=20260402" sizes="96x96">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260402">
 <link rel="shortcut icon" href="/favicon.ico?v=20260402">
-<link rel="stylesheet" href="{{ asset('pitch/assets/deck.css') }}?v=3">
-<script src="{{ asset('pitch/assets/i18n.js') }}?v=2"></script>
+<link rel="stylesheet" href="{{ asset('pitch-assets/assets/deck.css') }}?v=3">
+<script src="{{ asset('pitch-assets/assets/i18n.js') }}?v=2"></script>
 </head>
 <body>
 
@@ -1062,7 +1062,7 @@
 
 </deck-stage>
 
-<script src="{{ asset('pitch/assets/deck-stage.js') }}"></script>
+<script src="{{ asset('pitch-assets/assets/deck-stage.js') }}"></script>
 
 <script>
 // ────────── Logo injection ──────────
