@@ -82,7 +82,7 @@ fi
 
 echo "==> Pulling latest MayringCoder source..."
 if [ -d "$(dirname "$0")/MayringCoder/.git" ]; then
-  git -C "$(dirname "$0")/MayringCoder" pull --ff-only origin main || \
+  git -C "$(dirname "$0")/MayringCoder" pull origin main 2>/dev/null || \
     echo "WARN: MayringCoder git pull failed — continuing with existing code."
 else
   echo "WARN: MayringCoder/.git not found — skipping pull."
@@ -92,6 +92,15 @@ echo "==> Pulling latest images..."
 "${DC[@]}" pull postgres redis
 
 # ── Frontend: Vite build ────────────────────────
+# Load nvm in non-interactive shell so Node >=20 is available
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$NVM_DIR/nvm.sh"
+  nvm use 20 2>/dev/null || nvm use --lts 2>/dev/null || true
+fi
+echo "==> Node $(node --version), npm $(npm --version)"
+
 echo "==> Installing npm dependencies..."
 if ! npm install --frozen-lockfile; then
   echo "ERROR: npm install failed." >&2
