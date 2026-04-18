@@ -17,6 +17,17 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
+      - name: Free disk space (Docker cleanup)
+        run: |
+          AVAIL=$(df / --output=avail | tail -1)
+          if [ "$AVAIL" -lt 10485760 ]; then
+            echo "Less than 10 GB free ($((AVAIL/1024/1024)) GB) — pruning Docker..."
+            docker image prune -af --filter "until=24h" 2>/dev/null || true
+            docker builder prune -af 2>/dev/null || true
+          else
+            echo "Disk OK: $((AVAIL/1024/1024)) GB free"
+          fi
+
       - name: Pull latest code
         run: |
           cd ~/app.linn.games

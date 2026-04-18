@@ -38,10 +38,10 @@ fi
 
 # ── Migrate-only: schneller Hotfix-Pfad ────────
 if [ "$MIGRATE_ONLY" = true ]; then
-  # Alle PHP-Images neu bauen — Code ist baked in, nicht bind-gemountet.
-  # Ohne Rebuild laufen php-fpm und queue-worker mit veraltetem Code.
-  echo "==> [migrate-only] Rebuilding PHP images (php-cli, php-fpm, queue-worker)..."
-  "${DC[@]}" build php-cli php-fpm queue-worker
+  # Alle App-Images neu bauen — Code ist baked in, nicht bind-gemountet.
+  MAYRING_SERVICES="mayring-api mayring-mcp mayring-webui mayring-pi"
+  echo "==> [migrate-only] Rebuilding all app images..."
+  "${DC[@]}" build php-cli php-fpm queue-worker $MAYRING_SERVICES
 
   echo "==> [migrate-only] Clearing stale config cache..."
   "${DC[@]}" run --rm php-cli php artisan optimize:clear
@@ -57,10 +57,9 @@ if [ "$MIGRATE_ONLY" = true ]; then
   "${DC[@]}" run --rm php-cli php artisan route:cache
   "${DC[@]}" run --rm php-cli php artisan view:cache
 
-  echo "==> [migrate-only] Restarting queue workers with new image..."
+  echo "==> [migrate-only] Restarting services with new images..."
   "${DC[@]}" run --rm php-cli php artisan queue:restart
-  # Explizit neu starten damit das neue Image verwendet wird
-  "${DC[@]}" up -d --no-deps php-fpm queue-worker
+  "${DC[@]}" up -d --no-deps php-fpm queue-worker $MAYRING_SERVICES
 
   echo "==> [migrate-only] Reloading nginx (refresh upstream DNS)..."
   "${DC[@]}" exec -T web nginx -s reload 2>/dev/null || true
