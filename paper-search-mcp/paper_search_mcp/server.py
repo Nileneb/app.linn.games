@@ -10,6 +10,7 @@ import httpx
 import uvicorn
 from dotenv import load_dotenv
 from .config import get_env
+from .context import _request_user_email
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import Response
@@ -83,14 +84,15 @@ class BearerAuthMiddleware:
                 raise RuntimeError("LARAVEL_DB_* env vars not set for Sanctum auth")
         return self._db_pool
 
-    async def _validate_sanctum_token(self, token: str) -> bool:
+    async def _validate_sanctum_token(self, token: str) -> tuple[bool, Optional[str]]:
+        """Validate Sanctum token. Returns (is_valid, user_email_or_None)."""
         if "|" not in token:
-            return False
+            return False, None
         token_id_str, raw = token.split("|", 1)
         try:
             token_id = int(token_id_str)
         except ValueError:
-            return False
+            return False, None
         token_hash = hashlib.sha256(raw.encode()).hexdigest()
         try:
             pool = await self._get_pool()
@@ -103,10 +105,17 @@ class BearerAuthMiddleware:
                     "UPDATE personal_access_tokens SET last_used_at = NOW() WHERE id = $1",
                     token_id,
                 )
-                return True
+                user_row = await pool.fetchrow(
+                    "SELECT u.email FROM users u "
+                    "JOIN personal_access_tokens pat ON pat.tokenable_id = u.id "
+                    "WHERE pat.id = $1",
+                    token_id,
+                )
+                user_email = user_row["email"] if user_row else None
+                return True, user_email
         except Exception as e:
             logging.warning(f"Sanctum DB lookup failed: {e}")
-        return False
+        return False, None
 
     def _extract_token(self, scope) -> Optional[str]:
         headers = dict(scope.get("headers", []))
@@ -136,10 +145,13 @@ class BearerAuthMiddleware:
                 return
 
             if hmac.compare_digest(token, self.static_token):
+                _request_user_email.set(None)
                 await self.app(scope, receive, send)
                 return
 
-            if await self._validate_sanctum_token(token):
+            is_valid, user_email = await self._validate_sanctum_token(token)
+            if is_valid:
+                _request_user_email.set(user_email)
                 await self.app(scope, receive, send)
                 return
 

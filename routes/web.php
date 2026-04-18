@@ -24,6 +24,9 @@ Route::get('/.well-known/oauth-authorization-server', function () {
         'grant_types_supported'            => ['authorization_code'],
         'code_challenge_methods_supported' => ['S256'],
         'scopes_supported'                 => ['mcp:memory'],
+        'paper_search_authorization_endpoint' => route('paper-search.oauth.authorize'),
+        'paper_search_token_endpoint'         => route('paper-search.oauth.token'),
+        'paper_search_scopes_supported'       => ['paper-search:read'],
     ]);
 })->name('oauth.discovery');
 
@@ -132,6 +135,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->get('mcp/authorize', [\App\Http\Controllers\McpOAuthController::class, 'authorize'])
         ->name('mcp.oauth.authorize');
 
+    // Paper Search MCP OAuth 2.0 — all active users (no subscription gate)
+    Route::middleware(['auth', 'verified'])
+        ->get('/paper-search/authorize', [\App\Http\Controllers\PaperSearchOAuthController::class, 'authorize'])
+        ->name('paper-search.oauth.authorize');
+
     // MayringCoder Dashboard — erstellt kurzlebigen Token → Auto-Login auf mcp.linn.games/ui/
     Route::middleware('mayring.subscription')
         ->get('mayring/dashboard', [\App\Http\Controllers\MayringDashboardController::class, 'redirect'])
@@ -145,3 +153,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)
         ->name('mayring.memory');
 });
+
+// Paper Search MCP token exchange (unauthenticated by OAuth design — PKCE verifier proves ownership)
+Route::post('/paper-search/token', [\App\Http\Controllers\PaperSearchOAuthController::class, 'token'])
+    ->name('paper-search.oauth.token');
