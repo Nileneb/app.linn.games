@@ -3,16 +3,11 @@
 use App\Livewire\Concerns\{HasProjektContext, LoadsPhaseAgentResult};
 use App\Models\PhaseAgentResult;
 use App\Models\Recherche\{P4Suchstring, P8Suchprotokoll, P8Limitation, P8Reproduzierbarkeitspruefung, P8UpdatePlan};
-use App\Services\PhaseTemplateService;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use HasProjektContext, LoadsPhaseAgentResult;
-
-    // --- Template ---
-    public string $templateContent = '';
-    public bool $showTemplate = false;
 
     // --- Suchprotokoll ---
     public bool $showSpForm = false;
@@ -244,18 +239,6 @@ new class extends Component {
         $this->upTyp = 'periodisch';
     }
 
-    // ─── Template Methods ────────────────────────────────────
-
-    public function loadTemplate(): void
-    {
-        try {
-            $this->templateContent = app(PhaseTemplateService::class)->getTemplate(8, $this->projekt);
-            $this->showTemplate = true;
-        } catch (\Throwable $e) {
-            Log::error('Template laden fehlgeschlagen', ['phase' => 8, 'error' => $e->getMessage()]);
-        }
-    }
-
     // ─── Data ────────────────────────────────────────────────
 
     public function with(): array
@@ -293,20 +276,6 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-
-    {{-- ═══ Template ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
-        <div class="flex items-center justify-between border-b border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950">
-            <h3 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Suchprotokoll-Template</h3>
-            <button wire:click="loadTemplate" class="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">Template generieren</button>
-        </div>
-        @if ($showTemplate)
-            <div class="p-4">
-                <textarea wire:model="templateContent" rows="16"
-                    class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-            </div>
-        @endif
-    </div>
 
     {{-- ═══ Suchprotokoll ═══ --}}
     <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">

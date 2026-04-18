@@ -14,6 +14,19 @@ Route::get('/', function () {
 
 Route::get('/pitchdeck', fn () => view('pitch'))->name('pitch');
 
+// OAuth 2.0 discovery — consumed by Langdock, Claude Desktop, and other MCP clients
+Route::get('/.well-known/oauth-authorization-server', function () {
+    return response()->json([
+        'issuer'                           => 'https://app.linn.games',
+        'authorization_endpoint'           => route('mcp.oauth.authorize'),
+        'token_endpoint'                   => 'https://mcp.linn.games/token',
+        'response_types_supported'         => ['code'],
+        'grant_types_supported'            => ['authorization_code'],
+        'code_challenge_methods_supported' => ['S256'],
+        'scopes_supported'                 => ['mcp:memory'],
+    ]);
+})->name('oauth.discovery');
+
 Route::middleware('guest')->group(function () {
     Route::get('/auth/github', [\App\Http\Controllers\GitHubAuthController::class, 'redirect'])->name('auth.github');
     Route::get('/api/auth/callback/github', [\App\Http\Controllers\GitHubAuthController::class, 'callback'])->name('auth.github.callback');
@@ -113,8 +126,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('credits/success', fn () => view('credits.success'))->name('credits.success');
     Route::post('credits/checkout', [\App\Http\Controllers\CreditCheckoutController::class, 'redirect'])->name('credits.checkout');
 
-    // MCP OAuth 2.0 — Claude Web connector auth (PKCE flow)
-    Route::get('mcp/authorize', [\App\Http\Controllers\McpOAuthController::class, 'authorize'])
+    // MCP OAuth 2.0 — Claude Web / Langdock connector auth (PKCE flow)
+    // auth middleware stores intended URL so unauthenticated users are redirected back after login
+    Route::middleware(['auth', 'verified'])
+        ->get('mcp/authorize', [\App\Http\Controllers\McpOAuthController::class, 'authorize'])
         ->name('mcp.oauth.authorize');
 
     // MayringCoder Dashboard — erstellt kurzlebigen Token → Auto-Login auf mcp.linn.games/ui/

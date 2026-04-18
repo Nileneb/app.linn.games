@@ -6,7 +6,6 @@ use App\Models\Recherche\{P5Treffer, P5ScreeningKriterium, P5ScreeningEntscheidu
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 use App\Services\TransitionValidator;
-use App\Services\PhaseTemplateService;
 use Illuminate\Support\Facades\Log;
 
 new class extends Component {
@@ -15,10 +14,6 @@ new class extends Component {
     // --- Phase Transition ---
     public bool $showOverrideForm = false;
     public string $overrideBegruendung = '';
-
-    // --- Template ---
-    public string $templateContent = '';
-    public bool $showTemplate = false;
 
     // --- PRISMA Zahlen ---
     public bool $showPrismaForm = false;
@@ -268,18 +263,6 @@ new class extends Component {
         $this->showOverrideForm = false;
     }
 
-    // ─── Template Methods ────────────────────────────────────
-
-    public function loadTemplate(): void
-    {
-        try {
-            $this->templateContent = app(PhaseTemplateService::class)->getTemplate(5, $this->projekt);
-            $this->showTemplate = true;
-        } catch (\Throwable $e) {
-            Log::error('Template laden fehlgeschlagen', ['phase' => 5, 'error' => $e->getMessage()]);
-        }
-    }
-
     // ─── Data ────────────────────────────────────────────────
 
     public function with(): array
@@ -372,20 +355,6 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6" wire:poll.10s>
-    {{-- ═══ Template ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-indigo-200 dark:border-indigo-800">
-        <div class="flex items-center justify-between border-b border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950">
-            <h3 class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Screening-Template</h3>
-            <button wire:click="loadTemplate" class="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">Template laden</button>
-        </div>
-        @if ($showTemplate)
-            <div class="p-4">
-                <textarea wire:model="templateContent" rows="12"
-                    class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-            </div>
-        @endif
-    </div>
-
     {{-- ═══ Treffer-Heatmap nach Keywords & Themenbereichen ═══ --}}
     @if (!empty($heatmapData['keywords']))
         <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
