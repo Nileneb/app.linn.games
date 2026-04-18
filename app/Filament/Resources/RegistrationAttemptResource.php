@@ -159,27 +159,55 @@ class RegistrationAttemptResource extends Resource
         $lines[] = 'ANGABEN ZUM VORFALL';
         $lines[] = '  Zeitpunkt (UTC):    '.$record->created_at->format('d.m.Y H:i:s').' UTC';
         $lines[] = '  Art des Versuchs:   '.match ($record->reason) {
-            'honeypot' => 'Automatisierter Bot-Angriff (Honeypot-Falle ausgelöst)',
-            'rate_limit' => 'Brute-Force / Massenregistrierung (Rate-Limit überschritten)',
-            default => $record->reason,
+            'honeypot'         => 'Automatisierter Bot-Angriff (Honeypot-Falle ausgelöst)',
+            'rate_limit'       => 'Brute-Force / Massenregistrierung (Rate-Limit überschritten)',
+            'confidence_score' => 'Automatisierter Angriff (Bot-Erkennung angeschlagen)',
+            default            => $record->reason,
         };
         $lines[] = '';
         $lines[] = 'TECHNISCHE IDENTIFIKATION';
         $lines[] = '  IP-Adresse:         '.$record->ip;
-        $lines[] = '  Land (IP-Zuordnung):'.' '.($record->country_name ?? 'unbekannt').' ('.($record->country_code ?? '–').')';
+        $lines[] = '  Land (IP-Zuordnung): '.($record->country_name ?? 'unbekannt').' ('.($record->country_code ?? '–').')';
         $lines[] = '  Stadt:              '.($record->city ?? 'unbekannt');
         $lines[] = '  User-Agent:         '.($record->user_agent ?? 'nicht übermittelt');
         if ($record->email) {
             $lines[] = '  Verwendete E-Mail:  '.$record->email;
         }
+
+        if ($record->confidence_score !== null) {
+            $lines[] = '';
+            $lines[] = 'BOT-ERKENNUNG (Automatisierte Analyse)';
+            $lines[] = '  Gesamtrisiko-Score: '.$record->confidence_score.' / 155 Punkte';
+            $lines[] = '  Schwellenwert:      80 Punkte (Blockierung), 40 Punkte (Überprüfung)';
+
+            if (! empty($record->score_breakdown)) {
+                $lines[] = '  Einzelbewertungen:';
+                $scoreLabels = [
+                    'honeypot'           => 'Honeypot-Feld befüllt',
+                    'timing'             => 'Suspekte Ausfüllzeit (< 2 Sek.)',
+                    'timezone'           => 'Zeitzone passt nicht zum IP-Land',
+                    'tor'                => 'Bekannter Tor-/VPN-Knoten',
+                    'disposable'         => 'Wegwerf-E-Mail-Domain',
+                    'captcha'            => 'CAPTCHA nicht korrekt gelöst',
+                ];
+                foreach ($record->score_breakdown as $key => $points) {
+                    if ($points > 0) {
+                        $label = $scoreLabels[$key] ?? $key;
+                        $lines[] = sprintf('    %-38s +%d Pkt.', $label.':', $points);
+                    }
+                }
+            }
+        }
+
         $lines[] = '';
         $lines[] = 'PLATTFORM';
         $lines[] = '  Betroffene Plattform: app.linn.games';
         $lines[] = '  Betroffener Dienst:   Nutzer-Registrierung';
+        $lines[] = '  Exportzeitpunkt:      '.now()->format('d.m.Y H:i:s').' UTC';
         $lines[] = '';
         $lines[] = 'RECHTLICHER HINWEIS';
-        $lines[] = '  Diese Daten wurden zum Zweck der Strafverfolgung automatisch';
-        $lines[] = '  protokolliert (§ 202a StGB — Ausspähen von Daten,';
+        $lines[] = '  Diese Daten wurden automatisch protokolliert zum Zweck';
+        $lines[] = '  der Strafverfolgung (§ 202a StGB — Ausspähen von Daten,';
         $lines[] = '  § 303b StGB — Computersabotage, soweit anwendbar).';
         $lines[] = '  Die IP-Zuordnung basiert auf öffentlichen Geo-IP-Daten und';
         $lines[] = '  dient als Ermittlungshinweis. Eine gerichtsverwertbare';

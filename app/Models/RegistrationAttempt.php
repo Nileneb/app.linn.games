@@ -19,23 +19,28 @@ class RegistrationAttempt extends Model
         'country_code',
         'country_name',
         'city',
+        'confidence_score',
+        'score_breakdown',
         'created_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'created_at' => 'datetime',
+            'created_at'      => 'datetime',
+            'confidence_score' => 'integer',
+            'score_breakdown'  => 'array',
         ];
     }
 
     public function reasonLabel(): string
     {
         return match ($this->reason) {
-            'honeypot' => 'Honeypot',
-            'rate_limit' => 'Rate-Limit',
-            'validation' => 'Validierungsfehler',
-            default => $this->reason,
+            'honeypot'         => 'Honeypot',
+            'rate_limit'       => 'Rate-Limit',
+            'confidence_score' => 'Confidence Score (Bot-Verdacht)',
+            'validation'       => 'Validierungsfehler',
+            default            => $this->reason,
         };
     }
 }

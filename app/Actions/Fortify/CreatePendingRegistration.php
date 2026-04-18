@@ -106,15 +106,17 @@ class CreatePendingRegistration implements CreatesNewUsers
         $geo = $this->geoIp->lookup($ip);
 
         RegistrationAttempt::create([
-            'id' => Str::uuid(),
-            'ip' => $ip,
-            'user_agent' => $userAgent ? mb_substr($userAgent, 0, 512) : null,
-            'reason' => $reason,
-            'email' => $email ? mb_substr($email, 0, 255) : null,
-            'country_code' => $geo['country_code'] ?? null,
-            'country_name' => $geo['country_name'] ?? null,
-            'city' => $geo['city'] ?? null,
-            'created_at' => now(),
+            'id'               => Str::uuid(),
+            'ip'               => $ip,
+            'user_agent'       => $userAgent ? mb_substr($userAgent, 0, 512) : null,
+            'reason'           => $reason,
+            'email'            => $email ? mb_substr($email, 0, 255) : null,
+            'country_code'     => $geo['country_code'] ?? null,
+            'country_name'     => $geo['country_name'] ?? null,
+            'city'             => $geo['city'] ?? null,
+            'confidence_score' => $score > 0 ? $score : null,
+            'score_breakdown'  => ! empty($breakdown) ? $breakdown : null,
+            'created_at'       => now(),
         ]);
     }
 }
