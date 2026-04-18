@@ -75,6 +75,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         ];
     }
 
+    public function emailAliases(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserEmailAlias::class);
+    }
+
     /**
      * Get the user's initials
      */

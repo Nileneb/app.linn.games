@@ -192,6 +192,13 @@ class UserResource extends Resource
             ]);
     }
 
+    public static function getRelationManagers(): array
+    {
+        return [
+            \App\Filament\Resources\UserResource\RelationManagers\EmailAliasesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
