@@ -117,6 +117,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('mcp/authorize', [\App\Http\Controllers\McpOAuthController::class, 'authorize'])
         ->name('mcp.oauth.authorize');
 
+    // MayringCoder Dashboard — erstellt kurzlebigen Token → Auto-Login auf mcp.linn.games/ui/
+    Route::middleware('mayring.subscription')
+        ->get('mayring/dashboard', [\App\Http\Controllers\MayringDashboardController::class, 'redirect'])
+        ->name('mayring.dashboard');
+
     // MayringCoder Subscription (kein Gate — jeder Auth-User kann abonnieren)
     Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
 

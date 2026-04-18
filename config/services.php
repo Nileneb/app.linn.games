@@ -127,6 +127,10 @@ return [
         'timeout' => (int) env('MAYRING_MCP_TIMEOUT', 60),
     ],
 
+    'mayring' => [
+        'ui_url' => env('MAYRING_UI_URL', 'https://mcp.linn.games/ui'),
+    ],
+
     'mcp' => [
         'auth_token' => env('MCP_AUTH_TOKEN'),
         'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),
