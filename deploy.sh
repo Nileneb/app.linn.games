@@ -100,10 +100,11 @@ fi
 # ── Build ──────────────────────────────────────
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building production images..."
+  MAYRING_SERVICES="mayring-api mayring-mcp mayring-webui mayring-pi"
   if [ "$WITH_MCP" = true ]; then
-    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli mcp-paper-search
+    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli mcp-paper-search $MAYRING_SERVICES
   else
-    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli
+    "${DC[@]}" build --no-cache postgres web php-fpm queue-worker php-cli $MAYRING_SERVICES
   fi
 else
   echo "==> Skipping build (--skip-build)"
