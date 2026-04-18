@@ -86,7 +86,7 @@ jobs:
               '1. Deploy-Log im GitHub-Run öffnen (Link oben)',
               '2. SSH: `ssh nileneb@u-server`',
               '3. `cd ~/app.linn.games && docker compose logs php-fpm --tail=50`',
-              '4. Nach Fix: `./deploy.sh --migrate-only` oder `./deploy.sh`',
+              '4. Nach Fix: `./deploy.sh` (deploy immer komplett)',
               '',
               '_Automatisch erstellt von GitHub Actions_',
             ].join('\n');
