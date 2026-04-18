@@ -76,6 +76,7 @@
           <a href="#process">Ablauf</a>
           <a href="#about">Über uns</a>
           <a href="#contact">Kontakt</a>
+          <a href="{{ route('pitch') }}">Pitch Deck</a>
         </nav>
 
         <div class="nav-cta">

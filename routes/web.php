@@ -12,6 +12,8 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::get('/pitch', fn () => view('pitch'))->name('pitch');
+
 Route::middleware('guest')->group(function () {
     Route::get('/auth/github', [\App\Http\Controllers\GitHubAuthController::class, 'redirect'])->name('auth.github');
     Route::get('/api/auth/callback/github', [\App\Http\Controllers\GitHubAuthController::class, 'callback'])->name('auth.github.callback');
