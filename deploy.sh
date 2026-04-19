@@ -32,10 +32,18 @@ docker ps -aq --filter "name=applinngames-" | xargs -r docker rm -f 2>/dev/null 
 echo "==> Starting postgres & redis..."
 "${DC[@]}" up -d postgres redis
 echo "==> Waiting for postgres..."
-"${DC[@]}" exec postgres pg_isready -q --timeout=30 || {
-  echo "ERROR: Postgres did not become ready." >&2
-  exit 1
-}
+for i in $(seq 1 12); do
+  if "${DC[@]}" exec -T postgres pg_isready -q 2>/dev/null; then
+    echo "    Postgres ready after $((i * 5))s."
+    break
+  fi
+  if [ "$i" -eq 12 ]; then
+    echo "ERROR: Postgres did not become ready after 60s." >&2
+    "${DC[@]}" logs postgres --tail=20 >&2
+    exit 1
+  fi
+  sleep 5
+done
 
 echo "==> Ensuring Postgres extensions..."
 "${DC[@]}" exec -T postgres sh -lc \
