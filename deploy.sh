@@ -20,37 +20,8 @@ fi
 echo "==> Ensuring linn-shared network exists..."
 docker network inspect linn-shared &>/dev/null || docker network create linn-shared
 
-echo "==> Pulling latest base images..."
-"${DC[@]}" pull postgres redis
-
-# ── Frontend ───────────────────────────────────
-export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-  set +u  # nvm.sh uses unbound variables internally
-  # shellcheck source=/dev/null
-  . "$NVM_DIR/nvm.sh"
-  nvm use 24 2>/dev/null || nvm use --lts 2>/dev/null || true
-  set -u
-fi
-echo "==> Node $(node --version), npm $(npm --version)"
-
-echo "==> Installing npm dependencies..."
-if ! npm ci; then
-  echo "ERROR: npm install failed." >&2
-  exit 1
-fi
-
-echo "==> Building frontend assets..."
-if ! npm run build; then
-  echo "ERROR: Vite build failed." >&2
-  exit 1
-fi
-
-# ── Build all images ───────────────────────────
-echo "==> Building all production images..."
-"${DC[@]}" build \
-  postgres web php-fpm queue-worker php-cli \
-  mcp-paper-search
+echo "==> Pulling latest images from Docker Hub..."
+"${DC[@]}" pull postgres web php-fpm queue-worker php-cli mcp-paper-search redis
 
 # ── Start infrastructure ───────────────────────
 echo "==> Cleaning up stale containers..."
@@ -122,7 +93,7 @@ echo "==> Restarting queue workers..."
 echo "==> Health check..."
 HEALTH_URL="http://localhost:${APP_PORT:-6481}"
 for i in $(seq 1 12); do
-  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$HEALTH_URL" 2>/dev/null || echo "000")
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$HEALTH_URL" 2>/dev/null); HTTP_STATUS=${HTTP_STATUS:-000}
   if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
     echo "    HTTP $HTTP_STATUS after $((i * 5))s — OK"
     break
