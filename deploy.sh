@@ -61,6 +61,11 @@ echo "==> Building all production images (no-cache)..."
 # Docker Compose baut mayring:latest einmal wegen des gemeinsamen image:-Tags.
 
 # ── Start infrastructure ───────────────────────
+echo "==> Cleaning up stale containers..."
+"${DC[@]}" down --remove-orphans 2>/dev/null || true
+# Remove any ghost containers with hash-prefixed names that block compose
+docker ps -aq --filter "name=applinngames-" | xargs -r docker rm -f 2>/dev/null || true
+
 echo "==> Starting postgres & redis..."
 "${DC[@]}" up -d postgres redis
 echo "==> Waiting for postgres..."
@@ -110,7 +115,6 @@ echo "==> Rebuilding config/route/view cache..."
 
 # ── Start all services ─────────────────────────
 echo "==> Clearing stale build-asset volume..."
-"${DC[@]}" down --remove-orphans 2>/dev/null || true
 docker volume rm applinngames_linn-build-assets 2>/dev/null || true
 
 echo "==> Starting all services..."
