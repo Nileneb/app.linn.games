@@ -2,11 +2,8 @@
 # Voraussetzung: docker network create linn-shared (einmalig auf Server)
 # Deploy: ./deploy-mayring.sh
 
-x-mayring-build: &mayring-build
-  build:
-    context: ./MayringCoder
-    dockerfile: docker/Dockerfile
-  image: mayring:latest
+x-mayring-base: &mayring-build
+  image: ghcr.io/nileneb/mayring:latest
   restart: unless-stopped
   networks:
     - mayring-internal
