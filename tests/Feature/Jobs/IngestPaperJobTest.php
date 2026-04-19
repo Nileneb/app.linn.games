@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\IngestPaperJob;
+use App\Models\Recherche\Projekt;
 use App\Services\EmbeddingService;
 use App\Services\MayringMcpClient;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,8 @@ test('job stores projekt_id and metadata when provided', function () {
     );
     app()->instance(EmbeddingService::class, $embeddingMock);
 
-    $projektId = \Illuminate\Support\Str::uuid()->toString();
+    $projekt = Projekt::factory()->create();
+    $projektId = $projekt->id;
 
     (new IngestPaperJob(
         paperId: 'doi:10.9999/meta',

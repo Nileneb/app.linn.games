@@ -112,7 +112,7 @@ test('token endpoint löscht Redis-Key nach erfolgreicher Einlösung', function 
 });
 
 test('authorize endpoint leitet auf pending-approval weiter für inaktive user', function () {
-    $user = User::factory()->withoutTwoFactor()->create(['status' => 'pending']);
+    $user = User::factory()->withoutTwoFactor()->create(['status' => 'waitlisted']);
     $this->actingAs($user);
 
     $response = $this->get('/paper-search/authorize?redirect_uri=https://example.com/cb&code_challenge=abc123&code_challenge_method=S256&state=xyz');

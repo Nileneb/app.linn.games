@@ -31,9 +31,11 @@ echo "==> Pulling latest base images..."
 # ── Frontend ───────────────────────────────────
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
+  set +u  # nvm.sh uses unbound variables internally
   # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
   nvm use 20 2>/dev/null || nvm use --lts 2>/dev/null || true
+  set -u
 fi
 echo "==> Node $(node --version), npm $(npm --version)"
 
