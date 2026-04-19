@@ -3,7 +3,7 @@
 # Deploy: ./deploy-mayring.sh
 
 x-mayring-base: &mayring-build
-  image: ghcr.io/nileneb/mayring:latest
+  image: nileneb/mayring:latest
   restart: unless-stopped
   networks:
     - mayring-internal

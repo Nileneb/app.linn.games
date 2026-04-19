@@ -25,7 +25,7 @@ docker volume inspect linn-mayring-cache &>/dev/null || docker volume create lin
 
 # ── Pull image from GHCR ──────────────────────
 echo "==> Pulling MayringCoder image from GHCR..."
-docker pull ghcr.io/nileneb/mayring:latest
+docker pull nileneb/mayring:latest
 
 # ── Deploy ─────────────────────────────────────
 echo "==> Stopping old MayringCoder containers..."
