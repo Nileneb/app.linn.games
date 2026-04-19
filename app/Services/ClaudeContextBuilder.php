@@ -77,6 +77,16 @@ class ClaudeContextBuilder
                 $projektIdEx = (string) ($context['projekt_id'] ?? 'PROJEKT-UUID');
                 $exampleTables = '"'.$firstTable.'": [{"projekt_id": "'.$projektIdEx.'", "...weitere Felder laut Schema...": "..."}]';
             }
+            if ($phaseNr === 1) {
+                $lines[] = '## Qualitätsbewertung der Forschungsfrage (P1)';
+                $lines[] = 'Bewerte die Forschungsfrage streng nach dieser Rubrik — nutze die VOLLE Skala 0–100:';
+                $lines[] = '- **0–39 → schwach**: Fragestellung zu vage, keine erkennbaren PICO/SPIDER-Komponenten, kein klares Outcome oder Population';
+                $lines[] = '- **40–59 → befriedigend**: Grundstruktur erkennbar, aber ≥2 wichtige Komponenten fehlen oder sind zu unspezifisch';
+                $lines[] = '- **60–79 → gut**: Klare Fragestellung, die meisten Komponenten erkennbar, leichte Unschärfen tolerierbar';
+                $lines[] = '- **80–100 → sehr_gut**: Vollständig strukturiert, alle Kernkomponenten explizit, Outcome messbar, Population klar abgegrenzt';
+                $lines[] = 'Das `level`-Feld MUSS dem Score entsprechen (nicht frei wählen): sehr_gut=80–100, gut=60–79, befriedigend=40–59, schwach=0–39.';
+                $lines[] = '';
+            }
             $lines[] = 'Pflichtstruktur (EXAKT so — keine anderen Schlüssel!):';
             $lines[] = '```json';
             $lines[] = '{';
@@ -85,9 +95,9 @@ class ClaudeContextBuilder
                 $lines[] = '    "phase": '.$phaseNr.',';
                 $lines[] = '    "agent": "'.$agentKey.'",';
                 $lines[] = '    "qualitaets_bewertung": {';
-                $lines[] = '      "score": 75,';
-                $lines[] = '      "level": "gut",';
-                $lines[] = '      "punkte": ["+ Population klar definiert", "- Outcome noch zu unspezifisch"]';
+                $lines[] = '      "score": <integer 0-100 gemäß Rubrik>,';
+                $lines[] = '      "level": "<schwach|befriedigend|gut|sehr_gut — MUSS zum Score passen>",';
+                $lines[] = '      "punkte": ["+ stärke1", "- schwäche1"]';
                 $lines[] = '    }';
                 $lines[] = '  },';
             } else {

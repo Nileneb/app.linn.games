@@ -196,6 +196,15 @@ class ProcessPhaseAgentJob implements ShouldQueue
             if ($this->phaseNr === 1) {
                 $bewertung = $parsed['meta']['qualitaets_bewertung'] ?? null;
                 if (is_array($bewertung) && isset($bewertung['score'])) {
+                    $score = max(0, min(100, (int) $bewertung['score']));
+                    // Level vom Score ableiten — AI-Fehler bei level/score-Diskrepanz korrigieren
+                    $bewertung['score'] = $score;
+                    $bewertung['level'] = match (true) {
+                        $score >= 80 => 'sehr_gut',
+                        $score >= 60 => 'gut',
+                        $score >= 40 => 'befriedigend',
+                        default      => 'schwach',
+                    };
                     $result->update(['result_data' => ['qualitaets_bewertung' => $bewertung]]);
                 }
             }
