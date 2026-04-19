@@ -16,15 +16,6 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# ── Pull latest source ─────────────────────────
-echo "==> Pulling latest MayringCoder source..."
-if [ -d "$(dirname "$0")/MayringCoder/.git" ]; then
-  git -C "$(dirname "$0")/MayringCoder" pull origin master 2>/dev/null || \
-    echo "WARN: MayringCoder git pull failed — continuing with existing code."
-else
-  echo "WARN: MayringCoder/.git not found — skipping pull."
-fi
-
 # ── Shared infrastructure ──────────────────────
 echo "==> Ensuring linn-shared network exists..."
 docker network inspect linn-shared &>/dev/null || docker network create linn-shared
@@ -56,8 +47,8 @@ if ! npm run build; then
 fi
 
 # ── Build all images ───────────────────────────
-echo "==> Building all production images (no-cache)..."
-"${DC[@]}" build --no-cache \
+echo "==> Building all production images..."
+"${DC[@]}" build \
   postgres web php-fpm queue-worker php-cli \
   mcp-paper-search
 
@@ -129,7 +120,7 @@ echo "==> Restarting queue workers..."
 
 # ── Health check ───────────────────────────────
 echo "==> Health check..."
-HEALTH_URL="http://localhost:6479"
+HEALTH_URL="http://localhost:${APP_PORT:-6481}"
 for i in $(seq 1 12); do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$HEALTH_URL" 2>/dev/null || echo "000")
   if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
