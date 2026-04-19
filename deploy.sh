@@ -29,11 +29,10 @@ echo "==> Pulling latest images from Docker Hub..."
 # ── Start infrastructure ───────────────────────
 echo "==> Cleaning up stale containers..."
 "${DC[@]}" down --remove-orphans 2>/dev/null || true
-# Remove any ghost containers with hash-prefixed names that block compose
 docker ps -aq --filter "name=applinngames-" | xargs -r docker rm -f 2>/dev/null || true
 
 echo "==> Starting postgres & redis..."
-"${DC[@]}" up -d postgres redis
+"${DC[@]}" up -d --force-recreate postgres redis
 echo "==> Waiting for postgres..."
 for i in $(seq 1 12); do
   if "${DC[@]}" exec -T postgres pg_isready -q 2>/dev/null; then
