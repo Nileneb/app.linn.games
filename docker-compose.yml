@@ -191,3 +191,4 @@ volumes:
   linn-storage-production:
   linn-build-assets:
   linn-papers-data:
+    external: true

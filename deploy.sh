@@ -20,6 +20,9 @@ fi
 echo "==> Ensuring linn-shared network exists..."
 docker network inspect linn-shared &>/dev/null || docker network create linn-shared
 
+echo "==> Ensuring linn-papers-data volume exists..."
+docker volume inspect linn-papers-data &>/dev/null || docker volume create linn-papers-data
+
 echo "==> Pulling latest images from Docker Hub..."
 "${DC[@]}" pull postgres web php-fpm queue-worker php-cli mcp-paper-search redis
 
