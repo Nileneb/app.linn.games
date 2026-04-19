@@ -23,6 +23,9 @@ docker network inspect linn-shared &>/dev/null || docker network create linn-sha
 echo "==> Ensuring linn-mayring-cache volume exists..."
 docker volume inspect linn-mayring-cache &>/dev/null || docker volume create linn-mayring-cache
 
+echo "==> Ensuring linn-papers-data volume exists..."
+docker volume inspect linn-papers-data &>/dev/null || docker volume create linn-papers-data
+
 # ── Pull image from GHCR ──────────────────────
 echo "==> Pulling MayringCoder image from GHCR..."
 docker pull nileneb/mayring:latest
