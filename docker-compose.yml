@@ -9,6 +9,7 @@ services:
       - ./public:/var/www/public:ro
       - linn-build-assets:/var/www/public/build:ro
       - ./docker/common/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/mayring/nginx/mcp-passthrough.conf:/etc/nginx/conf.d/mcp.conf:ro
     environment:
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
     networks:
