@@ -14,9 +14,63 @@ jobs:
   deploy:
     name: Deploy
     runs-on: [self-hosted, u-server]
+    environment: production
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
+      - name: Write .env from GitHub Environment
+        env:
+          APP_KEY: ${{ secrets.APP_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REVERB_APP_SECRET: ${{ secrets.REVERB_APP_SECRET }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          MCP_AUTH_TOKEN: ${{ secrets.MCP_AUTH_TOKEN }}
+          MAYRING_MCP_AUTH_TOKEN: ${{ secrets.MAYRING_MCP_AUTH_TOKEN }}
+          PAPER_SEARCH_TOKEN: ${{ secrets.PAPER_SEARCH_TOKEN }}
+          STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+          STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LANGDOCK_DB_USERNAME: ${{ secrets.LANGDOCK_DB_USERNAME }}
+          LANGDOCK_DB_PASSWORD: ${{ secrets.LANGDOCK_DB_PASSWORD }}
+          APP_NAME: ${{ vars.APP_NAME }}
+          APP_ENV: ${{ vars.APP_ENV }}
+          APP_URL: ${{ vars.APP_URL }}
+          APP_PORT: ${{ vars.APP_PORT }}
+          APP_DEBUG: ${{ vars.APP_DEBUG }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_DATABASE: ${{ vars.DB_DATABASE }}
+          DB_USERNAME: ${{ vars.DB_USERNAME }}
+          POSTGRES_DATABASE: ${{ vars.POSTGRES_DATABASE }}
+          POSTGRES_USERNAME: ${{ vars.POSTGRES_USERNAME }}
+          REVERB_APP_ID: ${{ vars.REVERB_APP_ID }}
+          REVERB_APP_KEY: ${{ vars.REVERB_APP_KEY }}
+          REVERB_HOST: ${{ vars.REVERB_HOST }}
+          REVERB_PORT: ${{ vars.REVERB_PORT }}
+          REVERB_SCHEME: ${{ vars.REVERB_SCHEME }}
+          VITE_REVERB_APP_KEY: ${{ vars.VITE_REVERB_APP_KEY }}
+          VITE_REVERB_HOST: ${{ vars.VITE_REVERB_HOST }}
+          VITE_REVERB_PORT: ${{ vars.VITE_REVERB_PORT }}
+          VITE_REVERB_SCHEME: ${{ vars.VITE_REVERB_SCHEME }}
+          OLLAMA_URL: ${{ vars.OLLAMA_URL }}
+          MAYRING_MCP_ENDPOINT: ${{ vars.MAYRING_MCP_ENDPOINT }}
+          MAYRING_OLLAMA_MODEL: ${{ vars.MAYRING_OLLAMA_MODEL }}
+          PI_AGENT_URL: ${{ vars.PI_AGENT_URL }}
+          PAPER_SEARCH_URL: ${{ vars.PAPER_SEARCH_URL }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+          MAIL_PORT: ${{ vars.MAIL_PORT }}
+          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
+          MAIL_FROM_ADDRESS: ${{ vars.MAIL_FROM_ADDRESS }}
+          STRIPE_MAYRING_PRICE_ID: ${{ vars.STRIPE_MAYRING_PRICE_ID }}
+        run: |
+          cd ~/app.linn.games
+          python3 scripts/write-env.py
+
       - name: Free disk space (Docker cleanup)
         run: |
           AVAIL=$(df / --output=avail | tail -1)

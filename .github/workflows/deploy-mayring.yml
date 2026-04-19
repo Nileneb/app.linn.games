@@ -16,8 +16,45 @@ jobs:
   deploy:
     name: Deploy on u-server
     runs-on: [self-hosted, u-server]
+    environment: production
 
     steps:
+      - name: Write .env from GitHub Environment
+        env:
+          APP_KEY: ${{ secrets.APP_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REVERB_APP_SECRET: ${{ secrets.REVERB_APP_SECRET }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          MCP_AUTH_TOKEN: ${{ secrets.MCP_AUTH_TOKEN }}
+          MAYRING_MCP_AUTH_TOKEN: ${{ secrets.MAYRING_MCP_AUTH_TOKEN }}
+          PAPER_SEARCH_TOKEN: ${{ secrets.PAPER_SEARCH_TOKEN }}
+          STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+          STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          APP_NAME: ${{ vars.APP_NAME }}
+          APP_ENV: ${{ vars.APP_ENV }}
+          APP_URL: ${{ vars.APP_URL }}
+          APP_PORT: ${{ vars.APP_PORT }}
+          APP_DEBUG: ${{ vars.APP_DEBUG }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_DATABASE: ${{ vars.DB_DATABASE }}
+          DB_USERNAME: ${{ vars.DB_USERNAME }}
+          POSTGRES_DATABASE: ${{ vars.POSTGRES_DATABASE }}
+          POSTGRES_USERNAME: ${{ vars.POSTGRES_USERNAME }}
+          OLLAMA_URL: ${{ vars.OLLAMA_URL }}
+          MAYRING_MCP_ENDPOINT: ${{ vars.MAYRING_MCP_ENDPOINT }}
+          MAYRING_OLLAMA_MODEL: ${{ vars.MAYRING_OLLAMA_MODEL }}
+          PI_AGENT_URL: ${{ vars.PI_AGENT_URL }}
+        run: |
+          cd ~/app.linn.games
+          python3 scripts/write-env.py
+
       - name: Pull latest code
         run: |
           cd ~/app.linn.games
