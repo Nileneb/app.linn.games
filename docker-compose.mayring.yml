@@ -42,6 +42,7 @@ services:
       LARAVEL_DB_NAME: ${POSTGRES_DATABASE}
     volumes:
       - linn-mayring-cache:/app/cache
+      - linn-papers-data:/data/papers:ro
 
   mayring-mcp:
     <<: *mayring-build
@@ -87,4 +88,6 @@ networks:
 
 volumes:
   linn-mayring-cache:
+    external: true
+  linn-papers-data:
     external: true
