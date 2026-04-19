@@ -9,12 +9,13 @@ use App\Models\Workspace;
 use App\Services\AgentDailyLimitExceededException;
 use App\Services\AgentPayloadService;
 use App\Services\AgentResponseParser;
+use App\Services\ArtifactService;
 use App\Services\ClaudeCliService;
 use App\Services\CreditService;
-use App\Services\ArtifactService;
 use App\Services\McpTokenService;
 use App\Services\PaperSearchService;
 use App\Services\PhaseChainService;
+use App\Services\PhaseScoreService;
 use App\Services\RetrieverService;
 use App\Services\SynthesisMarkdownService;
 use Illuminate\Bus\Queueable;
@@ -192,21 +193,8 @@ class ProcessPhaseAgentJob implements ShouldQueue
                 ]);
             }
 
-            // Qualitätsscore für P1 in result_data persistieren
             if ($this->phaseNr === 1) {
-                $bewertung = $parsed['meta']['qualitaets_bewertung'] ?? null;
-                if (is_array($bewertung) && isset($bewertung['score'])) {
-                    $score = max(0, min(100, (int) $bewertung['score']));
-                    // Level vom Score ableiten — AI-Fehler bei level/score-Diskrepanz korrigieren
-                    $bewertung['score'] = $score;
-                    $bewertung['level'] = match (true) {
-                        $score >= 80 => 'sehr_gut',
-                        $score >= 60 => 'gut',
-                        $score >= 40 => 'befriedigend',
-                        default      => 'schwach',
-                    };
-                    $result->update(['result_data' => ['qualitaets_bewertung' => $bewertung]]);
-                }
+                app(PhaseScoreService::class)->calculateAndPersistP1Score($result, $parsed);
             }
 
             // Synthesis-Markdown anreichern
