@@ -1,19 +1,3 @@
-# Extension fields — must be at top level for Docker Compose v2 validation
-x-mayring-build: &mayring-build
-  build:
-    context: ./MayringCoder
-    dockerfile: docker/Dockerfile
-  image: mayring:latest
-  restart: unless-stopped
-  networks:
-    - linn-network
-
-x-mayring-env: &mayring-env
-  OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
-  OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-  CHROMA_PATH: /app/cache/chroma
-  MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
-
 services:
   web:
     build:
@@ -29,6 +13,7 @@ services:
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
     networks:
       - linn-network
+      - linn-shared
     ports:
       - "${APP_PORT:-6481}:80"
     depends_on:
@@ -53,6 +38,7 @@ services:
       - .env
     networks:
       - linn-network
+      - linn-shared
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,8 +137,6 @@ services:
       dockerfile: ./docker/common/postgres/dockerfile
     restart: unless-stopped
     user: postgres
-    # ports:
-    #   - "5433:5432"
     command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE}
@@ -163,6 +147,7 @@ services:
       - ./docker/common/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql:ro
     networks:
       - linn-network
+      - linn-shared
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
       interval: 10s
@@ -217,70 +202,14 @@ services:
       postgres:
         condition: service_healthy
 
-  # Alle vier MayringCoder-Dienste nutzen dasselbe Image (mayring:latest).
-  # Docker Compose baut es einmal; mcp/pi/webui lesen ChromaDB nur, api schreibt.
-  mayring-api:
-    <<: *mayring-build
-    command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
-    ports:
-      - "8090:8090"
-    environment:
-      <<: *mayring-env
-      LARAVEL_DB_HOST: postgres
-      LARAVEL_DB_PORT: 5432
-      LARAVEL_DB_USER: ${POSTGRES_USERNAME}
-      LARAVEL_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      LARAVEL_DB_NAME: ${POSTGRES_DATABASE}
-    volumes:
-      - linn-mayring-cache:/app/cache
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  mayring-mcp:
-    <<: *mayring-build
-    command: ["python", "-m", "src.mcp_server"]
-    environment:
-      <<: *mayring-env
-      MCP_TRANSPORT: http
-      MCP_HTTP_PORT: 8092
-      MCP_HTTP_HOST: 0.0.0.0
-    volumes:
-      - linn-mayring-cache:/app/cache
-
-  mayring-pi:
-    <<: *mayring-build
-    command: ["python", "-m", "src.pi_server"]
-    ports:
-      - "8091:8091"
-    environment:
-      <<: *mayring-env
-      PI_PORT: 8091
-    volumes:
-      - linn-mayring-cache:/app/cache
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  mayring-webui:
-    <<: *mayring-build
-    command: ["python", "-m", "src.web_ui", "--host", "0.0.0.0", "--port", "7860", "--api-url", "http://mayring-api:8090"]
-    environment:
-      <<: *mayring-env
-      UI_AUTH_USER: ${MAYRING_UI_AUTH_USER:-admin}
-      UI_AUTH_PASS: ${MAYRING_UI_AUTH_PASS}
-      GRADIO_ROOT_PATH: /ui
-      LARAVEL_INTERNAL_URL: http://nginx
-    volumes:
-      - linn-mayring-cache:/app/cache
-
-
 networks:
   linn-network:
     driver: bridge
+  linn-shared:
+    external: true
 
 volumes:
   linn-postgres-data:
   linn-storage-production:
   linn-build-assets:
   linn-papers-data:
-  linn-mayring-cache:

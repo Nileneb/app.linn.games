@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-DC=(docker compose --profile mcp)
+DC=(docker compose)
 
 # ── Pre-flight ─────────────────────────────────
 if ! command -v docker &>/dev/null; then
@@ -24,6 +24,10 @@ if [ -d "$(dirname "$0")/MayringCoder/.git" ]; then
 else
   echo "WARN: MayringCoder/.git not found — skipping pull."
 fi
+
+# ── Shared infrastructure ──────────────────────
+echo "==> Ensuring linn-shared network exists..."
+docker network inspect linn-shared &>/dev/null || docker network create linn-shared
 
 echo "==> Pulling latest base images..."
 "${DC[@]}" pull postgres redis

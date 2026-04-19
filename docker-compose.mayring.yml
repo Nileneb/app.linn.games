@@ -1,0 +1,91 @@
+# MayringCoder Stack — deploye unabhängig vom app.linn.games Stack.
+# Voraussetzung: docker network create linn-shared (einmalig auf Server)
+# Deploy: ./deploy-mayring.sh
+
+x-mayring-build: &mayring-build
+  build:
+    context: ./MayringCoder
+    dockerfile: docker/Dockerfile
+  image: mayring:latest
+  restart: unless-stopped
+  networks:
+    - mayring-internal
+    - linn-shared
+
+x-mayring-env: &mayring-env
+  OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
+  OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
+  CHROMA_PATH: /app/cache/chroma
+  MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
+
+services:
+  mayring-nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${MAYRING_PORT:-6480}:80"
+    volumes:
+      - ./docker/mayring/nginx/mcp.conf:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      - mayring-internal
+    depends_on:
+      - mayring-webui
+      - mayring-mcp
+
+  mayring-api:
+    <<: *mayring-build
+    command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
+    environment:
+      <<: *mayring-env
+      LARAVEL_DB_HOST: postgres
+      LARAVEL_DB_PORT: 5432
+      LARAVEL_DB_USER: ${POSTGRES_USERNAME}
+      LARAVEL_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      LARAVEL_DB_NAME: ${POSTGRES_DATABASE}
+    volumes:
+      - linn-mayring-cache:/app/cache
+
+  mayring-mcp:
+    <<: *mayring-build
+    command: ["python", "-m", "src.mcp_server"]
+    environment:
+      <<: *mayring-env
+      MCP_TRANSPORT: http
+      MCP_HTTP_PORT: 8092
+      MCP_HTTP_HOST: 0.0.0.0
+    volumes:
+      - linn-mayring-cache:/app/cache
+
+  mayring-pi:
+    <<: *mayring-build
+    command: ["python", "-m", "src.pi_server"]
+    environment:
+      <<: *mayring-env
+      PI_PORT: 8091
+    volumes:
+      - linn-mayring-cache:/app/cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mayring-webui:
+    <<: *mayring-build
+    command: ["python", "-m", "src.web_ui", "--host", "0.0.0.0", "--port", "7860",
+              "--api-url", "http://mayring-api:8090"]
+    environment:
+      <<: *mayring-env
+      UI_AUTH_USER: ${MAYRING_UI_AUTH_USER:-admin}
+      UI_AUTH_PASS: ${MAYRING_UI_AUTH_PASS}
+      GRADIO_ROOT_PATH: /ui
+      LARAVEL_INTERNAL_URL: http://web
+    volumes:
+      - linn-mayring-cache:/app/cache
+
+networks:
+  mayring-internal:
+    driver: bridge
+  linn-shared:
+    external: true
+
+volumes:
+  linn-mayring-cache:
+    external: true

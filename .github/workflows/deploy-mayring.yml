@@ -1,0 +1,67 @@
+name: Deploy MayringCoder
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MayringCoder/**'
+      - 'docker-compose.mayring.yml'
+      - 'docker/mayring/**'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    name: Deploy MayringCoder Stack
+    runs-on: [self-hosted, u-server]
+
+    steps:
+      - name: Pull latest code
+        run: |
+          cd ~/app.linn.games
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Deploy MayringCoder stack
+        timeout-minutes: 30
+        run: |
+          cd ~/app.linn.games
+          ./deploy-mayring.sh 2>&1 | tee /tmp/mayring-deploy-output.txt
+
+  open-issue-on-failure:
+    name: Report failure
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create issue on deploy failure
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = `🚨 MayringCoder Deploy fehlgeschlagen — ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`;
+            const body = [
+              '## MayringCoder Deploy-Fehler auf Production',
+              '',
+              `**Commit:** [\`${{ github.sha }}\`](${{ github.event.head_commit.url }})`,
+              `**Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              '',
+              '## Schritte zur Behebung',
+              '1. SSH: `ssh nileneb@u-server`',
+              '2. `cd ~/app.linn.games && docker compose -f docker-compose.mayring.yml logs --tail=50`',
+              '3. Nach Fix: `./deploy-mayring.sh`',
+              '',
+              '_Automatisch erstellt von GitHub Actions_',
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['bug', 'deploy-failure'],
+            });
