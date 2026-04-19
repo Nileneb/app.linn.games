@@ -19,7 +19,7 @@ fi
 # ── Pull latest source ─────────────────────────
 echo "==> Pulling latest MayringCoder source..."
 if [ -d "$(dirname "$0")/MayringCoder/.git" ]; then
-  git -C "$(dirname "$0")/MayringCoder" pull origin main 2>/dev/null || \
+  git -C "$(dirname "$0")/MayringCoder" pull origin master 2>/dev/null || \
     echo "WARN: MayringCoder git pull failed — continuing with existing code."
 else
   echo "WARN: MayringCoder/.git not found — skipping pull."
