@@ -44,7 +44,7 @@ fi
 echo "==> Node $(node --version), npm $(npm --version)"
 
 echo "==> Installing npm dependencies..."
-if ! npm install --frozen-lockfile; then
+if ! npm ci; then
   echo "ERROR: npm install failed." >&2
   exit 1
 fi
@@ -57,12 +57,9 @@ fi
 
 # ── Build all images ───────────────────────────
 echo "==> Building all production images (no-cache)..."
-# mayring-api baut das gemeinsame Image (mayring:latest); mcp/pi/webui nutzen es.
 "${DC[@]}" build --no-cache \
   postgres web php-fpm queue-worker php-cli \
-  mcp-paper-search \
-  mayring-api mayring-mcp mayring-webui mayring-pi
-# Docker Compose baut mayring:latest einmal wegen des gemeinsamen image:-Tags.
+  mcp-paper-search
 
 # ── Start infrastructure ───────────────────────
 echo "==> Cleaning up stale containers..."
