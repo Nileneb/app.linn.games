@@ -1,0 +1,729 @@
+erDiagram
+
+    %% ══════════════════════════════════════
+    %% ENUMS (als Kommentar-Referenz)
+    %% ══════════════════════════════════════
+    %% phase_status: offen | in_bearbeitung | abgeschlossen
+    %% review_typ: systematic_review | scoping_review | evidence_map
+    %% strukturmodell: PICO | SPIDER | PICOS
+    %% kriterium_typ: einschluss | ausschluss
+    %% screening_level: L1_titel_abstract | L2_volltext
+    %% screening_entscheidung: eingeschlossen | ausgeschlossen | unklar
+    %% rob_tool: RoB2 | ROBINS-I | CASP_qualitativ | AMSTAR2 | ROBINS-I_erweitert | narrativ
+    %% rob_urteil: niedrig | moderat | hoch | kritisch | nicht_bewertet
+    %% synthese_methode: meta_analyse | narrative_synthese | thematische_synthese | framework_synthesis
+    %% grade_urteil: stark | moderat | schwach | sehr_schwach
+    %% studientyp: RCT | nicht_randomisiert | qualitativ | systematic_review | guideline_framework | konzeptuell
+    %% tool_empfehlung: Rayyan | Covidence | EPPI_Reviewer | DistillerSR | ASReview | SWIFT_ActiveScreener
+    %% user_status: active | trial | suspended | deactivated
+    %% workspace_user_role: owner | editor | viewer
+
+    %% ══════════════════════════════════════
+    %% KERN: AUTH & MULTI-TENANCY
+    %% ══════════════════════════════════════
+
+    users {
+        bigint id PK
+        string name
+        string email UK
+        timestamp email_verified_at
+        string password
+        text two_factor_secret
+        text two_factor_recovery_codes
+        timestamp two_factor_confirmed_at
+        user_status status "DEFAULT active"
+        timestamp last_login_at
+        string remember_token
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    workspaces {
+        uuid id PK
+        bigint owner_id FK "NULLABLE → users ON DELETE SET NULL"
+        string name "MAX 160"
+        bigint credits_balance_cents "DEFAULT 0"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    workspace_users {
+        uuid id PK
+        uuid workspace_id FK "→ workspaces ON DELETE CASCADE"
+        bigint user_id FK "→ users ON DELETE CASCADE"
+        string role "CHECK owner|editor|viewer"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users ||--o{ workspace_users : "hat Mitgliedschaften"
+    workspaces ||--o{ workspace_users : "hat Mitglieder"
+    users ||--o{ workspaces : "owner_id (besitzt)"
+
+    %% ══════════════════════════════════════
+    %% SPATIE PERMISSIONS (Rollen-System)
+    %% ══════════════════════════════════════
+
+    permissions {
+        bigint id PK
+        string name
+        string guard_name
+    }
+
+    roles {
+        bigint id PK
+        string name
+        string guard_name
+    }
+
+    model_has_permissions {
+        bigint permission_id FK
+        string model_type
+        bigint model_id
+    }
+
+    model_has_roles {
+        bigint role_id FK
+        string model_type
+        bigint model_id
+    }
+
+    role_has_permissions {
+        bigint permission_id FK
+        bigint role_id FK
+    }
+
+    permissions ||--o{ model_has_permissions : ""
+    roles ||--o{ model_has_roles : ""
+    permissions ||--o{ role_has_permissions : ""
+    roles ||--o{ role_has_permissions : ""
+
+    %% ══════════════════════════════════════
+    %% KERN: PROJEKTE & PHASEN
+    %% ══════════════════════════════════════
+
+    projekte {
+        uuid id PK
+        bigint user_id FK "→ users ON DELETE CASCADE"
+        uuid workspace_id FK "→ workspaces ON DELETE CASCADE"
+        text titel
+        text forschungsfrage
+        review_typ review_typ
+        text verantwortlich
+        date startdatum
+        text notizen
+        timestamptz letztes_update "DEFAULT now()"
+        timestamptz erstellt_am "DEFAULT now()"
+    }
+
+    phasen {
+        uuid id PK
+        uuid projekt_id FK "→ projekte ON DELETE CASCADE"
+        smallint phase_nr "CHECK 1-8"
+        text titel
+        phase_status status "DEFAULT offen"
+        text notizen
+        timestamptz abgeschlossen_am
+    }
+
+    users ||--o{ projekte : "erstellt"
+    workspaces ||--o{ projekte : "gehört zu"
+    projekte ||--o{ phasen : "hat Phasen"
+    projekte }o--|| phasen : "UNIQUE(projekt_id, phase_nr)"
+
+    %% ══════════════════════════════════════
+    %% PHASE 1: FRAGESTELLUNG STRUKTURIEREN
+    %% ══════════════════════════════════════
+
+    p1_strukturmodell_wahl {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        strukturmodell modell
+        boolean gewaehlt "DEFAULT false"
+        text begruendung
+    }
+
+    p1_komponenten {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        strukturmodell modell
+        text komponente_kuerzel
+        text komponente_label
+        text inhaltlicher_begriff_de
+        jsonb synonyme
+        text englische_entsprechung
+        text mesh_term
+        text thesaurus_term
+        text anmerkungen
+    }
+
+    p1_kriterien {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        kriterium_typ kriterium_typ
+        text beschreibung
+        text begruendung
+        text quellbezug
+    }
+
+    p1_warnsignale {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        smallint lfd_nr
+        text warnsignal
+        text moegliche_auswirkung
+        text handlungsempfehlung
+    }
+
+    projekte ||--o{ p1_strukturmodell_wahl : ""
+    projekte ||--o{ p1_komponenten : ""
+    projekte ||--o{ p1_kriterien : ""
+    projekte ||--o{ p1_warnsignale : ""
+
+    %% ══════════════════════════════════════
+    %% PHASE 2: EXPLORATIVE MAPPING-SUCHE
+    %% ══════════════════════════════════════
+
+    p2_review_typ_entscheidung {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        review_typ review_typ
+        boolean passt
+        text begruendung
+    }
+
+    p2_mapping_suchstring_komponenten {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text komponente_label
+        jsonb suchbegriffe
+        text sprache
+        boolean trunkierung_genutzt "DEFAULT false"
+        text anmerkung
+    }
+
+    p2_trefferlisten {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text datenbank
+        text suchstring
+        integer treffer_gesamt
+        text einschaetzung
+        boolean anpassung_notwendig "DEFAULT false"
+        date suchdatum
+    }
+
+    p2_cluster {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text cluster_id
+        text cluster_label
+        text beschreibung
+        integer treffer_schaetzung
+        text relevanz "CHECK hoch|mittel|gering"
+    }
+
+    projekte ||--o{ p2_review_typ_entscheidung : ""
+    projekte ||--o{ p2_mapping_suchstring_komponenten : ""
+    projekte ||--o{ p2_trefferlisten : ""
+    projekte ||--o{ p2_cluster : ""
+
+    %% ══════════════════════════════════════
+    %% PHASE 3: DATENBANKAUSWAHL
+    %% ══════════════════════════════════════
+
+    p3_disziplinen {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text disziplin
+        text art "CHECK kerndisziplin|angrenzend"
+        text relevanz
+        text anmerkung
+    }
+
+    p3_datenbankmatrix {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text datenbank
+        text disziplin
+        text abdeckung
+        text besonderheit
+        text zugang "CHECK frei|kostenpflichtig|institutionell"
+        boolean empfohlen
+        text begruendung
+    }
+
+    p3_geografische_filter {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text region_land
+        boolean validierter_filter_vorhanden "DEFAULT false"
+        text filtername_quelle
+        numeric sensitivitaet_prozent "5,2"
+        text hilfsstrategie
+    }
+
+    p3_graue_literatur {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text quelle
+        text typ
+        text url
+        text suchpfad
+        text relevanz
+        text anmerkung
+    }
+
+    projekte ||--o{ p3_disziplinen : ""
+    projekte ||--o{ p3_datenbankmatrix : ""
+    projekte ||--o{ p3_geografische_filter : ""
+    projekte ||--o{ p3_graue_literatur : ""
+
+    %% ══════════════════════════════════════
+    %% PHASE 4: SUCHSTRING-ENTWICKLUNG
+    %% ══════════════════════════════════════
+
+    p4_suchstrings {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text datenbank
+        text suchstring
+        text feldeinschraenkung
+        jsonb gesetzte_filter
+        integer treffer_anzahl
+        text einschaetzung
+        text anpassung
+        text version "DEFAULT v1.0"
+        date suchdatum
+        timestamptz erstellt_am "DEFAULT now()"
+    }
+
+    p4_thesaurus_mapping {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text freitext_de
+        text freitext_en
+        text mesh_term
+        text emtree_term
+        text psycinfo_term
+        text anmerkung
+    }
+
+    p4_anpassungsprotokoll {
+        uuid id PK
+        uuid suchstring_id FK "→ p4_suchstrings CASCADE"
+        text version
+        date datum
+        text aenderung
+        text grund
+        integer treffer_vorher
+        integer treffer_nachher
+        text entscheidung
+    }
+
+    projekte ||--o{ p4_suchstrings : ""
+    projekte ||--o{ p4_thesaurus_mapping : ""
+    p4_suchstrings ||--o{ p4_anpassungsprotokoll : "hat Versionen"
+
+    %% ══════════════════════════════════════
+    %% PHASE 5: SCREENING & DEDUPLIZIERUNG
+    %% ══════════════════════════════════════
+
+    p5_prisma_zahlen {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        integer identifiziert_gesamt
+        integer davon_datenbank_treffer
+        integer davon_graue_literatur
+        integer nach_deduplizierung
+        integer ausgeschlossen_l1
+        integer volltext_geprueft
+        integer ausgeschlossen_l2
+        integer eingeschlossen_final
+        timestamptz aktualisiert_am "DEFAULT now()"
+    }
+
+    p5_screening_kriterien {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        screening_level level
+        kriterium_typ kriterium_typ
+        text beschreibung
+        text beispiel
+    }
+
+    p5_treffer {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text record_id "UNIQUE(projekt_id, record_id)"
+        text titel
+        text autoren
+        smallint jahr
+        text journal
+        text doi
+        text abstract
+        text datenbank_quelle
+        boolean ist_duplikat "DEFAULT false"
+        uuid duplikat_von FK "→ p5_treffer (self)"
+        boolean retrieval_downloaded
+        text retrieval_source_url
+        text retrieval_storage_path
+        text retrieval_status
+        text retrieval_last_response
+        timestamptz retrieval_checked_at
+        timestamptz erstellt_am "DEFAULT now()"
+    }
+
+    p5_screening_entscheidungen {
+        uuid id PK
+        uuid treffer_id FK "→ p5_treffer CASCADE"
+        screening_level level
+        screening_entscheidung entscheidung
+        text ausschlussgrund
+        text reviewer
+        date datum
+        text anmerkung
+    }
+
+    p5_tool_entscheidung {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        tool_empfehlung tool
+        boolean gewaehlt "DEFAULT false"
+        text begruendung
+    }
+
+    projekte ||--o{ p5_prisma_zahlen : ""
+    projekte ||--o{ p5_screening_kriterien : ""
+    projekte ||--o{ p5_treffer : ""
+    projekte ||--o{ p5_tool_entscheidung : ""
+    p5_treffer ||--o{ p5_screening_entscheidungen : "wird bewertet"
+    p5_treffer ||--o| p5_treffer : "duplikat_von (self-ref)"
+
+    %% ══════════════════════════════════════
+    %% PHASE 6: QUALITAETSBEWERTUNG
+    %% ══════════════════════════════════════
+
+    p6_qualitaetsbewertung {
+        uuid id PK
+        uuid treffer_id FK "→ p5_treffer CASCADE"
+        studientyp studientyp
+        rob_tool rob_tool
+        rob_urteil gesamturteil
+        text hauptproblem
+        boolean im_review_behalten "DEFAULT true"
+        text anmerkung
+        text bewertet_von
+        date bewertet_am
+    }
+
+    p6_luckenanalyse {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text fehlender_aspekt
+        text fehlender_studientyp
+        text moegliche_konsequenz
+        text empfehlung
+    }
+
+    p5_treffer ||--o{ p6_qualitaetsbewertung : "wird bewertet"
+    projekte ||--o{ p6_luckenanalyse : ""
+
+    %% ══════════════════════════════════════
+    %% PHASE 7: EVIDENZSYNTHESE
+    %% ══════════════════════════════════════
+
+    p7_synthese_methode {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        synthese_methode methode
+        boolean gewaehlt "DEFAULT false"
+        text begruendung
+    }
+
+    p7_datenextraktion {
+        uuid id PK
+        uuid treffer_id FK "→ p5_treffer CASCADE"
+        text land
+        text stichprobe_kontext
+        text phaenomen_intervention
+        text outcome_ergebnis
+        text hauptbefund
+        rob_urteil qualitaetsurteil
+        text anmerkung
+    }
+
+    p7_muster_konsistenz {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text muster_befund
+        jsonb unterstuetzende_quellen
+        jsonb widersprechende_quellen
+        text moegliche_erklaerung
+    }
+
+    p7_grade_einschaetzung {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text outcome
+        integer studienanzahl
+        rob_urteil rob_gesamt
+        text inkonsistenz
+        text indirektheit
+        text impraezision
+        grade_urteil grade_urteil
+        text begruendung
+    }
+
+    p7_mayring_snippets {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        uuid paper_id FK "→ p5_treffer CASCADE"
+        text snippet_text
+        string source_reference
+        integer chunk_index
+        bigint created_by FK "→ users SET NULL"
+        string category
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projekte ||--o{ p7_synthese_methode : ""
+    p5_treffer ||--o{ p7_datenextraktion : "Daten extrahiert"
+    projekte ||--o{ p7_muster_konsistenz : ""
+    projekte ||--o{ p7_grade_einschaetzung : ""
+    projekte ||--o{ p7_mayring_snippets : ""
+    p5_treffer ||--o{ p7_mayring_snippets : "Snippet aus Paper"
+    users ||--o{ p7_mayring_snippets : "erstellt von"
+
+    %% ══════════════════════════════════════
+    %% PHASE 8: DOKUMENTATION
+    %% ══════════════════════════════════════
+
+    p8_suchprotokoll {
+        uuid id PK
+        uuid suchstring_id FK "→ p4_suchstrings SET NULL"
+        text datenbank
+        date suchdatum
+        text db_version
+        text suchstring_final
+        jsonb gesetzte_filter
+        integer treffer_gesamt
+        integer treffer_eindeutig
+    }
+
+    p8_limitationen {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text limitationstyp
+        text beschreibung
+        text auswirkung_auf_vollstaendigkeit
+    }
+
+    p8_reproduzierbarkeitspruefung {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text pruefpunkt
+        boolean erfuellt
+        text anmerkung
+    }
+
+    p8_update_plan {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        text update_typ "CHECK living_review|periodisch"
+        text intervall
+        text verantwortlich
+        text tool
+        date naechstes_update
+    }
+
+    p4_suchstrings ||--o{ p8_suchprotokoll : "referenziert"
+    projekte ||--o{ p8_limitationen : ""
+    projekte ||--o{ p8_reproduzierbarkeitspruefung : ""
+    projekte ||--o{ p8_update_plan : ""
+
+    %% ══════════════════════════════════════
+    %% RAG PIPELINE & PAPERS
+    %% ══════════════════════════════════════
+
+    papers {
+        uuid id PK
+        uuid projekt_id FK "→ projekte SET NULL"
+        string source "MAX 50"
+        string paper_id "MAX 255"
+        text title
+        text abstract
+        jsonb authors
+        string doi "MAX 255"
+        string url "MAX 2048"
+        integer year
+        jsonb metadata
+        timestamptz erstellt_am "DEFAULT now()"
+    }
+
+    paper_embeddings {
+        uuid id PK
+        uuid projekt_id FK "→ projekte SET NULL"
+        string source "MAX 50"
+        string paper_id "MAX 500"
+        text title
+        integer chunk_index
+        text text_chunk
+        vector embedding "vector(768)"
+        jsonb metadata
+        timestamptz erstellt_am
+    }
+
+    chunk_codierungen {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        uuid paper_embedding_id FK "→ paper_embeddings CASCADE, UNIQUE"
+        text paraphrase
+        text generalisierung
+        text reduktion
+        text kategorie
+        enum status "pending|completed|failed"
+        text error_message
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projekte ||--o{ papers : ""
+    projekte ||--o{ paper_embeddings : ""
+    projekte ||--o{ chunk_codierungen : ""
+    paper_embeddings ||--|| chunk_codierungen : "1:1 Codierung"
+
+    %% ══════════════════════════════════════
+    %% PAPER DOWNLOAD MANAGEMENT
+    %% ══════════════════════════════════════
+
+    paper_download_rules {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        string name
+        text description
+        json criteria
+        boolean is_active "DEFAULT true"
+        integer priority "DEFAULT 100"
+        uuid erstellt_von
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "SoftDelete"
+    }
+
+    paper_download_attempts {
+        uuid id PK
+        uuid paper_id FK "→ papers CASCADE"
+        uuid projekt_id FK "→ projekte CASCADE"
+        uuid rule_id FK "→ paper_download_rules SET NULL"
+        enum status "pending|success|failed|skipped"
+        text source_url
+        text error_message
+        integer http_status_code
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    projekte ||--o{ paper_download_rules : ""
+    papers ||--o{ paper_download_attempts : ""
+    projekte ||--o{ paper_download_attempts : ""
+    paper_download_rules ||--o{ paper_download_attempts : "ausgeloest durch"
+
+    %% ══════════════════════════════════════
+    %% KI-AGENT RESULTS & CREDITS
+    %% ══════════════════════════════════════
+
+    phase_agent_results {
+        uuid id PK
+        uuid projekt_id FK "→ projekte CASCADE"
+        bigint user_id FK "→ users CASCADE"
+        integer phase_nr "1-8"
+        string agent_config_key
+        enum status "pending|completed|failed"
+        text content
+        text error_message
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    credit_transactions {
+        uuid id PK
+        uuid workspace_id FK "→ workspaces CASCADE"
+        string type "MAX 20 (usage|topup)"
+        integer amount_cents
+        integer tokens_used
+        string agent_config_key "MAX 60"
+        string description "MAX 255"
+        timestamptz created_at
+    }
+
+    projekte ||--o{ phase_agent_results : ""
+    users ||--o{ phase_agent_results : ""
+    workspaces ||--o{ credit_transactions : ""
+
+    %% ══════════════════════════════════════
+    %% CHAT & SONSTIGES
+    %% ══════════════════════════════════════
+
+    chat_messages {
+        uuid id PK
+        bigint user_id FK "→ users CASCADE"
+        uuid workspace_id FK "→ workspaces CASCADE"
+        string role "CHECK user|assistant"
+        text content
+        text agent_result_file_path
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    consents {
+        bigint id PK
+        bigint user_id FK "→ users CASCADE"
+        string ip_anonymous
+        json consent_categories
+        timestamp consented_at
+        timestamp revoked_at
+    }
+
+    contacts {
+        uuid id PK
+        string name
+        string company
+        string email
+        string project_type
+        text message
+        string timeline
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    page_views {
+        bigint id PK
+        string path "DEFAULT /"
+        string ip_anonymous
+        string user_agent
+        bigint visits "DEFAULT 0"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    activity_log {
+        bigint id PK
+        string log_name
+        text description
+        string subject_id
+        string subject_type
+        string event
+        string causer_id
+        string causer_type
+        json attribute_changes
+        json properties
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users ||--o{ chat_messages : ""
+    workspaces ||--o{ chat_messages : ""
+    users ||--o{ consents : ""

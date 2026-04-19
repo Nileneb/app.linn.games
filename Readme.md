@@ -268,6 +268,32 @@ MCP-Endpunkte und API:
 
 👉 **Vollständige API-Dokumentation:** [docs/API.md](docs/API.md)
 
+## Datenbank-Diagramm
+
+📊 **ER-Diagramm:** [ZieldiagramDB.mermaid](ZieldiagramDB.mermaid) — Klick auf die Datei um das Diagram anzuschauen
+
+Alle 46 Tabellen des Projekts mit ihren Spalten, Datentypen und Constraints. Die Beziehungen auf einen Blick:
+
+# Beziehungstypen im Überblick:
+
+Beziehung	Typ	Erklärung
+users ↔ workspaces	M:M (via workspace_users)	Ein Nutzer kann in mehreren Arbeitsbereichen sein, ein Arbeitsbereich hat mehrere Nutzer
+workspaces → projekte	1:M	Ein Arbeitsbereich hat viele Projekte
+projekte → phasen	1:M (max 8)	Jedes Projekt hat bis zu 8 Phasen, eindeutig per (projekt_id, phase_nr)
+projekte → p1–p8 Tabellen	1:M	Jede Phase hat mehrere Ergebnis-Datensätze pro Projekt
+p5_treffer → p5_screening / p6 / p7	1:M	Ein Treffer (Paper) wird mehrfach bewertet, gescreent, extrahiert
+p5_treffer → p5_treffer	Self-Ref	Duplikat-Erkennung (duplikat_von verweist auf Original)
+p4_suchstrings → p4_anpassungsprotokoll	1:M	Ein Suchstring hat mehrere Versionen/Änderungen
+p4_suchstrings → p8_suchprotokoll	1:M	Suchprotokolle referenzieren die Original-Suchstrings
+paper_embeddings ↔ chunk_codierungen	1:1	Jeder Embedding-Chunk wird genau einmal codiert (Mayring)
+workspaces → credit_transactions	1:M	Alle Buchungen (Aufladungen + Verbrauch) pro Workspace
+
+# Kaskadenverhalten:
+
+    Fast alles löscht kaskadierend (ON DELETE CASCADE), wenn das übergeordnete Objekt gelöscht wird
+    Ausnahmen: papers und paper_embeddings setzen projekt_id auf NULL (ON DELETE SET NULL), damit importierte Daten nicht verloren gehen
+    workspaces.owner_id ist ebenfalls SET NULL – ein Workspace überlebt, wenn der Ersteller gelöscht wird
+
 ## Contributing
 
 Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Branch-Konventionen, Merge-Fluss und Arbeitsablauf.
