@@ -73,6 +73,7 @@ services:
       UI_AUTH_USER: ${MAYRING_UI_AUTH_USER:-admin}
       UI_AUTH_PASS: ${MAYRING_UI_AUTH_PASS}
       GRADIO_ROOT_PATH: /ui
+      GRADIO_SERVER_NAME: "0.0.0.0"
       LARAVEL_INTERNAL_URL: http://web
     volumes:
       - linn-mayring-cache:/app/cache
