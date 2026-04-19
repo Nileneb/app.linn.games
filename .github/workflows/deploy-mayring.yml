@@ -51,6 +51,9 @@ jobs:
           MAYRING_MCP_ENDPOINT: ${{ vars.MAYRING_MCP_ENDPOINT }}
           MAYRING_OLLAMA_MODEL: ${{ vars.MAYRING_OLLAMA_MODEL }}
           PI_AGENT_URL: ${{ vars.PI_AGENT_URL }}
+          MAYRING_UI_AUTH_PASS: ${{ secrets.MAYRING_UI_AUTH_PASS }}
+          MAYRING_UI_AUTH_USER: ${{ vars.MAYRING_UI_AUTH_USER }}
+          MAYRING_PORT: ${{ vars.MAYRING_PORT }}
         run: |
           cd ~/app.linn.games
           python3 scripts/write-env.py

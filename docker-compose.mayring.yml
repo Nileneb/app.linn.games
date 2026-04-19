@@ -25,6 +25,7 @@ services:
       - ./docker/mayring/nginx/mcp.conf:/etc/nginx/templates/default.conf.template:ro
     networks:
       - mayring-internal
+      - linn-shared
     depends_on:
       - mayring-webui
       - mayring-mcp
