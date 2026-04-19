@@ -34,7 +34,7 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   set +u  # nvm.sh uses unbound variables internally
   # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
-  nvm use 20 2>/dev/null || nvm use --lts 2>/dev/null || true
+  nvm use 24 2>/dev/null || nvm use --lts 2>/dev/null || true
   set -u
 fi
 echo "==> Node $(node --version), npm $(npm --version)"
@@ -55,7 +55,7 @@ fi
 echo "==> Building all production images (no-cache)..."
 # mayring-api baut das gemeinsame Image (mayring:latest); mcp/pi/webui nutzen es.
 "${DC[@]}" build --no-cache \
-  postgres web php-fpm queue-worker php-cli \
+  postgres web php-fpm queue-worker php-cli php-test \
   mcp-paper-search \
   mayring-api mayring-mcp mayring-webui mayring-pi
 # Docker Compose baut mayring:latest einmal wegen des gemeinsamen image:-Tags.
