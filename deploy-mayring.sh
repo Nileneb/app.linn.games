@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-DM=(docker compose -f docker-compose.mayring.yml)
+DM=(docker compose -f docker-compose.mayring.yml --project-name mayring)
 
 # ── Pre-flight ─────────────────────────────────
 if ! command -v docker &>/dev/null; then
