@@ -194,9 +194,10 @@ class ClaudeCliService
         string $model,
         string $systemPrompt,
         string $userMessage,
+        ?string $apiKey = null,
         int $timeout = 120,
     ): array {
-        $apiKey = config('services.anthropic.api_key');
+        $apiKey = $apiKey ?: config('services.anthropic.api_key');
 
         $payload = [
             'model' => $model,
@@ -239,8 +240,6 @@ class ClaudeCliService
 
     public function call(string $userMessage, array $context = []): array
     {
-        // Chat agent gets full DB-aware context when a projekt_id is present.
-        // Wrapped in try-catch so unit tests (no DB) and edge cases fall back gracefully.
         try {
             $systemSuffix = ! empty($context['projekt_id'])
                 ? app(ClaudeContextBuilder::class)->build($context)
@@ -249,22 +248,39 @@ class ClaudeCliService
             $systemSuffix = $this->buildContextBlock($context);
         }
 
-        if ($this->useDirectApi()) {
-            $user = \Illuminate\Support\Facades\Auth::user();
-            $model = $user instanceof \App\Models\User
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $providerConfig = $user instanceof \App\Models\User
+            ? $user->llmProviderConfig()
+            : ['type' => 'platform'];
+
+        // OpenAI-compatible (Ollama, OpenRouter, LM Studio): dedicated adapter
+        if ($providerConfig['type'] === 'openai-compatible') {
+            return app(OpenAiCompatibleService::class)->chat(
+                endpoint: $providerConfig['endpoint'],
+                apiKey: $providerConfig['api_key'] ?? null,
+                model: $providerConfig['model'],
+                systemPrompt: $systemSuffix,
+                userMessage: $userMessage,
+            );
+        }
+
+        // Anthropic BYO or Platform: both go through Anthropic API/CLI.
+        // Difference: API key source.
+        $chatModel = $providerConfig['model']
+            ?? ($user instanceof \App\Models\User
                 ? $user->resolvedChatModel()
                 : config('services.anthropic.agent_models.chat-agent',
-                    config('services.anthropic.model', 'claude-sonnet-4-6'));
-            $result = $this->callDirectApi($model, $systemSuffix, $userMessage);
+                    config('services.anthropic.model', 'claude-sonnet-4-6')));
+
+        $apiKey = $providerConfig['type'] === 'anthropic-byo'
+            ? $providerConfig['api_key']
+            : config('services.anthropic.api_key');
+
+        if ($this->useDirectApi()) {
+            $result = $this->callDirectApi($chatModel, $systemSuffix, $userMessage, $apiKey);
 
             return ['content' => $result['content']];
         }
-
-        $user = \Illuminate\Support\Facades\Auth::user();
-        $chatModel = $user instanceof \App\Models\User
-            ? $user->resolvedChatModel()
-            : config('services.anthropic.agent_models.chat-agent',
-                config('services.anthropic.model', 'claude-sonnet-4-6'));
 
         $parts = array_filter([
             escapeshellarg($this->cliBin()),
@@ -281,7 +297,6 @@ class ClaudeCliService
         $command = implode(' ', array_values($parts));
 
         $env = [];
-        $apiKey = config('services.anthropic.api_key');
         if ($apiKey) {
             $env['ANTHROPIC_API_KEY'] = $apiKey;
         }

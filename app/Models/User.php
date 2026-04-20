@@ -46,6 +46,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'registration_city',
         'total_kills',
         'preferred_chat_model',
+        'llm_provider_type',
+        'llm_endpoint',
+        'llm_api_key',
+        'llm_custom_model',
     ];
 
     /**
@@ -58,6 +62,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        'llm_api_key',
     ];
 
     /**
@@ -73,6 +78,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'password' => 'hashed',
             'status' => 'string',
             'total_kills' => 'integer',
+            'llm_api_key' => 'encrypted',
         ];
     }
 
@@ -97,6 +103,43 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return (string) config('services.anthropic.agent_models.chat-agent',
             config('services.anthropic.model', 'claude-sonnet-4-6')
         );
+    }
+
+    /**
+     * Resolve the LLM provider configuration for this user's chat.
+     *
+     * Returns:
+     *   - ['type' => 'platform'] when the user relies on the platform's Anthropic key.
+     *   - ['type' => 'anthropic-byo', 'api_key' => ..., 'model' => ...] when the user
+     *     supplies their own Anthropic API key.
+     *   - ['type' => 'openai-compatible', 'endpoint' => ..., 'api_key' => ?, 'model' => ...]
+     *     for Ollama/OpenRouter/any OpenAI-compatible endpoint.
+     *
+     * Validation happens in the settings form. Missing required fields → silently
+     * fall back to 'platform' so the chat still works.
+     */
+    public function llmProviderConfig(): array
+    {
+        $type = $this->llm_provider_type ?: 'platform';
+
+        if ($type === 'anthropic-byo' && $this->llm_api_key) {
+            return [
+                'type' => 'anthropic-byo',
+                'api_key' => $this->llm_api_key,
+                'model' => $this->llm_custom_model ?: $this->resolvedChatModel(),
+            ];
+        }
+
+        if ($type === 'openai-compatible' && $this->llm_endpoint && $this->llm_custom_model) {
+            return [
+                'type' => 'openai-compatible',
+                'endpoint' => rtrim($this->llm_endpoint, '/'),
+                'api_key' => $this->llm_api_key,
+                'model' => $this->llm_custom_model,
+            ];
+        }
+
+        return ['type' => 'platform'];
     }
 
     /**
