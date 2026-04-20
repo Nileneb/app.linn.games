@@ -48,8 +48,7 @@ class ClaudeService
             $systemPrompt .= "\n\n".$contextBlock;
         }
 
-        $model = config("services.anthropic.agent_models.{$configKey}")
-            ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+        $model = $this->resolveModelForCall($configKey, $context);
         $maxTok = $maxTokens > 0 ? $maxTokens : (int) config('services.anthropic.max_tokens', 8192);
         $workspace = $this->resolveWorkspace($context);
 
@@ -138,8 +137,7 @@ class ClaudeService
             $systemPrompt .= "\n\n".$contextBlock;
         }
 
-        $model = config("services.anthropic.agent_models.{$configKey}")
-            ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+        $model = $this->resolveModelForCall($configKey, $context);
         $maxTok = $maxTokens > 0 ? $maxTokens : (int) config('services.anthropic.max_tokens', 8192);
         $workspace = $this->resolveWorkspace($context);
 
@@ -563,5 +561,35 @@ class ClaudeService
         }
 
         return Workspace::find($workspaceId);
+    }
+
+    /**
+     * Für chat-agent: User-Preference (preferred_chat_model) schlägt Config-Default.
+     * Für Worker-Agenten (scoping/search/review/...): immer Config (kein User-Override).
+     */
+    private function resolveModelForCall(string $configKey, array $context): string
+    {
+        $configured = config("services.anthropic.agent_models.{$configKey}")
+            ?? config('services.anthropic.model', 'claude-haiku-4-5-20251001');
+
+        if ($configKey !== 'chat-agent') {
+            return $configured;
+        }
+
+        $user = $this->resolveUserForCall($context);
+        if ($user === null) {
+            return $configured;
+        }
+
+        return $user->resolvedChatModel();
+    }
+
+    private function resolveUserForCall(array $context): ?\App\Models\User
+    {
+        if (! empty($context['user_id'])) {
+            return \App\Models\User::find($context['user_id']);
+        }
+
+        return \Illuminate\Support\Facades\Auth::user();
     }
 }

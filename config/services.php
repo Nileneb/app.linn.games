@@ -108,6 +108,29 @@ return [
             'synthesis_agent' => (int) env('CLAUDE_DAILY_LIMIT_SYNTHESIS', 2000),
             'mayring_agent' => (int) env('CLAUDE_DAILY_LIMIT_MAYRING', 3000),
         ],
+
+        // Whitelist für User-Settings → Chat-Model-Auswahl. Nur Chat-Agent respektiert das.
+        // Worker-Agenten (scoping/search/review/...) bleiben auf CLAUDE_WORKER_MODEL fixiert.
+        'available_chat_models' => [
+            'claude-haiku-4-5-20251001' => [
+                'label' => 'Haiku 4.5 — schnell & günstig',
+                'description' => 'Schnellste Antworten, niedrigster Preis. Ideal für Standard-Fragen.',
+                'price_per_1m_input_usd' => 0.80,
+                'price_per_1m_output_usd' => 4.00,
+            ],
+            'claude-sonnet-4-6' => [
+                'label' => 'Sonnet 4.6 — ausgewogen (Default)',
+                'description' => 'Guter Kompromiss aus Qualität und Geschwindigkeit. Voreinstellung.',
+                'price_per_1m_input_usd' => 3.00,
+                'price_per_1m_output_usd' => 15.00,
+            ],
+            'claude-opus-4-7' => [
+                'label' => 'Opus 4.7 — tiefstes Reasoning',
+                'description' => 'Bestes Modell für komplexe Aufgaben. Höhere Kosten pro Anfrage.',
+                'price_per_1m_input_usd' => 15.00,
+                'price_per_1m_output_usd' => 75.00,
+            ],
+        ],
     ],
 
     'pi_agent' => [

@@ -250,17 +250,27 @@ class ClaudeCliService
         }
 
         if ($this->useDirectApi()) {
-            $model = config('services.anthropic.agent_models.chat-agent',
-                config('services.anthropic.model', 'claude-sonnet-4-6'));
+            $user = \Illuminate\Support\Facades\Auth::user();
+            $model = $user instanceof \App\Models\User
+                ? $user->resolvedChatModel()
+                : config('services.anthropic.agent_models.chat-agent',
+                    config('services.anthropic.model', 'claude-sonnet-4-6'));
             $result = $this->callDirectApi($model, $systemSuffix, $userMessage);
 
             return ['content' => $result['content']];
         }
 
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $chatModel = $user instanceof \App\Models\User
+            ? $user->resolvedChatModel()
+            : config('services.anthropic.agent_models.chat-agent',
+                config('services.anthropic.model', 'claude-sonnet-4-6'));
+
         $parts = array_filter([
             escapeshellarg($this->cliBin()),
             '--print',
             '--output-format', 'json',
+            '--model', escapeshellarg($chatModel),
             ...$this->productionChatFlags(),
             $systemSuffix !== '' ? '--append-system-prompt' : null,
             $systemSuffix !== '' ? escapeshellarg($systemSuffix) : null,

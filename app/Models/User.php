@@ -45,6 +45,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'registration_country_name',
         'registration_city',
         'total_kills',
+        'preferred_chat_model',
     ];
 
     /**
@@ -78,6 +79,24 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function emailAliases(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(UserEmailAlias::class);
+    }
+
+    /**
+     * Resolve the Claude chat model this user should use.
+     * Falls back to config default when no user preference or preference not in whitelist.
+     */
+    public function resolvedChatModel(): string
+    {
+        $available = (array) config('services.anthropic.available_chat_models', []);
+        $preferred = $this->preferred_chat_model;
+
+        if ($preferred && isset($available[$preferred])) {
+            return $preferred;
+        }
+
+        return (string) config('services.anthropic.agent_models.chat-agent',
+            config('services.anthropic.model', 'claude-sonnet-4-6')
+        );
     }
 
     /**
