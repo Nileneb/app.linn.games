@@ -1,19 +1,6 @@
-# MayringCoder Stack — deploye unabhängig vom app.linn.games Stack.
-# Voraussetzung: docker network create linn-shared (einmalig auf Server)
+# MayringCoder Stack — deployed independently from app.linn.games stack.
+# Prerequisite: docker network create linn-shared (once on server)
 # Deploy: ./deploy-mayring.sh
-
-x-mayring-base: &mayring-build
-  image: nileneb/mayring:latest
-  restart: unless-stopped
-  networks:
-    - mayring-internal
-    - linn-shared
-
-x-mayring-env: &mayring-env
-  OLLAMA_URL: ${OLLAMA_URL:-http://192.168.178.11:11434}
-  OLLAMA_MODEL: ${MAYRING_OLLAMA_MODEL:-qwen2.5:1.5b}
-  CHROMA_PATH: /app/cache/chroma
-  MCP_AUTH_TOKEN: ${MAYRING_MCP_AUTH_TOKEN}
 
 services:
   mayring-nginx:
@@ -22,7 +9,7 @@ services:
     ports:
       - "${MAYRING_PORT:-6480}:80"
     volumes:
-      - ./docker/mayring/nginx/mcp.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/mayring/nginx/mcp.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - mayring-internal
       - linn-shared
@@ -31,54 +18,61 @@ services:
       - mayring-mcp
 
   mayring-api:
-    <<: *mayring-build
-    command: ["python", "-m", "uvicorn", "src.api_server:app", "--host", "0.0.0.0", "--port", "8090"]
+    image: nileneb/mayring:latest
+    command: python -m uvicorn src.api.server:app --host 0.0.0.0 --port 8090
+    restart: unless-stopped
+    env_file: .env.production
     environment:
-      <<: *mayring-env
-      LARAVEL_DB_HOST: postgres
-      LARAVEL_DB_PORT: 5432
-      LARAVEL_DB_USER: ${POSTGRES_USERNAME}
-      LARAVEL_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      LARAVEL_DB_NAME: ${POSTGRES_DATABASE}
+      LARAVEL_INTERNAL_URL: http://web
     volumes:
       - linn-mayring-cache:/app/cache
+      - ./reports:/app/reports
+      - ./secrets:/secrets:ro
       - linn-papers-data:/data/papers:ro
+    networks:
+      - mayring-internal
+      - linn-shared
 
   mayring-mcp:
-    <<: *mayring-build
-    command: ["python", "-m", "src.mcp_server"]
+    image: nileneb/mayring:latest
+    command: python -m src.mcp_server
+    restart: unless-stopped
+    env_file: .env.production
     environment:
-      <<: *mayring-env
-      MCP_TRANSPORT: http
       MCP_HTTP_PORT: 8092
       MCP_HTTP_HOST: 0.0.0.0
     volumes:
       - linn-mayring-cache:/app/cache
+      - ./secrets:/secrets:ro
+    networks:
+      - mayring-internal
 
   mayring-pi:
-    <<: *mayring-build
-    command: ["python", "-m", "src.pi_server"]
-    environment:
-      <<: *mayring-env
-      PI_PORT: 8091
+    image: nileneb/mayring:latest
+    command: python -m src.agents.pi_server
+    restart: unless-stopped
+    env_file: .env.production
     volumes:
       - linn-mayring-cache:/app/cache
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ./secrets:/secrets:ro
+    networks:
+      - mayring-internal
 
   mayring-webui:
-    <<: *mayring-build
-    command: ["python", "-m", "src.web_ui", "--host", "0.0.0.0", "--port", "7860",
-              "--api-url", "http://mayring-api:8090"]
+    image: nileneb/mayring:latest
+    command: python -m src.api.web_ui
+    restart: unless-stopped
+    env_file: .env.production
     environment:
-      <<: *mayring-env
-      UI_AUTH_USER: ${MAYRING_UI_AUTH_USER:-admin}
-      UI_AUTH_PASS: ${MAYRING_UI_AUTH_PASS}
+      LARAVEL_INTERNAL_URL: http://web
       GRADIO_ROOT_PATH: /ui
       GRADIO_SERVER_NAME: "0.0.0.0"
-      LARAVEL_INTERNAL_URL: http://web
     volumes:
-      - linn-mayring-cache:/app/cache
+      - linn-mayring-cache:/app/cache:ro
+      - ./secrets:/secrets:ro
+    networks:
+      - mayring-internal
+      - linn-shared
 
 networks:
   mayring-internal:
