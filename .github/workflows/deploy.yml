@@ -5,6 +5,7 @@ on:
     workflows: ["tests"]
     branches: [main]
     types: [completed]
+  workflow_dispatch:  # manueller Trigger via `gh workflow run 'Deploy to Production'`
 
 permissions:
   contents: read
@@ -15,7 +16,7 @@ jobs:
     name: Deploy
     runs-on: [self-hosted, u-server]
     environment: production
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Write .env from GitHub Environment
