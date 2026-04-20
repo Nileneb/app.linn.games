@@ -7,14 +7,15 @@ use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
+use Tests\Support\TestJwtKeys;
 
 beforeEach(function () {
     foreach (UserRole::all() as $roleName) {
         Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
     }
 
-    Config::set('services.jwt.private_key', file_get_contents(base_path('tests/fixtures/jwt/private-test.pem')));
-    Config::set('services.jwt.public_key', file_get_contents(base_path('tests/fixtures/jwt/public-test.pem')));
+    Config::set('services.jwt.private_key', TestJwtKeys::privateKey());
+    Config::set('services.jwt.public_key', TestJwtKeys::publicKey());
     Config::set('services.jwt.issuer', 'https://app.linn.games');
     Config::set('services.jwt.audience', 'mayringcoder');
     Config::set('services.mayring_mcp.auth_token', 'mayring-outbound-secret');
@@ -54,7 +55,7 @@ test('authorize endpoint issues JWT and POSTs it as token to MCP register-code',
         if (substr_count($token, '.') !== 2) {
             return false;
         }
-        $decoded = JWT::decode($token, new Key(file_get_contents(base_path('tests/fixtures/jwt/public-test.pem')), 'RS256'));
+        $decoded = JWT::decode($token, new Key(TestJwtKeys::publicKey(), 'RS256'));
 
         return $decoded->workspace_id === $workspace->id && $decoded->aud === 'mayringcoder';
     });
@@ -94,7 +95,7 @@ test('JWT includes admin scope when user has admin role', function () {
         if (empty($body['token'])) {
             return false;
         }
-        $decoded = JWT::decode($body['token'], new Key(file_get_contents(base_path('tests/fixtures/jwt/public-test.pem')), 'RS256'));
+        $decoded = JWT::decode($body['token'], new Key(TestJwtKeys::publicKey(), 'RS256'));
         return in_array('admin', (array) $decoded->scope, true);
     });
 });

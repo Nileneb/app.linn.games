@@ -32,6 +32,10 @@ docker-compose.override.yml
 /database/exports/.worktrees/
 .superpowers/**
 
+# JWT & RSA keys — nie committen (Test-Keys werden zur Laufzeit generiert)
+*.pem
+tests/fixtures/jwt/
+
 # KI-Tools (Dev-only)
 **/.claude
 CLAUDE.md

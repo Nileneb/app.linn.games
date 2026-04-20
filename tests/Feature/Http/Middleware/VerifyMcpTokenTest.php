@@ -4,11 +4,12 @@ use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Tests\Support\TestJwtKeys;
 
 beforeEach(function () {
     Config::set('services.mcp.service_token', 'test-service-secret');
-    Config::set('services.jwt.private_key', file_get_contents(base_path('tests/fixtures/jwt/private-test.pem')));
-    Config::set('services.jwt.public_key', file_get_contents(base_path('tests/fixtures/jwt/public-test.pem')));
+    Config::set('services.jwt.private_key', TestJwtKeys::privateKey());
+    Config::set('services.jwt.public_key', TestJwtKeys::publicKey());
     Config::set('services.jwt.issuer', 'https://app.linn.games');
     Config::set('services.jwt.audience', 'mayringcoder');
 
@@ -37,7 +38,7 @@ function signTestJwt(array $overrides = []): string
         'scope' => ['mcp:memory'],
     ], $overrides);
 
-    return JWT::encode($payload, file_get_contents(base_path('tests/fixtures/jwt/private-test.pem')), 'RS256');
+    return JWT::encode($payload, TestJwtKeys::privateKey(), 'RS256');
 }
 
 test('rejects requests without Bearer header', function () {

@@ -8,14 +8,15 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Config;
 use Spatie\Permission\Models\Role;
+use Tests\Support\TestJwtKeys;
 
 beforeEach(function () {
     foreach (UserRole::all() as $roleName) {
         Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
     }
 
-    Config::set('services.jwt.private_key', file_get_contents(base_path('tests/fixtures/jwt/private-test.pem')));
-    Config::set('services.jwt.public_key', file_get_contents(base_path('tests/fixtures/jwt/public-test.pem')));
+    Config::set('services.jwt.private_key', TestJwtKeys::privateKey());
+    Config::set('services.jwt.public_key', TestJwtKeys::publicKey());
     Config::set('services.jwt.issuer', 'https://app.linn.games');
     Config::set('services.jwt.audience', 'mayringcoder');
     Config::set('services.jwt.ttl', 3600);
@@ -23,8 +24,7 @@ beforeEach(function () {
 
 function decodeJwtWithTestKey(string $token): array
 {
-    $public = file_get_contents(base_path('tests/fixtures/jwt/public-test.pem'));
-    $decoded = JWT::decode($token, new Key($public, 'RS256'));
+    $decoded = JWT::decode($token, new Key(TestJwtKeys::publicKey(), 'RS256'));
 
     return (array) json_decode(json_encode($decoded), true);
 }
@@ -99,8 +99,7 @@ test('throws when JWT_PRIVATE_KEY is missing', function () {
 });
 
 test('accepts base64-encoded private key', function () {
-    $rawPem = file_get_contents(base_path('tests/fixtures/jwt/private-test.pem'));
-    Config::set('services.jwt.private_key', base64_encode($rawPem));
+    Config::set('services.jwt.private_key', base64_encode(TestJwtKeys::privateKey()));
 
     $user = User::factory()->withoutTwoFactor()->create();
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
