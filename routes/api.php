@@ -29,3 +29,15 @@ Route::middleware([VerifyMcpToken::class, SecureMcpHeaders::class, 'throttle:mcp
         ->middleware('mcp.internal')
         ->name('mcp.agent-stream');
 });
+
+// Workspace-LLM-Endpoint-Lookup — MayringCoder (src/llm/endpoint.py) holt hiermit
+// die passende Provider-Config pro Request. Auth: MCP_SERVICE_TOKEN.
+Route::middleware([VerifyMcpToken::class, 'throttle:60,1'])
+    ->get('/mcp-service/llm-endpoint/{workspace_id}', [\App\Http\Controllers\LlmEndpointController::class, 'show'])
+    ->name('mcp-service.llm-endpoint');
+
+// Token-Refresh für Gradio-WebUI — MayringCoder's web_ui.refresh_jwt() callt hier.
+// Dual-Auth: Sanctum ODER gültiger RS256-JWT als Bearer.
+Route::middleware('throttle:10,1')
+    ->post('/mayring/refresh-token', [\App\Http\Controllers\MayringDashboardController::class, 'refreshToken'])
+    ->name('mayring.refresh-token');

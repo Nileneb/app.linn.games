@@ -148,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // MayringCoder Subscription (kein Gate — jeder Auth-User kann abonnieren)
     Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
+    Route::get('einstellungen/llm-endpoints', \App\Livewire\Settings\LlmEndpoints::class)->name('settings.llm-endpoints');
 
     // MayringCoder Memory-Dashboard (nur für aktive Abonnenten)
     Route::middleware('mayring.subscription')

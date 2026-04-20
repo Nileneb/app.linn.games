@@ -52,7 +52,14 @@ class ClaudeService
         $maxTok = $maxTokens > 0 ? $maxTokens : (int) config('services.anthropic.max_tokens', 8192);
         $workspace = $this->resolveWorkspace($context);
 
-        if ($workspace !== null) {
+        // Workspace hat eigenen LLM-Endpoint konfiguriert → kein Platform-Billing.
+        // User zahlt direkt beim Provider. Siehe App\Models\LlmEndpoint::resolveFor.
+        $userManagedEndpoint = $workspace
+            ? \App\Models\LlmEndpoint::resolveFor($workspace, $configKey)
+            : null;
+        $isUserManaged = $userManagedEndpoint && $userManagedEndpoint->provider !== 'platform';
+
+        if (! $isUserManaged && $workspace !== null) {
             $this->creditService->assertHasBalance($workspace);
         }
 
@@ -92,7 +99,7 @@ class ClaudeService
         $outputTokens = (int) ($raw['usage']['output_tokens'] ?? 0);
         $tokensUsed = $inputTokens + $outputTokens;
 
-        if ($workspace !== null && $tokensUsed > 0) {
+        if (! $isUserManaged && $workspace !== null && $tokensUsed > 0) {
             $this->creditService->deduct($workspace, $inputTokens, $configKey, $outputTokens);
         }
 

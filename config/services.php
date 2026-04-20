@@ -166,6 +166,9 @@ return [
         'issuer' => env('JWT_ISSUER', 'https://app.linn.games'),
         'audience' => env('JWT_AUDIENCE', 'mayringcoder'),
         'ttl' => (int) env('JWT_TTL_SECONDS', 28800),
+        // Sliding session: wie lange nach exp darf MayringCoder noch refresh beantragen.
+        // Länger = bequemer für User, aber toleriert gestohlene abgelaufene Tokens.
+        'refresh_grace_seconds' => (int) env('JWT_REFRESH_GRACE_SECONDS', 7 * 24 * 3600),
     ],
 
     'ollama' => [
