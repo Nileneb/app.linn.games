@@ -98,6 +98,72 @@ test('throws when JWT_PRIVATE_KEY is missing', function () {
         ->toThrow(RuntimeException::class);
 });
 
+test('platform provider embeds llm_provider=platform without extra claims', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForUser($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['llm_provider'])->toBe('platform');
+    expect($claims)->not->toHaveKey('llm_endpoint');
+    expect($claims)->not->toHaveKey('llm_model');
+    expect($claims)->not->toHaveKey('llm_requires_key');
+});
+
+test('anthropic-byo provider embeds model + requires_key flag but NOT api_key', function () {
+    $user = User::factory()->withoutTwoFactor()->create([
+        'llm_provider_type' => 'anthropic-byo',
+        'llm_api_key' => 'sk-ant-secret-key-DO-NOT-LEAK',
+        'llm_custom_model' => 'claude-opus-4-7',
+    ]);
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForUser($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['llm_provider'])->toBe('anthropic-byo');
+    expect($claims['llm_model'])->toBe('claude-opus-4-7');
+    expect($claims['llm_requires_key'])->toBeTrue();
+
+    // Security: raw api_key must NEVER be in JWT payload
+    expect(json_encode($claims))->not->toContain('sk-ant-secret-key-DO-NOT-LEAK');
+});
+
+test('openai-compatible provider embeds endpoint + model + requires_key flag', function () {
+    $user = User::factory()->withoutTwoFactor()->create([
+        'llm_provider_type' => 'openai-compatible',
+        'llm_endpoint' => 'http://localhost:11434',
+        'llm_api_key' => 'ollama-token',
+        'llm_custom_model' => 'qwen2.5:7b',
+    ]);
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForUser($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['llm_provider'])->toBe('openai-compatible');
+    expect($claims['llm_endpoint'])->toBe('http://localhost:11434');
+    expect($claims['llm_model'])->toBe('qwen2.5:7b');
+    expect($claims['llm_requires_key'])->toBeTrue();
+    expect(json_encode($claims))->not->toContain('ollama-token');
+});
+
+test('openai-compatible without api_key sets requires_key=false (local ollama)', function () {
+    $user = User::factory()->withoutTwoFactor()->create([
+        'llm_provider_type' => 'openai-compatible',
+        'llm_endpoint' => 'http://localhost:11434',
+        'llm_api_key' => null,
+        'llm_custom_model' => 'llama3.2',
+    ]);
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForUser($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['llm_requires_key'])->toBeFalse();
+});
+
 test('accepts base64-encoded private key', function () {
     Config::set('services.jwt.private_key', base64_encode(TestJwtKeys::privateKey()));
 

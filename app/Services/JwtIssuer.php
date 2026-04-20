@@ -26,6 +26,21 @@ class JwtIssuer
             'email' => $user->email,
         ];
 
+        // Provider-Claims für MayringCoder (non-sensitive — api_key bleibt server-side,
+        // wird via separatem Callback geholt).
+        $providerConfig = $user->llmProviderConfig();
+        $payload['llm_provider'] = $providerConfig['type'];
+        if ($providerConfig['type'] !== 'platform') {
+            $payload['llm_model'] = $providerConfig['model'] ?? null;
+            if ($providerConfig['type'] === 'openai-compatible') {
+                $payload['llm_endpoint'] = $providerConfig['endpoint'] ?? null;
+                $payload['llm_requires_key'] = ! empty($providerConfig['api_key']);
+            }
+            if ($providerConfig['type'] === 'anthropic-byo') {
+                $payload['llm_requires_key'] = true;
+            }
+        }
+
         return JWT::encode($payload, $this->privateKey(), 'RS256');
     }
 
