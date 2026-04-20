@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Writes .env from .env.defaults + GitHub Environment variables passed as env vars.
 Called by CI/CD deploy workflows. All OVERRIDE_KEYS are injected via workflow env: block.
+
+Multiline-Werte (PEM-Keys) werden automatisch base64-encoded, damit die .env
+single-line safe bleibt. JwtIssuer/Middleware decoden automatisch.
 """
+import base64
 import os
 from pathlib import Path
 
@@ -15,7 +19,8 @@ OVERRIDE_KEYS = [
     'DB_PASSWORD', 'POSTGRES_PASSWORD',
     'REVERB_APP_SECRET',
     'CLAUDE_API_KEY',
-    'MCP_AUTH_TOKEN', 'MAYRING_MCP_AUTH_TOKEN',
+    'MCP_AUTH_TOKEN', 'MAYRING_MCP_AUTH_TOKEN', 'MCP_SERVICE_TOKEN',
+    'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY',
     'PAPER_SEARCH_TOKEN',
     'STRIPE_KEY', 'STRIPE_SECRET', 'STRIPE_WEBHOOK_SECRET',
     'GH_CLIENT_ID', 'GH_CLIENT_SECRET',  # GitHub blocks GITHUB_ prefix — mapped below
@@ -30,6 +35,7 @@ OVERRIDE_KEYS = [
     'VITE_REVERB_APP_KEY', 'VITE_REVERB_HOST', 'VITE_REVERB_PORT', 'VITE_REVERB_SCHEME',
     'OLLAMA_URL',
     'MAYRING_MCP_ENDPOINT', 'MAYRING_OLLAMA_MODEL', 'PI_AGENT_URL',
+    'JWT_ISSUER', 'JWT_AUDIENCE', 'JWT_TTL_SECONDS', 'JWT_REFRESH_GRACE_SECONDS',
     'MAYRING_UI_AUTH_PASS', 'MAYRING_UI_AUTH_USER', 'MAYRING_PORT',
     'PAPER_SEARCH_URL',
     'MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_FROM_ADDRESS',
@@ -37,6 +43,12 @@ OVERRIDE_KEYS = [
 ]
 
 overrides = {k: os.environ[k] for k in OVERRIDE_KEYS if os.environ.get(k)}
+
+# Multiline-Werte (PEM-Keys) base64-encoden für single-line .env.
+# Laravel-Code (JwtIssuer, VerifyMcpToken) decoded automatisch via base64_decode.
+for key in ('JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY'):
+    if key in overrides and '\n' in overrides[key]:
+        overrides[key] = base64.b64encode(overrides[key].encode()).decode()
 
 # GitHub blocks GITHUB_ prefix in secret names — remap to correct .env keys
 for gh_key, env_key in [('GH_CLIENT_ID', 'GITHUB_CLIENT_ID'), ('GH_CLIENT_SECRET', 'GITHUB_CLIENT_SECRET')]:

@@ -27,6 +27,13 @@ jobs:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           MCP_AUTH_TOKEN: ${{ secrets.MCP_AUTH_TOKEN }}
           MAYRING_MCP_AUTH_TOKEN: ${{ secrets.MAYRING_MCP_AUTH_TOKEN }}
+          MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+          JWT_ISSUER: ${{ vars.JWT_ISSUER }}
+          JWT_AUDIENCE: ${{ vars.JWT_AUDIENCE }}
+          JWT_TTL_SECONDS: ${{ vars.JWT_TTL_SECONDS }}
+          JWT_REFRESH_GRACE_SECONDS: ${{ vars.JWT_REFRESH_GRACE_SECONDS }}
           PAPER_SEARCH_TOKEN: ${{ secrets.PAPER_SEARCH_TOKEN }}
           STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
           STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}

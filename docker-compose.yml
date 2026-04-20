@@ -10,6 +10,7 @@ services:
       - ./docker/mayring/nginx/mcp-passthrough.conf:/etc/nginx/conf.d/mcp.conf:ro
     environment:
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - MCP_SERVICE_TOKEN=${MCP_SERVICE_TOKEN}
     networks:
       - linn-network
       - linn-shared
@@ -151,12 +152,12 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - BEARER_TOKEN=${MCP_AUTH_TOKEN}
+      - BEARER_TOKEN=${MCP_SERVICE_TOKEN:-${MCP_AUTH_TOKEN}}
       - MCP_TRANSPORT=streamable-http
       - MCP_MESSAGES_PATH=/paper-messages/
       - DOWNLOAD_PATH=/data/papers
       - LARAVEL_INGEST_URL=http://php-fpm/api/papers/ingest
-      - LARAVEL_MCP_TOKEN=${MCP_AUTH_TOKEN}
+      - LARAVEL_MCP_TOKEN=${MCP_SERVICE_TOKEN:-${MCP_AUTH_TOKEN}}
       - LARAVEL_DB_HOST=postgres
       - LARAVEL_DB_PORT=5432
       - LARAVEL_DB_USER=${POSTGRES_USERNAME}
