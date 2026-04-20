@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\JwtIssuer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 class MayringDashboardController extends Controller
 {
+    public function __construct(private readonly JwtIssuer $jwtIssuer) {}
+
     public function redirect(Request $request)
     {
         $user = $request->user();
+        $workspace = $user->currentWorkspace();
 
-        $token = $user->createToken(
-            name: 'mayring-ui-session',
-            abilities: ['mcp:memory'],
-            expiresAt: now()->addHours(8),
-        );
+        $jwt = $this->jwtIssuer->issueForUser($user, $workspace);
 
         $code = Str::uuid()->toString();
-        Redis::setex("mayring_ui_code:{$code}", 60, $token->plainTextToken);
+        Redis::setex("mayring_ui_code:{$code}", 60, $jwt);
 
         $url = rtrim(config('services.mayring.ui_url', 'https://mcp.linn.games/ui'), '/')
             . '/?code=' . $code;

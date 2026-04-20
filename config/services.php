@@ -132,9 +132,17 @@ return [
     ],
 
     'mcp' => [
-        'auth_token' => env('MCP_AUTH_TOKEN'),
+        'service_token' => env('MCP_SERVICE_TOKEN', env('MCP_AUTH_TOKEN')),
         'rate_limit' => (int) env('MCP_RATE_LIMIT', 60),
         'restrict_to_internal' => (bool) env('MCP_RESTRICT_TO_INTERNAL', true),
+    ],
+
+    'jwt' => [
+        'private_key' => env('JWT_PRIVATE_KEY'),
+        'public_key' => env('JWT_PUBLIC_KEY'),
+        'issuer' => env('JWT_ISSUER', 'https://app.linn.games'),
+        'audience' => env('JWT_AUDIENCE', 'mayringcoder'),
+        'ttl' => (int) env('JWT_TTL_SECONDS', 28800),
     ],
 
     'ollama' => [

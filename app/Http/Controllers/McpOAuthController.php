@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\JwtIssuer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -9,6 +10,8 @@ use Illuminate\Support\Str;
 
 class McpOAuthController extends Controller
 {
+    public function __construct(private readonly JwtIssuer $jwtIssuer) {}
+
     public function authorize(Request $request): RedirectResponse
     {
         $redirectUri = $request->query('redirect_uri');
@@ -28,10 +31,7 @@ class McpOAuthController extends Controller
                 ->with('info', 'Mayring Memory erfordert ein aktives Abo.');
         }
 
-        // Always create a fresh MCP token (old one may have rotated)
-        $user->tokens()->where('name', 'MCP Claude Web')->delete();
-        $tokenResult = $user->createToken('MCP Claude Web', ['mcp:memory']);
-        $plainTextToken = $tokenResult->plainTextToken; // "{id}|{plaintext}"
+        $jwt = $this->jwtIssuer->issueForUser($user, $workspace);
 
         $code = Str::random(40);
 
@@ -45,7 +45,7 @@ class McpOAuthController extends Controller
             ->timeout(5)
             ->post("{$mcpHttpUrl}/authorize/register-code", [
                 'code'                  => $code,
-                'token'                 => $plainTextToken,
+                'token'                 => $jwt,
                 'workspace_id'          => $workspace->id,
                 'code_challenge'        => $codeChallenge,
                 'code_challenge_method' => $codeChallengeMethod,

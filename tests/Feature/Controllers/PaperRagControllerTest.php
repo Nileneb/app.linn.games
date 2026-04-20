@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
-    Config::set('services.mcp.auth_token', 'test-mcp-token');
+    Config::set('services.mcp.service_token', 'test-mcp-token');
 });
 
 test('search accepts offset parameter for pagination', function () {

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Config;
 
 beforeEach(function () {
     Config::set('services.anthropic.agents.test_agent', 'agents/test-agent.md');
-    Config::set('services.mcp.auth_token', 'mcp-secret');
+    Config::set('services.mcp.service_token', 'mcp-secret');
 });
 
 test('mcp agent endpoint forwards request to claude and returns agent content', function () {

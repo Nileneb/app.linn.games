@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Queue;
 // Hilfsfunktion: Autorisierungs-Header mit gültigem MCP-Token
 function mcpHeaders(): array
 {
-    Config::set('services.mcp.auth_token', 'test-mcp-token');
+    Config::set('services.mcp.service_token', 'test-mcp-token');
 
     return ['Authorization' => 'Bearer test-mcp-token'];
 }
@@ -31,7 +31,7 @@ test('ingest rejects request without bearer token', function () {
 });
 
 test('ingest rejects request with invalid bearer token', function () {
-    Config::set('services.mcp.auth_token', 'test-mcp-token');
+    Config::set('services.mcp.service_token', 'test-mcp-token');
 
     $response = $this->postJson('/api/papers/ingest', [
         'paper_id' => 'paper-1',
@@ -242,7 +242,7 @@ test('search returns 503 when ollama connection fails', function () {
 test('ingest returns 429 when rate limit is exceeded', function () {
     Queue::fake();
     $token = 'rate-limit-test-token-ingest-'.uniqid();
-    Config::set('services.mcp.auth_token', $token);
+    Config::set('services.mcp.service_token', $token);
     Config::set('services.mcp.rate_limit', 1);
 
     $headers = ['Authorization' => "Bearer {$token}"];
@@ -265,7 +265,7 @@ test('search returns 429 when rate limit is exceeded', function () {
         ),
     ]);
     $token = 'rate-limit-test-token-search-'.uniqid();
-    Config::set('services.mcp.auth_token', $token);
+    Config::set('services.mcp.service_token', $token);
     Config::set('services.mcp.rate_limit', 1);
 
     $headers = ['Authorization' => "Bearer {$token}"];
