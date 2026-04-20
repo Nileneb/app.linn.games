@@ -6,6 +6,8 @@ on:
     paths:
       - 'docker-compose.mayring.yml'
       - 'docker/mayring/**'
+  repository_dispatch:
+    types: [mayring-deploy]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +21,7 @@ jobs:
     environment: production
 
     steps:
-      - name: Write .env from GitHub Environment
+      - name: Write Laravel .env from GitHub Environment
         env:
           APP_KEY: ${{ secrets.APP_KEY }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -28,6 +30,9 @@ jobs:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           MCP_AUTH_TOKEN: ${{ secrets.MCP_AUTH_TOKEN }}
           MAYRING_MCP_AUTH_TOKEN: ${{ secrets.MAYRING_MCP_AUTH_TOKEN }}
+          MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           PAPER_SEARCH_TOKEN: ${{ secrets.PAPER_SEARCH_TOKEN }}
           STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
           STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}
@@ -54,9 +59,51 @@ jobs:
           MAYRING_UI_AUTH_PASS: ${{ secrets.MAYRING_UI_AUTH_PASS }}
           MAYRING_UI_AUTH_USER: ${{ vars.MAYRING_UI_AUTH_USER }}
           MAYRING_PORT: ${{ vars.MAYRING_PORT }}
+          JWT_ISSUER: ${{ vars.JWT_ISSUER }}
+          JWT_AUDIENCE: ${{ vars.JWT_AUDIENCE }}
+          JWT_TTL_SECONDS: ${{ vars.JWT_TTL_SECONDS }}
+          JWT_REFRESH_GRACE_SECONDS: ${{ vars.JWT_REFRESH_GRACE_SECONDS }}
         run: |
           cd ~/app.linn.games
           python3 scripts/write-env.py
+
+      - name: Write MayringCoder .env.production
+        env:
+          OLLAMA_URL: ${{ vars.OLLAMA_URL }}
+          OLLAMA_MODEL: ${{ vars.MAYRING_OLLAMA_MODEL }}
+          PI_REPO_SLUG: ${{ vars.PI_REPO_SLUG }}
+          MCP_AUTH_ENABLED: "true"
+          JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+          JWT_ISSUER: ${{ vars.JWT_ISSUER }}
+          JWT_AUDIENCE: ${{ vars.JWT_AUDIENCE }}
+          APP_BASE_URL: ${{ vars.MAYRING_APP_BASE_URL }}
+          MAYRING_API_URL: http://api-server:8080
+          LARAVEL_NETWORK: linn-shared
+          MAYRING_PORT: ${{ vars.MAYRING_PORT }}
+          MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
+        run: |
+          cat > ~/app.linn.games/.env.production << ENVEOF
+          OLLAMA_URL=${OLLAMA_URL}
+          OLLAMA_MODEL=${OLLAMA_MODEL}
+          PI_REPO_SLUG=${PI_REPO_SLUG}
+          MCP_AUTH_ENABLED=${MCP_AUTH_ENABLED}
+          JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH}
+          JWT_ISSUER=${JWT_ISSUER}
+          JWT_AUDIENCE=${JWT_AUDIENCE}
+          APP_BASE_URL=${APP_BASE_URL}
+          MAYRING_API_URL=${MAYRING_API_URL}
+          LARAVEL_NETWORK=${LARAVEL_NETWORK}
+          MAYRING_PORT=${MAYRING_PORT}
+          MCP_SERVICE_TOKEN=${MCP_SERVICE_TOKEN}
+          ENVEOF
+
+      - name: Write JWT public key for MayringCoder
+        env:
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+        run: |
+          mkdir -p ~/app.linn.games/secrets
+          printf '%s' "$JWT_PUBLIC_KEY" > ~/app.linn.games/secrets/jwt_public.pem
+          chmod 600 ~/app.linn.games/secrets/jwt_public.pem
 
       - name: Pull latest code
         run: |
