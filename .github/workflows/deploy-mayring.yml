@@ -9,6 +9,10 @@ on:
   repository_dispatch:
     types: [mayring-deploy]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to deploy (default: latest)"
+        default: "latest"
 
 permissions:
   contents: read
@@ -19,6 +23,8 @@ jobs:
     name: Deploy on u-server
     runs-on: [self-hosted, u-server]
     environment: production
+    env:
+      DEPLOY_TAG: ${{ github.event.client_payload.tag || github.event.inputs.tag || 'latest' }}
 
     steps:
       - name: Write Laravel .env from GitHub Environment
@@ -115,7 +121,7 @@ jobs:
         timeout-minutes: 10
         run: |
           cd ~/app.linn.games
-          ./deploy-mayring.sh 2>&1 | tee /tmp/mayring-deploy-output.txt
+          DEPLOY_TAG="$DEPLOY_TAG" ./deploy-mayring.sh 2>&1 | tee /tmp/mayring-deploy-output.txt
 
   open-issue-on-failure:
     name: Report failure

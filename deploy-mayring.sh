@@ -3,6 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+DEPLOY_TAG="${DEPLOY_TAG:-latest}"
 DM=(docker compose -f docker-compose.mayring.yml --project-name mayring)
 
 # ── Pre-flight ─────────────────────────────────
@@ -26,9 +27,15 @@ docker volume inspect linn-mayring-cache &>/dev/null || docker volume create lin
 echo "==> Ensuring linn-papers-data volume exists..."
 docker volume inspect linn-papers-data &>/dev/null || docker volume create linn-papers-data
 
-# ── Pull image from GHCR ──────────────────────
-echo "==> Pulling MayringCoder image from GHCR..."
-docker pull nileneb/mayring:latest
+# ── Pull image from Docker Hub ─────────────────
+# docker-compose.mayring.yml uses `image: nileneb/mayring:latest`. If a specific
+# tag is requested (e.g. git-sha from CI), pull it and locally alias it as :latest
+# so compose picks it up without needing a compose file edit.
+echo "==> Pulling MayringCoder image (tag=${DEPLOY_TAG}) from Docker Hub..."
+docker pull "nileneb/mayring:${DEPLOY_TAG}"
+if [ "${DEPLOY_TAG}" != "latest" ]; then
+  docker tag "nileneb/mayring:${DEPLOY_TAG}" nileneb/mayring:latest
+fi
 
 # ── Deploy ─────────────────────────────────────
 echo "==> Stopping old MayringCoder containers..."
