@@ -146,7 +146,7 @@ return [
 
     'mayring_mcp' => [
         'endpoint' => env('MAYRING_MCP_ENDPOINT', 'http://localhost:8090'),
-        'auth_token' => env('MAYRING_MCP_AUTH_TOKEN'),
+        'auth_token' => env('MCP_SERVICE_TOKEN', env('MAYRING_MCP_AUTH_TOKEN')),
         'timeout' => (int) env('MAYRING_MCP_TIMEOUT', 60),
     ],
 
