@@ -39,8 +39,10 @@ services:
     restart: unless-stopped
     env_file: .env.production
     environment:
+      MCP_TRANSPORT: http
       MCP_HTTP_PORT: 8092
       MCP_HTTP_HOST: 0.0.0.0
+      MCP_AUTH_ENABLED: "true"
     volumes:
       - linn-mayring-cache:/app/cache
       - ./secrets:/secrets:ro
