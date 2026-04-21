@@ -60,13 +60,12 @@ services:
 
   mayring-webui:
     image: nileneb/mayring:latest
-    command: python -m src.api.web_ui
+    command: python -m src.api.web_ui --host 0.0.0.0
     restart: unless-stopped
     env_file: .env.production
     environment:
       LARAVEL_INTERNAL_URL: http://web
       GRADIO_ROOT_PATH: /ui
-      GRADIO_SERVER_NAME: "0.0.0.0"
     volumes:
       - linn-mayring-cache:/app/cache:ro
       - ./secrets:/secrets:ro
