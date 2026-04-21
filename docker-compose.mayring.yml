@@ -48,6 +48,7 @@ services:
       - ./secrets:/secrets:ro
     networks:
       - mayring-internal
+      - linn-shared
 
   mayring-pi:
     image: nileneb/mayring:latest
