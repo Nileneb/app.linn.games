@@ -36,6 +36,13 @@ Route::middleware([VerifyMcpToken::class, 'throttle:60,1'])
     ->get('/mcp-service/llm-endpoint/{workspace_id}', [\App\Http\Controllers\LlmEndpointController::class, 'show'])
     ->name('mcp-service.llm-endpoint');
 
+// User-LLM-Key-Callback — MayringCoder holt hier den entschlüsselten User-API-Key
+// wenn im JWT llm_requires_key=true. Outer-Auth via MCP_SERVICE_TOKEN, Body-JWT
+// identifiziert den User. Kein JWT im Authorization-Header akzeptiert.
+Route::middleware([VerifyMcpToken::class.':service_only', 'throttle:30,1'])
+    ->post('/mcp/user-llm-key', [\App\Http\Controllers\UserLlmKeyController::class, 'show'])
+    ->name('mcp.user-llm-key');
+
 // Token-Refresh für Gradio-WebUI — MayringCoder's web_ui.refresh_jwt() callt hier.
 // Dual-Auth: Sanctum ODER gültiger RS256-JWT als Bearer.
 Route::middleware('throttle:10,1')

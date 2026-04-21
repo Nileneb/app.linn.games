@@ -2,17 +2,19 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\JwtIssuer;
 use Closure;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
-use Throwable;
 
 class VerifyMcpToken
 {
-    public function handle(Request $request, Closure $next): Response
+    /**
+     * @param  string  $mode  'dual' (service-token OR user-JWT) | 'service_only' (no user-JWT accepted)
+     */
+    public function handle(Request $request, Closure $next, string $mode = 'dual'): Response
     {
         $header = $request->header('Authorization', '');
 
@@ -29,13 +31,14 @@ class VerifyMcpToken
             return $next($request);
         }
 
-        $claims = $this->decodeJwt($token);
-
-        if (($claims['iss'] ?? null) !== config('services.jwt.issuer')) {
-            abort(401, 'Invalid token issuer.');
+        if ($mode === 'service_only') {
+            abort(401, 'Service token required.');
         }
-        if (($claims['aud'] ?? null) !== config('services.jwt.audience')) {
-            abort(401, 'Invalid token audience.');
+
+        try {
+            $claims = JwtIssuer::decodeAndValidate($token);
+        } catch (InvalidArgumentException $e) {
+            abort(401, $e->getMessage());
         }
 
         $request->attributes->set('auth_mode', 'jwt');
@@ -48,32 +51,5 @@ class VerifyMcpToken
         }
 
         return $next($request);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function decodeJwt(string $token): array
-    {
-        $publicKey = (string) config('services.jwt.public_key', '');
-        if ($publicKey === '') {
-            abort(401, 'Invalid token.');
-        }
-
-        if (! str_contains($publicKey, 'BEGIN')) {
-            $decoded = base64_decode($publicKey, true);
-            if ($decoded === false || ! str_contains($decoded, 'BEGIN')) {
-                abort(401, 'Invalid token.');
-            }
-            $publicKey = $decoded;
-        }
-
-        try {
-            $decoded = JWT::decode($token, new Key($publicKey, 'RS256'));
-        } catch (Throwable $e) {
-            abort(401, 'Invalid token: '.$e->getMessage());
-        }
-
-        return (array) json_decode(json_encode($decoded, JSON_THROW_ON_ERROR), true);
     }
 }
