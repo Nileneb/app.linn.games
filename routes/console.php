@@ -53,6 +53,11 @@ Artisan::command('deploy:ensure-admin', function () {
         $this->info("Admin-User {$email} existiert bereits.");
     }
 
+    if ($user->status !== 'active') {
+        $user->forceFill(['status' => 'active'])->save();
+        $this->info("Admin-Status auf 'active' gesetzt.");
+    }
+
     if (! $user->hasRole(\App\Enums\UserRole::ADMIN)) {
         $user->assignRole(\App\Enums\UserRole::ADMIN);
         $this->info('Admin-Rolle zugewiesen.');
