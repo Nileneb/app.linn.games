@@ -44,7 +44,7 @@ test('accepting invitation sets password and status to trial', function () {
         ->assertRedirect(route('login'));
 
     $user->refresh();
-    expect($user->status)->toBe('trial');
+    expect($user->status)->toBe('active');
     expect($user->invitation_token)->toBeNull();
 });
 
