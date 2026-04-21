@@ -36,7 +36,7 @@ class AcceptInvitation extends Component
 
         $this->invitedUser->update([
             'password' => Hash::make($this->password),
-            'status' => 'trial',
+            'status' => 'active',
             'invitation_token' => null,
             'invitation_expires_at' => null,
         ]);
