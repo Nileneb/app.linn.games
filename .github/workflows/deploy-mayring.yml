@@ -83,7 +83,7 @@ jobs:
           JWT_ISSUER: ${{ vars.JWT_ISSUER }}
           JWT_AUDIENCE: ${{ vars.JWT_AUDIENCE }}
           APP_BASE_URL: ${{ vars.MAYRING_APP_BASE_URL }}
-          MAYRING_API_URL: http://api-server:8080
+          MAYRING_API_URL: http://mayring-api:8090
           LARAVEL_NETWORK: linn-shared
           MAYRING_PORT: ${{ vars.MAYRING_PORT }}
           MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
