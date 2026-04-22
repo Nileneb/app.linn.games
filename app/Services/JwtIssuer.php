@@ -16,16 +16,43 @@ class JwtIssuer
 {
     public function issueForUser(User $user, Workspace $workspace): string
     {
+        return $this->issue($user, $workspace,
+            ttlSeconds: (int) config('services.jwt.ttl', 28800),
+            extraScopes: [],
+        );
+    }
+
+    /**
+     * Long-lived JWT (default 30 days) for the conversation-watcher daemon
+     * that runs on a user's own laptop. Extends the normal user-scope with
+     * ``watcher``, so server-side code can tell the two apart and e.g.
+     * rate-limit watcher-calls separately.
+     */
+    public function issueForWatcher(User $user, Workspace $workspace): string
+    {
+        $ttl = (int) config('services.jwt.watcher_ttl', 30 * 24 * 3600);
+
+        return $this->issue($user, $workspace,
+            ttlSeconds: $ttl,
+            extraScopes: ['watcher'],
+        );
+    }
+
+    /**
+     * @param  string[]  $extraScopes
+     */
+    private function issue(User $user, Workspace $workspace, int $ttlSeconds, array $extraScopes): string
+    {
         $now = time();
         $payload = [
             'iss' => config('services.jwt.issuer'),
             'aud' => config('services.jwt.audience'),
             'sub' => (string) $user->id,
             'iat' => $now,
-            'exp' => $now + (int) config('services.jwt.ttl', 28800),
+            'exp' => $now + $ttlSeconds,
             'jti' => Str::uuid()->toString(),
             'workspace_id' => $workspace->id,
-            'scope' => $this->scopesFor($user),
+            'scope' => array_values(array_unique(array_merge($this->scopesFor($user), $extraScopes))),
             'email' => $user->email,
         ];
 

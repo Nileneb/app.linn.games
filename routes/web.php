@@ -154,6 +154,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('mayring.subscription')
         ->get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)
         ->name('mayring.memory');
+
+    // Conversation-Watcher Setup — erklärt dem User, wozu der Watcher gut ist,
+    // gibt einen 30-Tage-JWT aus und rendert den fertigen Docker-Command zum
+    // Kopieren. Die Daten liegen beim User auf dem Rechner (~/.claude/projects),
+    // wir liefern nur Token + Anleitung.
+    Route::middleware('mayring.subscription')
+        ->get('mayring/watcher', \App\Livewire\Mayring\WatcherSetup::class)
+        ->name('mayring.watcher');
 });
 
 // Paper Search MCP token exchange (unauthenticated by OAuth design — PKCE verifier proves ownership)

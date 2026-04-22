@@ -169,6 +169,10 @@ return [
         // Sliding session: wie lange nach exp darf MayringCoder noch refresh beantragen.
         // Länger = bequemer für User, aber toleriert gestohlene abgelaufene Tokens.
         'refresh_grace_seconds' => (int) env('JWT_REFRESH_GRACE_SECONDS', 7 * 24 * 3600),
+        // Langlebiger Daemon-Token für den Conversation-Watcher auf dem User-
+        // Laptop (default 30 Tage). Kein Sanctum, kein Refresh — nach Ablauf
+        // erzeugt der User einen neuen Token im Dashboard.
+        'watcher_ttl' => (int) env('JWT_WATCHER_TTL_SECONDS', 30 * 24 * 3600),
     ],
 
     'ollama' => [

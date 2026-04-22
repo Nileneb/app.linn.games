@@ -175,3 +175,55 @@ test('accepts base64-encoded private key', function () {
 
     expect($claims['sub'])->toBe((string) $user->id);
 });
+
+// ---------------------------------------------------------------------------
+// Watcher-Token (30-Tage-Daemon für den Conversation-Watcher auf User-Laptop)
+// ---------------------------------------------------------------------------
+
+test('issueForWatcher adds watcher scope and uses 30-day TTL by default', function () {
+    Config::set('services.jwt.watcher_ttl', 30 * 24 * 3600);
+
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForWatcher($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['scope'])->toContain('watcher');
+    expect($claims['scope'])->toContain('mcp:memory');
+    $ttl = (int) ($claims['exp'] - $claims['iat']);
+    expect($ttl)->toBe(30 * 24 * 3600);
+});
+
+test('issueForWatcher honors JWT_WATCHER_TTL_SECONDS override', function () {
+    Config::set('services.jwt.watcher_ttl', 90 * 24 * 3600);
+
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForWatcher($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect((int) ($claims['exp'] - $claims['iat']))->toBe(90 * 24 * 3600);
+});
+
+test('issueForWatcher preserves admin scope when user is admin', function () {
+    $user = User::factory()->admin()->withoutTwoFactor()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForWatcher($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['scope'])->toContain('watcher');
+    expect($claims['scope'])->toContain('admin');
+});
+
+test('issueForUser does NOT get watcher scope', function () {
+    $user = User::factory()->withoutTwoFactor()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
+
+    $token = app(JwtIssuer::class)->issueForUser($user, $workspace);
+    $claims = decodeJwtWithTestKey($token);
+
+    expect($claims['scope'])->not->toContain('watcher');
+});
