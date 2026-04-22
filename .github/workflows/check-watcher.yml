@@ -55,14 +55,22 @@ jobs:
 
       - name: Reset watcher state and restart
         run: |
-          echo "=== Resetting watcher state for fresh ingest ==="
+          echo "=== Warte bis API healthy, dann Watcher neu starten ==="
+          # Wait for mayring-api healthcheck to pass (it's up 30s now — needs time to warm up)
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' mayring-mayring-api-1 2>/dev/null)
+            echo "API health: $STATUS (attempt $i)"
+            if [ "$STATUS" = "healthy" ]; then
+              break
+            fi
+            sleep 5
+          done
           WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
           if [ -n "$WATCHER" ]; then
-            # Clear the state file so watcher re-reads all sessions
             docker exec "$WATCHER" rm -f /root/.cache/mayryngcoder/watcher_state.json 2>/dev/null || true
             docker restart "$WATCHER"
-            echo "Watcher restarted: $WATCHER"
-            sleep 35
+            echo "Watcher restarted AFTER API healthy: $WATCHER"
+            sleep 45
           fi
 
       - name: Watcher logs after reset (last 30 lines)
