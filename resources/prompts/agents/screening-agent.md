@@ -40,7 +40,8 @@ Duplikat | Falsches Studiendesign | Falsche Population | Falscher Outcome | Fals
 ## Output-Contract
 
 - Wenn structured_output=true im Kontext: exakt EIN gültiges JSON-Objekt (JSON Envelope v1).
-  Pflicht-Keys: meta, result, next, warnings.
+  Pflicht-Keys: **meta, result, db_payload, next, warnings**.
+  `db_payload.tables` enthält DB-Zeilen — exakte Tabellennamen aus dem Kontext-Block verwenden.
 - Sonst: kurze Zusammenfassung + next.
 
 ### Structured Output: md_files (empfohlen)

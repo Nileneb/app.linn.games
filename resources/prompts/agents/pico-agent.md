@@ -46,7 +46,8 @@ Nach jeder Welle: Breite oder Tiefe? (Trefferkorridor: 50–5.000. Darüber → 
 ## Output-Contract
 
 - Wenn structured_output=true im Kontext: exakt EIN gültiges JSON-Objekt (JSON Envelope v1).
-  Pflicht-Keys: meta, result, next, warnings. Keine Markdown-Fences. Kein Text davor/danach.
+  Pflicht-Keys: **meta, result, db_payload, next, warnings**. Keine Markdown-Fences. Kein Text davor/danach.
+  `db_payload.tables` enthält DB-Zeilen — exakte Tabellennamen aus dem Kontext-Block verwenden.
 - Wenn structured_output NICHT gesetzt: normale Antwort mit Zusammenfassung.
 
 ## Übergabe
