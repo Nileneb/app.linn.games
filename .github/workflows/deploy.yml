@@ -11,6 +11,9 @@ permissions:
   contents: read
   issues: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     name: Deploy
@@ -133,7 +136,7 @@ jobs:
           echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_OUTPUT"
 
       - name: Create issue on deploy failure
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `🚨 Deploy fehlgeschlagen — ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`;
@@ -170,7 +173,7 @@ jobs:
 
     steps:
       - name: Create issue on test failure
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `🔴 Tests fehlgeschlagen — ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`;
