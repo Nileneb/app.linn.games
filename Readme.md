@@ -190,50 +190,55 @@ CLAUDE_PROJECTS_DIR=~/.claude/projects ./deploy-mayring.sh
 
 Drei Messebenen:
 
+**CI-Workflow:** `.github/workflows/benchmark.yml` — läuft manuell + automatisch montags 06:00 UTC.  
+**GitHub Step Summary** nach jedem Lauf mit Tabellen für alle Metriken.
+
+### Baseline (2026-04-22, erster Lauf)
+
+| Metrik | Wert |
+|---|---|
+| `/health` avg / p95 | 4ms / 4ms |
+| `/conversation/micro-batch` avg / p95 | 11.4s / 18.1s (inkl. Ollama-Embedding) |
+| Throughput `/health` (ab, c=5) | 470 req/s |
+
 ### 1. Retrieval-Qualität (MayringCoder, bereits gebaut)
 
 ```bash
-# Retrieval-Benchmark (MRR + Recall@K) via API
-curl -X POST https://mcp.linn.games/benchmark \
+# Via CI-Workflow (empfohlen)
+gh workflow run benchmark.yml --repo Nileneb/app.linn.games
+
+# Direkt auf dem Server
+curl -X POST http://localhost:6480/benchmark \
   -H "Authorization: Bearer $MCP_SERVICE_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"top_k": 5, "repo": "org/repo"}'
-
-# Direkt lokal
-python src/benchmark_retrieval.py \
-  --queries benchmarks/retrieval_queries.yaml --top-k 10
+  -d '{"top_k": 5}'
+# → poll GET /jobs/{job_id} bis status=done → MRR + Recall@5 im output-Feld
 ```
 
-Metriken: **MRR** (Mean Reciprocal Rank) + **Recall@K** — misst Qualität der Hybrid-Suche (ChromaDB + SQLite FTS).
+Metriken: **MRR** (Mean Reciprocal Rank) + **Recall@5** — misst Qualität der Hybrid-Suche (ChromaDB + SQLite FTS). Ground-Truth: `benchmarks/retrieval_queries.yaml` (40 Queries).
 
-### 2. API-Latenz (nginx + Laravel)
+### 2. API-Latenz (nginx + mayring-api)
 
-```bash
-# hey installieren: go install github.com/rakyll/hey@latest
-hey -n 100 -c 10 -H "Authorization: Bearer $TOKEN" \
-  http://localhost:6480/health
-
-hey -n 50 -c 5 -m POST \
-  -H "Authorization: Bearer $MCP_SERVICE_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"turns":[...],"session_id":"bench","workspace_slug":"test"}' \
-  http://localhost:6480/conversation/micro-batch
-```
+Der Benchmark-Workflow misst automatisch:
+- `/health` — nginx → mayring-api Round-Trip (Baseline: ~4ms)
+- `/conversation/micro-batch` — inkl. Ollama-Embedding auf `three.linn.games` (Baseline: ~11s avg)
+- Concurrent Throughput via `ab` (Baseline: ~470 req/s auf `/health`)
 
 ### 3. Agent-Pipeline-Durchsatz (P1→P8 Timing)
 
-Phase-Zeiten stehen in `phase_agent_results.created_at` / `updated_at` pro Phase — SQL-Query genügt:
+SQL direkt in Postgres (oder via Benchmark-Workflow):
 
 ```sql
 SELECT
-  p.id,
-  MIN(par.created_at) AS pipeline_start,
-  MAX(par.updated_at) AS pipeline_end,
-  EXTRACT(EPOCH FROM (MAX(par.updated_at) - MIN(par.created_at))) AS elapsed_s
-FROM projekte p
-JOIN phase_agent_results par ON par.projekt_id = p.id
-GROUP BY p.id
-ORDER BY pipeline_start DESC;
+  COUNT(*) AS runs,
+  ROUND(AVG(elapsed_s)::numeric, 1) AS avg_s,
+  ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY elapsed_s)::numeric, 1) AS p95_s
+FROM (
+  SELECT EXTRACT(EPOCH FROM (MAX(updated_at) - MIN(created_at))) AS elapsed_s
+  FROM phase_agent_results
+  WHERE status = 'completed'
+  GROUP BY projekt_id HAVING COUNT(DISTINCT phase_nr) >= 4
+) t;
 ```
 
 ---
