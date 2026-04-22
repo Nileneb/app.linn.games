@@ -87,6 +87,10 @@ jobs:
           LARAVEL_NETWORK: linn-shared
           MAYRING_PORT: ${{ vars.MAYRING_PORT }}
           MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
+          # Server-side watcher: path to ~/.claude/projects on the runner host.
+          # Set as GitHub Actions variable CLAUDE_PROJECTS_DIR (e.g. /home/nileneb/.claude/projects).
+          # Leave empty to skip the watcher profile.
+          CLAUDE_PROJECTS_DIR: ${{ vars.CLAUDE_PROJECTS_DIR }}
         run: |
           cat > ~/app.linn.games/.env.production << ENVEOF
           OLLAMA_URL=${OLLAMA_URL}
@@ -101,6 +105,7 @@ jobs:
           LARAVEL_NETWORK=${LARAVEL_NETWORK}
           MAYRING_PORT=${MAYRING_PORT}
           MCP_SERVICE_TOKEN=${MCP_SERVICE_TOKEN}
+          CLAUDE_PROJECTS_DIR=${CLAUDE_PROJECTS_DIR}
           ENVEOF
 
       - name: Write JWT public key for MayringCoder
