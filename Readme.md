@@ -1,16 +1,15 @@
 # Linn.Games — Laravel Application
 
-> **app.linn.games** — Research-Management-Plattform mit KI-gestützter systematischer Literaturrecherche.
+> **app.linn.games** — Research-Management-Plattform mit KI-gestützter systematischer Literaturrecherche (8-Phasen Systematic Review).
 
-## 🚀 Quick Start (Local Development)
+## Quick Start (Local Development)
 
-**Siehe: [`.github/instructions/local-dev-setup.md`](.github/instructions/local-dev-setup.md)** für vollständige lokale Entwicklungs-Anleitung.
+**Vollständige Anleitung:** [`.github/instructions/local-dev-setup.md`](.github/instructions/local-dev-setup.md)
 
-**TL;DR:**
 ```bash
 composer setup
 docker compose up -d
-# Öffne http://localhost:6480 → Login: editor@test.local / password
+# Öffne http://localhost:6481 → Login: editor@test.local / password
 ```
 
 ---
@@ -25,144 +24,216 @@ docker compose up -d
 | Filament | 4.9 (Admin-Panel) |
 | Fortify | 1.30 (Auth + 2FA) |
 | Tailwind CSS | 4 (via Vite) |
-| PostgreSQL | 16 (UUID-Primärschlüssel) |
+| PostgreSQL | 16 + pgvector |
 | Redis | Alpine (Cache, Session, Queue) |
+| MayringCoder | Python / FastAPI (separater Stack) |
+
+---
 
 ## Architektur
 
 ```
-┌──────────────┐     ┌───────────┐     ┌──────────┐
-│    Nginx     │────▸│  PHP-FPM  │────▸│ Postgres │
-│  (Port 6481) │     └───────────┘     │ + pgvector│
-└──────────────┘     ┌───────────┐     └──────────┘
-                     │Queue-Worker│────▸┌──────────┐
-                     └───────────┘     │  Redis   │
-                     ┌────────────────┐└──────────┘
-                     │ Postgres-MCP   │  (KI-Datenbankzugriff via SSE)
-                     │ /mcp/sse       │
-                     └────────────────┘
-                     ┌────────────────┐
-                     │ Paper-Search   │  (Literatursuche + Embedding)
-                     │ /paper-mcp/    │
-                     └────────────────┘
-                     ┌────────────────┐
-                     │   Ollama       │  (Embedding-Modell: nomic-embed-text)
-                     │ /ollama/       │
-                     └────────────────┘
+Internet
+  │
+  ├─ app.linn.games:6481 ──▶ nginx ──▶ php-fpm (Laravel 12)
+  │                                  ├─▶ queue-worker (Phase Agents)
+  │                                  ├─▶ postgres:5432 + pgvector
+  │                                  ├─▶ redis (Cache/Queue/Session)
+  │                                  ├─▶ mcp-paper-search:8089 (/paper-mcp/)
+  │                                  └─▶ three.linn.games (Ollama, keine GPU auf u-server)
+  │
+  └─ mcp.linn.games:6480 ──▶ mayring-nginx ──▶ mayring-api:8090   (REST + /wiki /ambient)
+                                             ├─▶ mayring-mcp:8092  (MCP/SSE)
+                                             ├─▶ mayring-webui:7860 (Gradio /ui/)
+                                             └─▶ mayring-watcher   (Conversation-Ingest)
+
+Netzwerke: mayring-internal (MayringCoder intern) + linn-shared (Stack-übergreifend)
 ```
 
-**Docker-Services:** `web` (nginx), `php-fpm`, `php-cli`, `php-test`, `queue-worker`, `postgres`, `redis`, `postgres-mcp`, `ollama`, `mcp-paper-search`
+**Wichtig:** Ollama läuft dediziert auf `three.linn.games` — NICHT als Docker-Service auf u-server (kein GPU).
+
+---
 
 ## Features
 
 ### Authentifizierung & Benutzerverwaltung
-- Login, Registrierung, Passwort-Reset (Fortify, plain Blade)
+- Login, Registrierung, Passwort-Reset (Fortify)
 - Zwei-Faktor-Authentifizierung (TOTP + Recovery-Codes)
-- E-Mail-Verifizierung
-- Profil-Einstellungen (Volt Inline-Komponenten)
 - DSGVO-Datenexport & Account-Löschung (`/dsgvo/export`, `/dsgvo/delete-account`)
 
-### Systematische Literaturrecherche
-- **ResearchInput** — Forschungsfrage eingeben → Projekt erstellen → KI-Agent (Claude API) via Queue auslösen
-- **ProjektListe** — Alle Recherche-Projekte des Benutzers (sortiert nach Erstellungsdatum)
-- **ProjektDetail** — Einzelprojekt mit Phasen (P1–P8) und Trefferliste (P5)
-- 32 Eloquent-Models für 8 Phasen eines systematischen Reviews
-- KI-Integration: `ClaudeService` → Anthropic Claude API (direkte HTTP-Aufrufe, testbar via `Http::fake()`)
-- Vektor-Embeddings: `paper_embeddings`-Tabelle mit pgvector (IVFFlat-Index)
-- Activity-Logging: Änderungen an `Projekt` und `User` via `spatie/laravel-activitylog`
+### Systematische Literaturrecherche (8 Phasen)
+- Forschungsfrage eingeben → KI-Agents (Claude API) laufen auto-chained P1→P4, P5→P8
+- 32 Eloquent-Models für die 8-Phasen-Pipeline
+- Vektor-Embeddings: `paper_embeddings` + pgvector (IVFFlat-Index) via Ollama
+- Screening, Qualitätsbewertung (RoB2/CASP), Synthese, Dokumentation
+
+### BYO LLM-Provider
+- Eigener Anthropic-API-Key oder OpenAI-kompatibler Endpoint (Ollama, etc.)
+- Konfigurierbar pro User unter `/settings/ai-model`
+- `User::resolvedChatModel()` — Platform-Default oder User-Key (encrypted at rest)
+- Whitelist in `config/services.anthropic.available_chat_models`
+- Billing-Skip bei non-platform Providern
+
+### MayringCoder-Integration
+- Phase 7 (Codierung/Synthese) nutzt MayringCoder via `MayringMcpClient`
+- JWT RS256-Auth: `/api/mayring/token-exchange` → 30-Tage Service-JWT für Watcher-Daemon
+- Refresh-Token: `POST /api/mayring/refresh-token` mit 7-Tage Sliding-Session-Grace
 
 ### Admin-Panel (Filament)
-- `ContactResource` — Kontaktanfragen verwalten
-- `UserResource` — Benutzerverwaltung
+- `ContactResource` — Kontaktanfragen
+- `UserResource` — Benutzerverwaltung, Status-Flow, Kredit-Verwaltung
 - Rollen & Berechtigungen (Spatie Permission)
 
-### Kontaktformular
-- Formular-Submission mit Rate-Limiting
-- Bestätigungs-E-Mail an Absender (`ContactConfirmationMail`)
-- Benachrichtigung an Team (`ContactInquiryMail`)
-- Seitentracking-Middleware (`TrackPageView`)
+### Credit-System
+- `CreditService::deduct()` bucht Token-Kosten pro Agent-Call
+- `CreditTransaction` loggt Verbrauch mit Agent-Key + Token-Count
+- `WorkspaceLowBalance` Event bei <10% → Admin-Notification
+- Exceptions: `InsufficientCreditsException`, `AgentDailyLimitExceededException`
 
-### CI/CD & Deployment
-- `deploy.sh` — Automatisiertes Deployment (Build, Migrate, Cache, Start)
-- Deploy-Benachrichtigung per E-Mail (`DeployNotificationMail`)
-- Optionen: `--skip-build`, `--skip-migrate`
+### CI/CD
+- `deploy.sh` — Vollständiges Deployment (Build, Migrate, Cache, Start)
+- `deploy-mayring.sh` — Separates MayringCoder-Stack-Deployment
+- Deploy-Benachrichtigung per E-Mail + GitHub Issues bei Fehler
 
-### MCP PostgreSQL Endpoint
-- Entwickler-Datenbankzugriff via SSE (`/mcp/sse`) — für Claude Code und ähnliche MCP-Clients
-- Authentifizierung: Bearer-Token, X-API-Key oder Query-Parameter (alle Endpunkte inkl. `/messages/`)
-- Eingeschränkter DB-Benutzer — kein Schreibzugriff auf produktive Tabellen
+---
 
-### Ollama Embedding Endpoint
-- Lokales Embedding-Modell (`nomic-embed-text`) via Ollama
-- Nginx-Proxy unter `/ollama/` mit Token-Authentifizierung
-- Genutzt für Vektor-Suche in Recherche-Treffern und Agent-Outputs
-
-### Paper-Search MCP
-- Literatursuche und Paper-Ingestion via MCP-Protokoll (`/paper-mcp/`)
-- Automatischer Paper-Download und Embedding-Erzeugung
-
-## Service-Architektur
-
-### KI-Agent Flow
+## KI-Agent Flow
 
 ```
 UI (Volt/Livewire)
-  → TriggersPhaseAgent trait | agent-action-button.blade.php
-  → SendAgentMessage::execute()
+  → TriggersPhaseAgent trait
+  → ProcessPhaseAgentJob (Queue, async)
   → ClaudeService::callByConfigKey()
-      ├─ PromptLoaderService (lädt .md aus resources/prompts/agents/ + Skills)
+      ├─ PromptLoaderService (resources/prompts/agents/*.md + Skills)
       ├─ ClaudeContextBuilder::build() (Projektdaten als Markdown in System-Prompt)
       └─ HTTP POST api.anthropic.com/v1/messages
+           └─ [Tool-Use-Loop für P7 via MayringMcpClient]
   → AgentPayloadService::persistPayload() (JSON Envelope → DB)
-  → LangdockArtifactService::persistFromAgentResponse() (Markdown-Files)
-  → PhaseAgentResult gespeichert
   → PhaseChainService::maybeDispatchNext() (auto-chain P1→P4, P5→P8)
 ```
 
-**Async:** `ProcessPhaseAgentJob` (Queue) für alle Phasen-Agents.
+---
 
-### Zentrale Services
-
-| Service | Datei | Aufgabe |
-|---------|-------|---------|
-| `ClaudeService` | `app/Services/ClaudeService.php` | Ruft Claude API auf, Retry-Logik, Tool-Use-Loop (Mayring), Token-Abrechnung |
-| `PromptLoaderService` | `app/Services/PromptLoaderService.php` | Lädt Agent-Prompts aus `.md`-Dateien inkl. Skill-Includes via YAML-Frontmatter |
-| `ClaudeContextBuilder` | `app/Services/ClaudeContextBuilder.php` | Baut strukturierten Markdown-Kontext aus Projektdaten (P1–P6) für den System-Prompt |
-| `PhaseChainService` | `app/Services/PhaseChainService.php` | Orchestriert Auto-Chain zwischen Phasen nach Agent-Abschluss |
-| `CreditService` | `app/Services/CreditService.php` | Workspace-Guthaben, Token→Cent-Umrechnung (Input/Output getrennt), Tageslimits |
-| `RetrieverService` | `app/Services/RetrieverService.php` | Semantische Suche via pgvector (Ollama Embeddings) |
-| `AgentPayloadService` | `app/Services/AgentPayloadService.php` | Parst JSON Envelope v1 und schreibt in Phasen-Tabellen |
-| `MayringMcpClient` | `app/Services/MayringMcpClient.php` | HTTP-Client zum MayringCoder-Service (Tool-Use-API für P7) |
-| `StreamingAgentService` | `app/Services/StreamingAgentService.php` | SSE-Streaming für Dashboard-Chat |
-
-### 8-Phasen Systematic Review
+## 8-Phasen Systematic Review
 
 | Phase | Beschreibung | Agent-Config-Key |
 |-------|-------------|-----------------|
-| P1 | PICO/SPIDER/PEO-Komponenten | `scoping_mapping_agent` |
-| P2 | Review-Typ & Scoping | `scoping_mapping_agent` |
-| P3 | Datenbankauswahl | `scoping_mapping_agent` |
-| P4 | Suchstrings generieren | `search_agent` |
-| P5 | Screening (L1/L2) | `review_agent` |
-| P6 | Qualitätsbewertung (RoB2/CASP) | `review_agent` |
-| P7 | Datenextraktion & Synthese | `review_agent` |
-| P8 | Dokumentation & Abschluss | `review_agent` |
+| P1 | PICO/SPIDER/PEO-Komponenten-Analyse | `scoping_mapping_agent` |
+| P2 | Review-Typ & Scope-Bestimmung | `scoping_mapping_agent` |
+| P3 | Datenbankauswahl + Suchmethodik | `scoping_mapping_agent` |
+| P4 | Suchstrings generieren (Boolean) | `search_agent` |
+| P5 | Titel/Abstract-Screening (L1) | `review_agent` |
+| P6 | Qualitätsbewertung RoB2/CASP (L2) | `review_agent` |
+| P7 | Datenextraktion & Mayring-Codierung | `review_agent` + MayringMCP |
+| P8 | Synthese + PRISMA-Dokumentation | `review_agent` |
 
-**P4→P5:** Kein Auto-Chain (manueller Paper-Import über CSV/DOI nötig).
+**Auto-Chain:** P1→P4 und P5→P8 laufen automatisch durch.  
+**Pause bei P4→P5:** Manueller Paper-Import (CSV/DOI) erforderlich.
 
-### Credit-System
+---
 
-- `CreditService::deduct()` bucht Token-Kosten pro Agent-Call
-- Preise konfigurierbar via `config/services.php` (`anthropic.price_per_1k_input_tokens_cents`)
-- `CreditTransaction` loggt jeden Verbrauch mit Agent-Key und Token-Count
-- Exceptions: `InsufficientCreditsException`, `AgentDailyLimitExceededException`
+## Zentrale Services
 
-### Benutzerverwaltung & Beta
+| Service | Datei | Aufgabe |
+|---------|-------|---------|
+| `ClaudeService` | `app/Services/ClaudeService.php` | Claude API, Retry, Tool-Use-Loop, Token-Billing |
+| `PromptLoaderService` | `app/Services/PromptLoaderService.php` | Agent-Prompts aus `.md` + Skill-Includes (YAML-Frontmatter) |
+| `ClaudeContextBuilder` | `app/Services/ClaudeContextBuilder.php` | Strukturierter Projekt-Kontext P1–P6 für System-Prompt |
+| `PhaseChainService` | `app/Services/PhaseChainService.php` | Auto-Chain-Orchestrierung zwischen Phasen |
+| `CreditService` | `app/Services/CreditService.php` | Workspace-Guthaben, Token→Cent (Input/Output getrennt) |
+| `RetrieverService` | `app/Services/RetrieverService.php` | Semantische Suche via pgvector + Ollama |
+| `AgentPayloadService` | `app/Services/AgentPayloadService.php` | JSON Envelope v1 parsen → Phasen-Tabellen |
+| `MayringMcpClient` | `app/Services/MayringMcpClient.php` | HTTP-Client zu MayringCoder (Tool-Use P7) |
+| `StreamingAgentService` | `app/Services/StreamingAgentService.php` | SSE-Streaming für Dashboard-Chat |
 
-User-Status-Flow:
+---
+
+## MayringCoder Stack (`docker-compose.mayring.yml`)
+
+Separater Python/FastAPI-Stack auf `mcp.linn.games:6480`.
+
+| Service | Port | Funktion |
+|---------|------|---------|
+| `mayring-nginx` | 6480 | Reverse Proxy, routet REST→api, MCP→mcp, UI→webui |
+| `mayring-api` | 8090 | REST API: Ingestion, Wiki, Ambient, Predictive, RAG |
+| `mayring-mcp` | 8092 | MCP/SSE-Server (OAuth, Tool-Use) |
+| `mayring-webui` | 7860 | Gradio Dashboard (`/ui/`) |
+| `mayring-pi` | — | Pi-Agent (interne Analyse) |
+| `mayring-watcher` | — | Claude-Conversation-Ingest (Profil `watcher`) |
+
+### Conversation Watcher
+
+Überwacht `~/.claude/projects` inkrementell und ingested neue Turns automatisch via `POST /conversation/micro-batch` in Workspace `system`.
+
+```bash
+# Aktivierung: CLAUDE_PROJECTS_DIR setzen
+CLAUDE_PROJECTS_DIR=~/.claude/projects ./deploy-mayring.sh
 ```
-Selbst-Registrierung → waitlisted → [Admin genehmigt] → trial → [Admin aktiviert] → active
-Admin-Einladung     → invited    → [User akzeptiert]  → trial → [Admin aktiviert] → active
+
+**Routing:** Watcher → `http://mayring-nginx:80` (internes Docker-Netz) → nginx routet `/conversation/*` zu `mayring-api:8090`.
+
+### Deployment
+
+```bash
+# Nur MayringCoder Stack
+./deploy-mayring.sh
+
+# Mit Watcher
+CLAUDE_PROJECTS_DIR=~/.claude/projects ./deploy-mayring.sh
+```
+
+**CI:** Automatisch via `deploy-mayring.yml` bei Änderungen an `docker-compose.mayring.yml` oder `docker/mayring/**`.
+
+---
+
+## Benchmarking
+
+Drei Messebenen:
+
+### 1. Retrieval-Qualität (MayringCoder, bereits gebaut)
+
+```bash
+# Retrieval-Benchmark (MRR + Recall@K) via API
+curl -X POST https://mcp.linn.games/benchmark \
+  -H "Authorization: Bearer $MCP_SERVICE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"top_k": 5, "repo": "org/repo"}'
+
+# Direkt lokal
+python src/benchmark_retrieval.py \
+  --queries benchmarks/retrieval_queries.yaml --top-k 10
+```
+
+Metriken: **MRR** (Mean Reciprocal Rank) + **Recall@K** — misst Qualität der Hybrid-Suche (ChromaDB + SQLite FTS).
+
+### 2. API-Latenz (nginx + Laravel)
+
+```bash
+# hey installieren: go install github.com/rakyll/hey@latest
+hey -n 100 -c 10 -H "Authorization: Bearer $TOKEN" \
+  http://localhost:6480/health
+
+hey -n 50 -c 5 -m POST \
+  -H "Authorization: Bearer $MCP_SERVICE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"turns":[...],"session_id":"bench","workspace_slug":"test"}' \
+  http://localhost:6480/conversation/micro-batch
+```
+
+### 3. Agent-Pipeline-Durchsatz (P1→P8 Timing)
+
+Phase-Zeiten stehen in `phase_agent_results.created_at` / `updated_at` pro Phase — SQL-Query genügt:
+
+```sql
+SELECT
+  p.id,
+  MIN(par.created_at) AS pipeline_start,
+  MAX(par.updated_at) AS pipeline_end,
+  EXTRACT(EPOCH FROM (MAX(par.updated_at) - MIN(par.created_at))) AS elapsed_s
+FROM projekte p
+JOIN phase_agent_results par ON par.projekt_id = p.id
+GROUP BY p.id
+ORDER BY pipeline_start DESC;
 ```
 
 ---
@@ -174,36 +245,58 @@ Admin-Einladung     → invited    → [User akzeptiert]  → trial → [Admin a
 |---|---|---|
 | GET | `/` | Startseite |
 | POST | `/contact` | Kontaktformular |
-| GET | `/Impressum.html` | Impressum |
-| GET | `/dsgvo.html` | Datenschutzerklärung |
-| GET | `/AGB.html` | AGB |
-| GET | `/dashboard` | Dashboard (auth) |
-| GET | `/settings/*` | Profil, Passwort, Appearance, 2FA (auth) |
+| GET | `/dashboard` | Dashboard + Chat (auth) |
+| GET | `/settings/*` | Profil, Passwort, 2FA, KI-Modell (auth) |
 | GET | `/recherche` | Recherche-Übersicht (auth) |
-| GET | `/recherche/{projekt}` | Projekt-Detail (auth) |
+| GET | `/recherche/{projekt}` | Projekt-Detail + Phasen (auth) |
 | GET | `/dsgvo/export` | DSGVO-Datenexport (auth) |
 | DELETE | `/dsgvo/delete-account` | Account-Löschung (auth) |
 
 ### API (`routes/api.php`)
-| Methode | Pfad | Beschreibung |
-|---|---|---|
-| GET | `/api/user` | Authentifizierter Benutzer (Sanctum) |
-| POST | `/api/papers/ingest` | Paper-Ingestion (MCP-Token) |
-| GET | `/api/papers/rag-search` | Vektor-Suche (MCP-Token) |
+| Methode | Pfad | Auth | Beschreibung |
+|---|---|---|---|
+| GET | `/api/user` | Sanctum | Authentifizierter Benutzer |
+| POST | `/api/papers/ingest` | MCP-Token | Paper-Ingestion |
+| GET | `/api/papers/rag-search` | MCP-Token | Vektor-Suche |
+| POST | `/api/mayring/token-exchange` | JWT | 30-Tage Service-JWT für Watcher |
+| POST | `/api/mayring/refresh-token` | JWT | Token-Refresh (7-Tage Grace) |
+
+---
 
 ## Datenbank
 
-**21 Migrationen** — Users, Cache, Jobs, 2FA, Contacts, PageViews, Permissions, Consents, Recherche P1–P8, Indices, Prisma-Funktion.
+**21 Migrationen** — Users, Cache, Jobs, 2FA, Contacts, PageViews, Permissions, Consents, Recherche P1–P8, Indices.
 
 **36+ Models:**
-- Core: `User`, `Contact`, `PageView`, `Consent`, `ChatMessage`
-- Recherche: `Projekt`, `Phase`, `P5Treffer` + 29 Phasen-Models (P1–P8)
+- Core: `User`, `Workspace`, `Contact`, `PageView`, `Consent`, `ChatMessage`
+- Recherche: `Projekt`, `Phase`, `P5Treffer` + Phasen-Models P1–P8
 - Embeddings: `PaperEmbedding` (pgvector)
+- Credits: `CreditTransaction`
+
+**ER-Diagramm:** [ZieldiagramDB.mermaid](ZieldiagramDB.mermaid)
+
+---
+
+## Konfiguration (`.env`)
+
+| Variable | Beschreibung |
+|---|---|
+| `APP_URL` | `https://app.linn.games` |
+| `DB_CONNECTION` | `pgsql` (PostgreSQL 16) |
+| `QUEUE_CONNECTION` | `redis` |
+| `ANTHROPIC_API_KEY` | Claude API Key (Platform-Default) |
+| `MCP_AUTH_TOKEN` | Token für Postgres-MCP-Endpoint |
+| `MCP_SERVICE_TOKEN` | Token für MayringCoder Service-Calls |
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | RS256-Schlüsselpaar für Mayring-JWT |
+| `OLLAMA_URL` | `https://three.linn.games/ollama` (kein Docker) |
+| `MAYRING_MCP_ENDPOINT` | `https://mcp.linn.games/sse` |
+| `APP_PORT` | `6481` (Main-Stack), MayringCoder: `MAYRING_PORT=6480` |
+
+---
 
 ## Lokale Entwicklung
 
 ```bash
-# Composer-Scripts
 composer setup     # Install, Key, Migrate, NPM Build
 composer dev       # Server + Queue + Vite (parallel)
 composer test      # PHPUnit/Pest Tests
@@ -212,91 +305,67 @@ composer test      # PHPUnit/Pest Tests
 ## Deployment (Produktion)
 
 ```bash
-./deploy.sh                    # Vollständiges Deployment
-./deploy.sh --skip-build       # Ohne Docker-Rebuild
-./deploy.sh --skip-migrate     # Ohne Migrationen
+# Main Stack
+./deploy.sh
+./deploy.sh --skip-build
+./deploy.sh --skip-migrate
+
+# MayringCoder Stack
+./deploy-mayring.sh
+CLAUDE_PROJECTS_DIR=~/.claude/projects ./deploy-mayring.sh
 ```
 
-**Ablauf:** Pull Images → Build → Start Postgres/Redis → Migrate → Cache Config/Routes/Views → Start All → Deploy-Mail
-
-## Konfiguration
-
-Umgebungsvariablen in `.env`:
-
-| Variable | Beschreibung |
-|---|---|
-| `APP_URL` | `https://app.linn.games` |
-| `DB_CONNECTION` | `pgsql` (PostgreSQL 16) |
-| `QUEUE_CONNECTION` | `redis` |
-| `CACHE_STORE` | `redis` |
-| `SESSION_DRIVER` | `redis` |
-| `MAIL_HOST` | SMTP (Strato) |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API Key (KI-Agent-Aufrufe) |
-| `MCP_AUTH_TOKEN` | Token für MCP-PostgreSQL-Endpoint |
+---
 
 ## Tests
 
 ```bash
-# Via Docker (PostgreSQL)
 docker compose run --rm php-test vendor/bin/pest
 ```
 
-**440+ Tests** — Unit, Auth, Kontakt, Dashboard-Chat, Recherche P1–P8, ProjektPolicy, Agent-Integration, Einladungssystem.
+**440+ Tests** — Unit, Auth, Kontakt, Dashboard-Chat, Recherche P1–P8, ProjektPolicy, Agent-Integration, Einladungssystem, Credit-System, BYO-LLM.
 
 | Testsuite | Abdeckung |
 |---|---|
 | Auth (Login, Register, 2FA, Passwort) | ✅ |
-| Kontaktformular (Validierung, Submission) | ✅ |
-| Dashboard-Chat (Agent API, Multi-Turn, Fehler) | ✅ |
-| Recherche (Projekt erstellen, Liste, Detail, Zugriff) | ✅ |
-| ProjektPolicy (Owner-Zugriff CRUD) | ✅ |
-| Agent-Buttons (P1–P7 Phasen) | ✅ |
+| Kontaktformular | ✅ |
+| Dashboard-Chat (Multi-Turn, Streaming, Fehler) | ✅ |
+| Recherche (Projekt CRUD, Zugriff, Policy) | ✅ |
+| Agent-Buttons P1–P8 + Auto-Chain | ✅ |
+| Credit-System (Deduct, Limits, Low-Balance) | ✅ |
+| BYO-LLM (Key-Routing, Billing-Skip) | ✅ |
 
-## Dokumentation & API
+---
 
-MCP-Endpunkte und API:
+## MCP-Endpunkte
 
 | Endpunkt | Beschreibung | Doku |
-|----------|-------------|------|
-| `/mcp/sse` & `/messages/` | PostgreSQL MCP (Entwickler-Datenbankzugriff) | [docs/API.md](docs/API.md#-postgresql-mcp-endpoint) |
-| `/paper-mcp/sse` & `/paper-messages/` | Paper-Search MCP für Literatursuche | [docs/API.md](docs/API.md#-paper-search-mcp-endpoint) |
-| `/ollama/*` | Embedding-Proxy (nomic-embed-text) | [docs/API.md](docs/API.md#-ollama-embedding-endpoint) |
-| `/api/papers/ingest` | Paper-Ingestion (MCP-Token) | [docs/API.md](docs/API.md) |
-| `/api/papers/rag-search` | Vektor-Suche (MCP-Token) | [docs/API.md](docs/API.md) |
+|---|---|---|
+| `/mcp/sse` | PostgreSQL MCP (Entwickler-DB-Zugriff) | [docs/API.md](docs/API.md) |
+| `/paper-mcp/sse` | Paper-Search MCP | [docs/API.md](docs/API.md) |
+| `mcp.linn.games/sse` | MayringCoder MCP (Tool-Use) | [docs/API.md](docs/API.md) |
+| `mcp.linn.games/conversation/micro-batch` | Conversation-Ingestion | POST, Bearer |
+| `mcp.linn.games/benchmark` | Retrieval-Benchmark | POST, Bearer |
+| `mcp.linn.games/wiki/generate` | Wiki-Generierung | POST, Bearer |
 
-**Alle MCP-Endpunkte nutzen:** Bearer Token, X-API-Key oder Query-Parameter (`?token=...`)
+**Auth:** Bearer Token, X-API-Key oder `?token=` Query-Parameter.
 
 👉 **Vollständige API-Dokumentation:** [docs/API.md](docs/API.md)
 
-## Datenbank-Diagramm
+---
 
-📊 **ER-Diagramm:** [ZieldiagramDB.mermaid](ZieldiagramDB.mermaid) — Klick auf die Datei um das Diagram anzuschauen
+## Benutzerverwaltung
 
-Alle 46 Tabellen des Projekts mit ihren Spalten, Datentypen und Constraints. Die Beziehungen auf einen Blick:
+```
+Selbst-Registrierung → waitlisted → [Admin] → trial → [Admin] → active
+Admin-Einladung      → invited    → [User]  → trial → [Admin] → active
+```
 
-# Beziehungstypen im Überblick:
-
-Beziehung	Typ	Erklärung
-users ↔ workspaces	M:M (via workspace_users)	Ein Nutzer kann in mehreren Arbeitsbereichen sein, ein Arbeitsbereich hat mehrere Nutzer
-workspaces → projekte	1:M	Ein Arbeitsbereich hat viele Projekte
-projekte → phasen	1:M (max 8)	Jedes Projekt hat bis zu 8 Phasen, eindeutig per (projekt_id, phase_nr)
-projekte → p1–p8 Tabellen	1:M	Jede Phase hat mehrere Ergebnis-Datensätze pro Projekt
-p5_treffer → p5_screening / p6 / p7	1:M	Ein Treffer (Paper) wird mehrfach bewertet, gescreent, extrahiert
-p5_treffer → p5_treffer	Self-Ref	Duplikat-Erkennung (duplikat_von verweist auf Original)
-p4_suchstrings → p4_anpassungsprotokoll	1:M	Ein Suchstring hat mehrere Versionen/Änderungen
-p4_suchstrings → p8_suchprotokoll	1:M	Suchprotokolle referenzieren die Original-Suchstrings
-paper_embeddings ↔ chunk_codierungen	1:1	Jeder Embedding-Chunk wird genau einmal codiert (Mayring)
-workspaces → credit_transactions	1:M	Alle Buchungen (Aufladungen + Verbrauch) pro Workspace
-
-# Kaskadenverhalten:
-
-    Fast alles löscht kaskadierend (ON DELETE CASCADE), wenn das übergeordnete Objekt gelöscht wird
-    Ausnahmen: papers und paper_embeddings setzen projekt_id auf NULL (ON DELETE SET NULL), damit importierte Daten nicht verloren gehen
-    workspaces.owner_id ist ebenfalls SET NULL – ein Workspace überlebt, wenn der Ersteller gelöscht wird
+---
 
 ## Contributing
 
-Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Branch-Konventionen, Merge-Fluss und Arbeitsablauf.
+Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Lizenz
 
