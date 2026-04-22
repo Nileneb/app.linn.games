@@ -144,7 +144,38 @@ class AgentResponseParser
     private function tryDecode(string $json): ?array
     {
         $decoded = json_decode(trim($json), true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
 
-        return (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
+        // Agents sometimes embed literal newlines/tabs inside JSON string values.
+        // Escape them within string boundaries and retry.
+        if (json_last_error() === JSON_ERROR_CTRL_CHAR) {
+            $sanitized = $this->escapeControlCharsInStrings($json);
+            $decoded = json_decode(trim($sanitized), true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Replaces literal control characters (newline, carriage return, tab) inside
+     * JSON string values with their JSON-escaped equivalents.
+     * Correctly skips already-escaped sequences (e.g. \n, \t in the source).
+     */
+    private function escapeControlCharsInStrings(string $json): string
+    {
+        $result = preg_replace_callback(
+            '/"(?:[^"\\\\]|\\\\.)*"/s',
+            static function (array $m): string {
+                return str_replace(["\n", "\r", "\t"], ['\n', '\r', '\t'], $m[0]);
+            },
+            $json,
+        );
+
+        return $result ?? $json;
     }
 }
