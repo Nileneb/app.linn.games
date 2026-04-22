@@ -53,28 +53,29 @@
         <section class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-5 space-y-4">
             <h2 class="text-lg font-semibold">2. Watcher starten</h2>
             <p class="text-sm text-zinc-600 dark:text-zinc-300">
-                Öffne ein Terminal und führe den folgenden Befehl aus. Der Watcher
-                läuft dann als Hintergrund-Service und schickt neue Chat-Summaries
-                automatisch an MayringCoder.
+                Kopier den Befehl ins Terminal. API-URL und Projekt-Pfad sind
+                fest eingebaut — nur Dein Token ist drin. Keine Config-Datei nötig.
             </p>
             <pre class="bg-zinc-900 text-zinc-100 p-4 rounded text-xs overflow-x-auto whitespace-pre select-all"
->curl -L https://raw.githubusercontent.com/Nileneb/MayringCoder/master/docker-compose.watcher.yml -o mayring-watcher.yml
-
-MAYRING_API_URL={{ $apiBaseUrl }} \
-  MAYRING_JWT={{ $generatedToken }} \
-  CLAUDE_PROJECTS_DIR=~/.claude/projects \
-  docker compose -f mayring-watcher.yml up -d</pre>
+>docker run -d --name mayring-watcher --restart=unless-stopped \
+  -v ~/.claude/projects:/host_claude:ro \
+  -v mayring-watcher-state:/root/.cache/mayryngcoder \
+  -e CLAUDE_PROJECTS_DIR=/host_claude \
+  -e MAYRING_API_URL={{ $apiBaseUrl }} \
+  -e MAYRING_JWT={{ $generatedToken }} \
+  nileneb/mayring:latest \
+  python -m tools.conversation_watcher --workspace-id system</pre>
 
             <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                Status prüfen: <code>docker compose -f mayring-watcher.yml logs -f</code><br>
-                Stoppen: <code>docker compose -f mayring-watcher.yml down</code>
+                Läuft er? <code>docker logs -f mayring-watcher</code><br>
+                Stoppen &amp; entfernen: <code>docker rm -f mayring-watcher</code>
             </p>
         </section>
 
         <section class="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm">
-            <strong>Nach 30 Tagen:</strong> Der Token läuft ab. Komm dann einfach
-            hierher zurück und klick erneut "Watcher-Token generieren" — der
-            Docker-Container greift beim nächsten Restart den neuen Wert ab.
+            <strong>Nach 30 Tagen:</strong> Token neu generieren, dann
+            <code>docker rm -f mayring-watcher</code> und den neuen
+            <code>docker run</code>-Befehl nochmal ausführen.
         </section>
     @endif
 </div>
