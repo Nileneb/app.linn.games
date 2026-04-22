@@ -76,6 +76,37 @@ services:
       - mayring-internal
       - linn-shared
 
+  # Issue #52 — inkrementeller Claude-Conversation-Watcher.
+  # Activate on a dev host (where ~/.claude/projects exists):
+  #   CLAUDE_PROJECTS_DIR=~/.claude/projects \
+  #     docker compose -f docker-compose.mayring.yml --profile watcher up -d mayring-watcher
+  # Post-hook triggers /wiki/generate on the api so Wiki/Ambient/Predictive
+  # stay fresh without restarting mayring-api.
+  mayring-watcher:
+    image: nileneb/mayring:latest
+    profiles: ["watcher"]
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      CLAUDE_PROJECTS_DIR: "/host_claude"
+    command:
+      - python
+      - -m
+      - tools.conversation_watcher
+      - --workspace-id
+      - "system"
+      - --hook-cmd
+      - "curl -fsS -X POST -H 'Authorization: Bearer ${MCP_SERVICE_TOKEN}' -H 'Content-Type: application/json' -d '{\"repo\":\"${WATCHER_REPO:-}\"}' http://mayring-api:8090/wiki/generate >/dev/null"
+      - --hook-interval
+      - "1800"
+    volumes:
+      - linn-mayring-cache:/app/cache
+      - ${CLAUDE_PROJECTS_DIR:-/tmp/empty_claude_projects}:/host_claude:ro
+    networks:
+      - mayring-internal
+    depends_on:
+      - mayring-api
+
 networks:
   mayring-internal:
     driver: bridge
