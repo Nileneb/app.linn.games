@@ -110,6 +110,7 @@ services:
       - "1800"
     volumes:
       - linn-mayring-cache:/app/cache
+      - linn-watcher-state:/root/.cache/mayryngcoder
       - ${CLAUDE_PROJECTS_DIR:-/tmp/empty_claude_projects}:/host_claude:ro
     networks:
       - mayring-internal
@@ -128,3 +129,5 @@ volumes:
     external: true
   linn-papers-data:
     external: true
+  linn-watcher-state:
+    name: linn-watcher-state

@@ -67,7 +67,6 @@ jobs:
           done
           WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
           if [ -n "$WATCHER" ]; then
-            docker exec "$WATCHER" rm -f /root/.cache/mayryngcoder/watcher_state.json 2>/dev/null || true
             docker restart "$WATCHER"
             echo "Watcher restarted AFTER API healthy: $WATCHER"
             sleep 45
