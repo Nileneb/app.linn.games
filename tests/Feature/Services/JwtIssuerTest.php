@@ -208,7 +208,11 @@ test('issueForWatcher honors JWT_WATCHER_TTL_SECONDS override', function () {
 });
 
 test('issueForWatcher preserves admin scope when user is admin', function () {
-    $user = User::factory()->admin()->withoutTwoFactor()->create();
+    // UserFactory hat kein admin()-state — Rolle wird wie im existierenden
+    // Test-Pattern (siehe 'includes admin scope for users with admin role')
+    // per syncRoles nach Erzeugung zugewiesen.
+    $user = User::factory()->withoutTwoFactor()->create();
+    $user->syncRoles([UserRole::ADMIN]);
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
 
     $token = app(JwtIssuer::class)->issueForWatcher($user, $workspace);

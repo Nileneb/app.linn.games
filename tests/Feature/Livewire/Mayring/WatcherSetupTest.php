@@ -25,29 +25,26 @@ test('requires authentication', function () {
         ->assertRedirect(route('login'));
 });
 
+// NB: `User::factory()` triggert automatisch einen default-Workspace via
+// Observer (memory-Notiz: User-Observer Auto-Workspace). currentWorkspace()
+// gibt den ältesten owned-Workspace zurück — deshalb mutieren wir ihn
+// statt einen zweiten zu erzeugen (den die Middleware sonst nie sehen würde).
+
 test('renders setup page for active subscriber', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $workspace = Workspace::factory()->create([
-        'owner_id' => $user->id,
-        'mayring_active' => true,
-    ]);
-    $user->update(['current_workspace_id' => $workspace->id]);
+    $user->currentWorkspace()->update(['mayring_active' => true]);
 
     $this->actingAs($user)
         ->get(route('mayring.watcher'))
         ->assertOk()
         ->assertSee('Conversation-Watcher einrichten')
         ->assertSee('auf Deinem Rechner')
-        ->assertDontSee('MAYRING_JWT=eyJ');  // token only after generate
+        ->assertDontSee('MAYRING_JWT=eyJ');
 });
 
 test('generate action produces watcher-scoped JWT and exposes Docker command', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $workspace = Workspace::factory()->create([
-        'owner_id' => $user->id,
-        'mayring_active' => true,
-    ]);
-    $user->update(['current_workspace_id' => $workspace->id]);
+    $user->currentWorkspace()->update(['mayring_active' => true]);
 
     Livewire::actingAs($user)
         ->test(WatcherSetup::class)
@@ -60,11 +57,7 @@ test('generate action produces watcher-scoped JWT and exposes Docker command', f
 
 test('blocks users without active Mayring subscription', function () {
     $user = User::factory()->withoutTwoFactor()->create();
-    $workspace = Workspace::factory()->create([
-        'owner_id' => $user->id,
-        'mayring_active' => false,
-    ]);
-    $user->update(['current_workspace_id' => $workspace->id]);
+    $user->currentWorkspace()->update(['mayring_active' => false]);
 
     $this->actingAs($user)
         ->get(route('mayring.watcher'))
