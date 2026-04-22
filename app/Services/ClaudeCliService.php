@@ -359,7 +359,8 @@ class ClaudeCliService
         }
 
         if ($this->useDirectApi()) {
-            return $this->callDirectApi($model, $systemPrompt, $userMessage, $timeout);
+            $apiKey = config('services.anthropic.api_key');
+            return $this->callDirectApi($model, $systemPrompt, $userMessage, $apiKey, $timeout);
         }
 
         $parts = array_filter([
