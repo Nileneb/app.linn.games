@@ -20,14 +20,44 @@ jobs:
           echo "=== Container Status ==="
           docker ps --filter "name=mayring" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" 2>&1
 
-      - name: Watcher logs (last 40 lines)
+      - name: Test micro-batch endpoint
+        env:
+          MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
         run: |
-          echo "=== mayring-watcher logs ==="
-          # Try all known container name patterns
+          echo "=== POST /conversation/micro-batch (expect 200) ==="
+          HTTP_STATUS=$(curl -s -o /tmp/mb_response.json -w "%{http_code}" \
+            -X POST http://localhost:6480/conversation/micro-batch \
+            -H "Authorization: Bearer ${MCP_SERVICE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"turns":[{"role":"user","content":"CI proof-of-life test","timestamp":"2026-04-22T16:00:00Z"}],"session_id":"ci-watcher-test","workspace_slug":"ci-test"}')
+          echo "HTTP Status: ${HTTP_STATUS}"
+          cat /tmp/mb_response.json 2>/dev/null || true
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✓ BEWEIS: /conversation/micro-batch funktioniert (HTTP 200)"
+          else
+            echo "✗ FEHLER: HTTP ${HTTP_STATUS}"
+            exit 1
+          fi
+
+      - name: Reset watcher state and restart
+        run: |
+          echo "=== Resetting watcher state for fresh ingest ==="
+          WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
+          if [ -n "$WATCHER" ]; then
+            # Clear the state file so watcher re-reads all sessions
+            docker exec "$WATCHER" rm -f /root/.cache/mayryngcoder/watcher_state.json 2>/dev/null || true
+            docker restart "$WATCHER"
+            echo "Watcher restarted: $WATCHER"
+            sleep 35
+          fi
+
+      - name: Watcher logs after reset (last 30 lines)
+        run: |
+          echo "=== mayring-watcher logs nach Reset ==="
           WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
           if [ -n "$WATCHER" ]; then
             echo "Container: $WATCHER"
-            docker logs "$WATCHER" --tail=40 2>&1
+            docker logs "$WATCHER" --tail=30 2>&1
           else
             echo "ERROR: No watcher container found at all"
           fi
