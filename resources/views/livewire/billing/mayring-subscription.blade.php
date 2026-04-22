@@ -41,6 +41,19 @@
             </a>
         </div>
 
+        {{-- Watcher-Setup Link --}}
+        <div class="rounded-lg border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-4 flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Conversation-Watcher</p>
+                <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Claude-Chats automatisch aus ~/.claude/projects in Deinen Memory-Store ingesten — läuft als Docker-Container auf Deinem Rechner.</p>
+            </div>
+            <a href="{{ route('mayring.watcher') }}"
+                class="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-500 transition">
+                Einrichten
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
         {{-- Neuen Token erstellt --}}
         @if ($mcpToken)
             <div class="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4 space-y-3">
