@@ -23,7 +23,7 @@ jobs:
           echo "=== mayring-api /health latency (30 requests) ==="
           TIMES=$(for i in $(seq 1 30); do curl -s -o /dev/null -w "%{time_total}\n" http://localhost:6480/health; done)
           echo "$TIMES"
-          STATS=$(echo "$TIMES" | awk 'BEGIN{n=0;s=0} {v[n++]=$1;s+=$1} END{asort(v);printf "avg=%.3f p95=%.3f",s/n,v[int(n*0.95)+1]}')
+          STATS=$(echo "$TIMES" | python3 -c "import sys; v=sorted(float(l) for l in sys.stdin if l.strip()); n=len(v); print(f'avg={sum(v)/n:.3f} p95={v[int(n*0.95)]:.3f}')")
           echo "health_stats=$STATS" >> $GITHUB_OUTPUT
           echo "Result: $STATS"
 
@@ -42,7 +42,7 @@ jobs:
               -d "$PAYLOAD"
           done)
           echo "$TIMES"
-          STATS=$(echo "$TIMES" | awk 'BEGIN{n=0;s=0} {v[n++]=$1;s+=$1} END{asort(v);printf "avg=%.3f p95=%.3f",s/n,v[int(n*0.95)+1]}')
+          STATS=$(echo "$TIMES" | python3 -c "import sys; v=sorted(float(l) for l in sys.stdin if l.strip()); n=len(v); print(f'avg={sum(v)/n:.3f} p95={v[int(n*0.95)]:.3f}')")
           echo "mb_stats=$STATS" >> $GITHUB_OUTPUT
           echo "Result: $STATS"
 
