@@ -39,6 +39,20 @@ jobs:
             exit 1
           fi
 
+      - name: Diagnose internal connectivity
+        run: |
+          echo "=== Internal network test from watcher container ==="
+          WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
+          if [ -n "$WATCHER" ]; then
+            echo "DNS resolution of mayring-api from watcher:"
+            docker exec "$WATCHER" getent hosts mayring-api 2>&1 || echo "getent not available"
+            echo "Ping test:"
+            docker exec "$WATCHER" curl -s -o /dev/null -w "http://mayring-api:8090/health → HTTP %{http_code}\n" \
+              --connect-timeout 5 http://mayring-api:8090/health 2>&1 || echo "Connection failed"
+          fi
+          echo "mayring-api networks:"
+          docker inspect mayring-mayring-api-1 --format '{{json .NetworkSettings.Networks}}' 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); [print(k) for k in d]" 2>/dev/null || true
+
       - name: Reset watcher state and restart
         run: |
           echo "=== Resetting watcher state for fresh ingest ==="
