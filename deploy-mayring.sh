@@ -39,6 +39,8 @@ fi
 
 # ── Deploy ─────────────────────────────────────
 echo "==> Stopping old MayringCoder containers..."
+# Also remove any standalone watcher container started outside compose (legacy cleanup).
+docker stop mayring-watcher 2>/dev/null && docker rm mayring-watcher 2>/dev/null || true
 "${DM[@]}" down --remove-orphans 2>/dev/null || true
 
 echo "==> Starting MayringCoder stack..."
