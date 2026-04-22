@@ -158,3 +158,16 @@ Das PDF enthält alle Abschnitte aus Schritt 5 als klar formatiertes Dokument mi
 ## Wichtiges Abschlussziel
 - Fokus: „Welche Cluster gibt es?"
 - Dimensionen und Concept-Blöcke so bauen, dass neue Cluster auftauchen können, ohne durch zu enge Vorfilter verhindert zu werden.
+
+---
+
+## DB-Persistenz (PFLICHT — immer ausführen)
+
+Die identifizierten Cluster und Datenbanksuchen MÜSSEN als Zeilen in `db_payload.tables` erscheinen.
+Der Kontext-Block (## Output-Anforderung) legt das exakte JSON-Schema fest — halte dich **strikt** daran.
+
+Mapping der Schritte auf Tabellen:
+- **SCHRITT 1/2 → `p2_cluster`**: Jeder Cluster = eine Zeile. Felder: `projekt_id`, `cluster_id`, `cluster_label`, `beschreibung`, `treffer_schaetzung`, `relevanz`.
+- **SCHRITT 4 → `p2_trefferlisten`**: Jede durchsuchte Datenbank = eine Zeile. Felder: `projekt_id`, `datenbank`, `suchstring`, `treffer_gesamt`, `einschaetzung`, `anpassung_notwendig`, `suchdatum`.
+
+`db_payload.tables` MUSS beide Arrays enthalten (auch wenn leer: `[]`).
