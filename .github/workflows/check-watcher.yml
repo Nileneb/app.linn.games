@@ -1,0 +1,31 @@
+name: Check Watcher Logs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    name: Show watcher container logs
+    runs-on: [self-hosted, u-server]
+
+    steps:
+      - name: Container status
+        run: |
+          echo "=== Container Status ==="
+          docker ps --filter "name=mayring" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" 2>&1
+
+      - name: Watcher logs (last 40 lines)
+        run: |
+          echo "=== mayring-watcher logs ==="
+          docker compose -f ~/app.linn.games/docker-compose.mayring.yml \
+            --project-name mayring \
+            --env-file ~/app.linn.games/.env.production \
+            logs mayring-watcher --tail=40 --no-log-prefix 2>&1 || \
+          docker logs mayring-mayring-watcher-1 --tail=40 2>&1 || \
+          echo "Watcher container not found — check profile was activated"
