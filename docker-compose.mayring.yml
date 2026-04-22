@@ -95,9 +95,9 @@ services:
     env_file: .env.production
     environment:
       CLAUDE_PROJECTS_DIR: "/host_claude"
-      # Use public nginx URL so watcher doesn't depend on direct Docker-network
-      # connectivity to mayring-api (which causes ECONNREFUSED on startup).
-      MAYRING_API_URL: "https://mcp.linn.games"
+      # Route through internal nginx (always up, routes /conversation/* to mayring-api).
+      # Avoids NAS/Cloudflare chain and the ECONNREFUSED race on direct mayring-api:8090.
+      MAYRING_API_URL: "http://mayring-nginx:80"
     command:
       - python
       - -m
