@@ -32,6 +32,12 @@ services:
     networks:
       - mayring-internal
       - linn-shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   mayring-mcp:
     image: nileneb/mayring:latest
@@ -105,7 +111,8 @@ services:
     networks:
       - mayring-internal
     depends_on:
-      - mayring-api
+      mayring-api:
+        condition: service_healthy
 
 networks:
   mayring-internal:
