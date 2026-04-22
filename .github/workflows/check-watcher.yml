@@ -23,9 +23,11 @@ jobs:
       - name: Watcher logs (last 40 lines)
         run: |
           echo "=== mayring-watcher logs ==="
-          docker compose -f ~/app.linn.games/docker-compose.mayring.yml \
-            --project-name mayring \
-            --env-file ~/app.linn.games/.env.production \
-            logs mayring-watcher --tail=40 --no-log-prefix 2>&1 || \
-          docker logs mayring-mayring-watcher-1 --tail=40 2>&1 || \
-          echo "Watcher container not found — check profile was activated"
+          # Try all known container name patterns
+          WATCHER=$(docker ps -a --format '{{.Names}}' | grep -i watcher | head -1)
+          if [ -n "$WATCHER" ]; then
+            echo "Container: $WATCHER"
+            docker logs "$WATCHER" --tail=40 2>&1
+          else
+            echo "ERROR: No watcher container found at all"
+          fi

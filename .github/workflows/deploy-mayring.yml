@@ -124,6 +124,8 @@ jobs:
 
       - name: Deploy MayringCoder stack
         timeout-minutes: 10
+        env:
+          CLAUDE_PROJECTS_DIR: ${{ vars.CLAUDE_PROJECTS_DIR }}
         run: |
           cd ~/app.linn.games
           DEPLOY_TAG="$DEPLOY_TAG" ./deploy-mayring.sh 2>&1 | tee /tmp/mayring-deploy-output.txt
@@ -138,7 +140,7 @@ jobs:
 
     steps:
       - name: Create issue on deploy failure
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `🚨 MayringCoder Deploy fehlgeschlagen — ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`;
