@@ -21,20 +21,9 @@ jobs:
         id: latency_health
         run: |
           echo "=== mayring-api /health latency (30 requests) ==="
-          TIMES=$(for i in $(seq 1 30); do
-            curl -s -o /dev/null -w "%{time_total}\n" http://localhost:6480/health
-          done)
+          TIMES=$(for i in $(seq 1 30); do curl -s -o /dev/null -w "%{time_total}\n" http://localhost:6480/health; done)
           echo "$TIMES"
-          STATS=$(echo "$TIMES" | awk '
-            BEGIN { n=0; s=0 }
-            { v[n++]=$1; s+=$1 }
-            END {
-              asort(v)
-              avg=s/n
-              p95=v[int(n*0.95)+1]
-              printf "avg=%.3f p95=%.3f", avg, p95
-            }
-          ')
+          STATS=$(echo "$TIMES" | awk 'BEGIN{n=0;s=0} {v[n++]=$1;s+=$1} END{asort(v);printf "avg=%.3f p95=%.3f",s/n,v[int(n*0.95)+1]}')
           echo "health_stats=$STATS" >> $GITHUB_OUTPUT
           echo "Result: $STATS"
 
@@ -53,16 +42,7 @@ jobs:
               -d "$PAYLOAD"
           done)
           echo "$TIMES"
-          STATS=$(echo "$TIMES" | awk '
-            BEGIN { n=0; s=0 }
-            { v[n++]=$1; s+=$1 }
-            END {
-              asort(v)
-              avg=s/n
-              p95=v[int(n*0.95)+1]
-              printf "avg=%.3f p95=%.3f", avg, p95
-            }
-          ')
+          STATS=$(echo "$TIMES" | awk 'BEGIN{n=0;s=0} {v[n++]=$1;s+=$1} END{asort(v);printf "avg=%.3f p95=%.3f",s/n,v[int(n*0.95)+1]}')
           echo "mb_stats=$STATS" >> $GITHUB_OUTPUT
           echo "Result: $STATS"
 
@@ -71,9 +51,10 @@ jobs:
         run: |
           echo "=== Concurrent throughput via ab (50 req, 5 concurrent) ==="
           if command -v ab &>/dev/null; then
-            RPS=$(ab -n 50 -c 5 http://localhost:6480/health 2>&1 | grep "Requests per second" | awk '{print $4}')
+            AB_OUT=$(ab -n 50 -c 5 http://localhost:6480/health 2>&1)
+            echo "$AB_OUT" | grep -E "Requests per second|Time per request|Failed requests"
+            RPS=$(echo "$AB_OUT" | awk '/Requests per second/{print $4}')
             echo "rps=$RPS" >> $GITHUB_OUTPUT
-            ab -n 50 -c 5 http://localhost:6480/health 2>&1 | grep -E "Requests per second|Time per request|Failed requests"
           else
             echo "ab nicht installiert — skip"
             echo "rps=n/a" >> $GITHUB_OUTPUT
@@ -91,55 +72,34 @@ jobs:
             -d '{"top_k": 5}')
           echo "Job response: $JOB_RESP"
           JOB_ID=$(echo "$JOB_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('job_id',''))" 2>/dev/null)
-
           if [ -z "$JOB_ID" ]; then
             echo "WARN: Kein job_id — Benchmark-Endpoint möglicherweise nicht verfügbar"
-            echo "mrr=n/a recall=n/a hits=n/a" >> $GITHUB_OUTPUT
+            echo "mrr=n/a" >> $GITHUB_OUTPUT
+            echo "recall=n/a" >> $GITHUB_OUTPUT
+            echo "hits=n/a" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "Job ID: $JOB_ID"
-
-          # Poll bis done (max 3 Minuten = 36 × 5s)
+          # Poll bis done (max 3 Minuten)
+          POLL_STATUS="started"
           for i in $(seq 1 36); do
-            POLL=$(curl -s -H "Authorization: Bearer ${MCP_SERVICE_TOKEN}" \
-              "http://localhost:6480/jobs/${JOB_ID}")
-            STATUS=$(echo "$POLL" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
-            echo "  Poll $i: status=$STATUS"
-            if [ "$STATUS" = "done" ] || [ "$STATUS" = "error" ]; then
-              echo "$POLL" | python3 -c "
-import sys, json
-job = json.load(sys.stdin)
-out = job.get('output', '')
-for line in out.splitlines():
-    if any(k in line for k in ['MRR', 'Recall', 'Hits', 'Category']):
-        print('  ' + line.strip())
-"
-              # Werte für Summary extrahieren
-              MRR=$(echo "$POLL" | python3 -c "
-import sys, json, re
-out = json.load(sys.stdin).get('output','')
-m = re.search(r'MRR:\s+([\d.]+)', out)
-print(m.group(1) if m else 'n/a')
-" 2>/dev/null)
-              RECALL=$(echo "$POLL" | python3 -c "
-import sys, json, re
-out = json.load(sys.stdin).get('output','')
-m = re.search(r'Recall@5:\s+([\d.]+)', out)
-print(m.group(1) if m else 'n/a')
-" 2>/dev/null)
-              HITS=$(echo "$POLL" | python3 -c "
-import sys, json, re
-out = json.load(sys.stdin).get('output','')
-m = re.search(r'Hits:\s+(\d+/\d+)', out)
-print(m.group(1) if m else 'n/a')
-" 2>/dev/null)
-              echo "mrr=$MRR" >> $GITHUB_OUTPUT
-              echo "recall=$RECALL" >> $GITHUB_OUTPUT
-              echo "hits=$HITS" >> $GITHUB_OUTPUT
+            POLL=$(curl -s -H "Authorization: Bearer ${MCP_SERVICE_TOKEN}" "http://localhost:6480/jobs/${JOB_ID}")
+            POLL_STATUS=$(echo "$POLL" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
+            echo "  Poll $i: status=$POLL_STATUS"
+            if [ "$POLL_STATUS" = "done" ] || [ "$POLL_STATUS" = "error" ]; then
               break
             fi
             sleep 5
           done
+          # Relevante Zeilen ausgeben
+          POLL_OUT=$(curl -s -H "Authorization: Bearer ${MCP_SERVICE_TOKEN}" "http://localhost:6480/jobs/${JOB_ID}")
+          echo "$POLL_OUT" | python3 -c "import sys,json; out=json.load(sys.stdin).get('output',''); [print('  '+l.strip()) for l in out.splitlines() if any(k in l for k in ['MRR','Recall','Hits','Category'])]" 2>/dev/null
+          MRR=$(echo "$POLL_OUT" | python3 -c "import sys,json,re; out=json.load(sys.stdin).get('output',''); m=re.search(r'MRR:\s+([\d.]+)',out); print(m.group(1) if m else 'n/a')" 2>/dev/null)
+          RECALL=$(echo "$POLL_OUT" | python3 -c "import sys,json,re; out=json.load(sys.stdin).get('output',''); m=re.search(r'Recall@5:\s+([\d.]+)',out); print(m.group(1) if m else 'n/a')" 2>/dev/null)
+          HITS=$(echo "$POLL_OUT" | python3 -c "import sys,json,re; out=json.load(sys.stdin).get('output',''); m=re.search(r'Hits:\s+(\d+/\d+)',out); print(m.group(1) if m else 'n/a')" 2>/dev/null)
+          echo "mrr=${MRR}" >> $GITHUB_OUTPUT
+          echo "recall=${RECALL}" >> $GITHUB_OUTPUT
+          echo "hits=${HITS}" >> $GITHUB_OUTPUT
 
       - name: Phase pipeline timing (last 7 days, status=completed)
         id: pipeline
@@ -148,26 +108,12 @@ print(m.group(1) if m else 'n/a')
           PG=$(docker ps --format '{{.Names}}' | grep -E "postgres" | grep -v mayring | head -1)
           if [ -z "$PG" ]; then
             echo "WARN: Postgres-Container nicht gefunden"
-            echo "pipeline=n/a" >> $GITHUB_OUTPUT
+            echo "pipeline=n/a|n/a|n/a|n/a" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "Postgres container: $PG"
-          RESULT=$(docker exec "$PG" psql -U postgres linn_games -t -A -F'|' -c "
-            SELECT
-              COUNT(*)::text,
-              ROUND(AVG(elapsed_s)::numeric, 1)::text,
-              ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY elapsed_s)::numeric, 1)::text,
-              ROUND(MAX(elapsed_s)::numeric, 1)::text
-            FROM (
-              SELECT
-                EXTRACT(EPOCH FROM (MAX(updated_at) - MIN(created_at))) AS elapsed_s
-              FROM phase_agent_results
-              WHERE created_at > NOW() - INTERVAL '7 days'
-                AND status = 'completed'
-              GROUP BY projekt_id
-              HAVING COUNT(DISTINCT phase_nr) >= 4
-            ) t;
-          " 2>/dev/null || echo "n/a|n/a|n/a|n/a")
+          SQL="SELECT COUNT(*)::text||'|'||COALESCE(ROUND(AVG(elapsed_s)::numeric,1)::text,'n/a')||'|'||COALESCE(ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY elapsed_s)::numeric,1)::text,'n/a')||'|'||COALESCE(ROUND(MAX(elapsed_s)::numeric,1)::text,'n/a') FROM (SELECT EXTRACT(EPOCH FROM (MAX(updated_at)-MIN(created_at))) AS elapsed_s FROM phase_agent_results WHERE created_at > NOW()-INTERVAL '7 days' AND status='completed' GROUP BY projekt_id HAVING COUNT(DISTINCT phase_nr)>=4) t;"
+          RESULT=$(docker exec "$PG" psql -U postgres linn_games -t -A -c "$SQL" 2>/dev/null || echo "n/a|n/a|n/a|n/a")
           echo "Runs|avg_s|p95_s|max_s: $RESULT"
           echo "pipeline=$RESULT" >> $GITHUB_OUTPUT
 
@@ -182,30 +128,38 @@ print(m.group(1) if m else 'n/a')
           PIPELINE: ${{ steps.pipeline.outputs.pipeline }}
         run: |
           TS=$(date -u +"%Y-%m-%dT%H:%M UTC")
-          cat >> $GITHUB_STEP_SUMMARY << SUMMARY
-          ## System Benchmark — ${TS}
-
-          ### API Latenz (sequentiell, localhost:6480)
-          | Endpoint | Avg | p95 |
-          |---|---|---|
-          | \`/health\` | $(echo "$HEALTH_STATS" | awk -F'[ =]' '{print $2 "s"}') | $(echo "$HEALTH_STATS" | awk -F'[ =]' '{print $4 "s"}') |
-          | \`/conversation/micro-batch\` | $(echo "$MB_STATS" | awk -F'[ =]' '{print $2 "s"}') | $(echo "$MB_STATS" | awk -F'[ =]' '{print $4 "s"}') |
-
-          ### Concurrent Throughput (ab, 50 req c=5)
-          | Metrik | Wert |
-          |---|---|
-          | Requests/sec | ${RPS} |
-
-          ### Retrieval Qualität (MayringCoder, top_k=5)
-          | Metrik | Wert |
-          |---|---|
-          | MRR | ${MRR} |
-          | Recall@5 | ${RECALL} |
-          | Hits | ${HITS} |
-
-          ### Phase Agent Pipeline (letzte 7 Tage, ≥4 Phasen)
-          | Runs | Avg (s) | p95 (s) | Max (s) |
-          |---|---|---|---|
-          | $(echo "$PIPELINE" | cut -d'|' -f1) | $(echo "$PIPELINE" | cut -d'|' -f2) | $(echo "$PIPELINE" | cut -d'|' -f3) | $(echo "$PIPELINE" | cut -d'|' -f4) |
-          SUMMARY
+          H_AVG=$(echo "$HEALTH_STATS" | sed 's/avg=\([^ ]*\).*/\1s/')
+          H_P95=$(echo "$HEALTH_STATS" | sed 's/.*p95=\(.*\)/\1s/')
+          MB_AVG=$(echo "$MB_STATS" | sed 's/avg=\([^ ]*\).*/\1s/')
+          MB_P95=$(echo "$MB_STATS" | sed 's/.*p95=\(.*\)/\1s/')
+          PL_RUNS=$(echo "$PIPELINE" | cut -d'|' -f1)
+          PL_AVG=$(echo "$PIPELINE" | cut -d'|' -f2)
+          PL_P95=$(echo "$PIPELINE" | cut -d'|' -f3)
+          PL_MAX=$(echo "$PIPELINE" | cut -d'|' -f4)
+          {
+            echo "## System Benchmark — ${TS}"
+            echo ""
+            echo "### API Latenz (sequentiell, localhost:6480)"
+            echo "| Endpoint | Avg | p95 |"
+            echo "|---|---|---|"
+            echo "| \`/health\` | ${H_AVG} | ${H_P95} |"
+            echo "| \`/conversation/micro-batch\` | ${MB_AVG} | ${MB_P95} |"
+            echo ""
+            echo "### Concurrent Throughput (ab, 50 req c=5)"
+            echo "| Metrik | Wert |"
+            echo "|---|---|"
+            echo "| Requests/sec | ${RPS} |"
+            echo ""
+            echo "### Retrieval Qualität (MayringCoder, top_k=5)"
+            echo "| Metrik | Wert |"
+            echo "|---|---|"
+            echo "| MRR | ${MRR} |"
+            echo "| Recall@5 | ${RECALL} |"
+            echo "| Hits | ${HITS} |"
+            echo ""
+            echo "### Phase Agent Pipeline (letzte 7 Tage, ≥4 Phasen)"
+            echo "| Runs | Avg (s) | p95 (s) | Max (s) |"
+            echo "|---|---|---|---|"
+            echo "| ${PL_RUNS} | ${PL_AVG} | ${PL_P95} | ${PL_MAX} |"
+          } >> $GITHUB_STEP_SUMMARY
           echo "Summary geschrieben."
