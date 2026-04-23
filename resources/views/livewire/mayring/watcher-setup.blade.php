@@ -57,7 +57,9 @@
                 fest eingebaut — nur Dein Token ist drin. Keine Config-Datei nötig.
             </p>
             <pre class="bg-zinc-900 text-zinc-100 p-4 rounded text-xs overflow-x-auto whitespace-pre select-all"
->docker run -d --name mayring-watcher --restart=unless-stopped \
+>docker pull nileneb/mayring:latest && \
+docker run -d --name mayring-watcher --restart=unless-stopped \
+  -w /app \
   -v ~/.claude/projects:/host_claude:ro \
   -v mayring-watcher-state:/root/.cache/mayryngcoder \
   -e CLAUDE_PROJECTS_DIR=/host_claude \
