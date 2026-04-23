@@ -89,7 +89,9 @@ Alle verfügbaren Datenbanken werden im selben Durchlauf durchsucht. Keine Welle
 
 1) Identifiziere alle relevanten Datenbanken für das Thema (z.B. PubMed, Scopus, Web of Science, ERIC, PsycINFO, Cochrane, etc.).
 2) Erstelle für jede DB die passende Query-Variante basierend auf den Concept-Blocks.
-3) Durchsuche alle DBs gleichzeitig.
+3) Durchsuche alle DBs gleichzeitig via MCP-Tools (mcp__paper-search__search_*).
+   - Falls ein MCP-Tool fehlschlägt oder nicht verfügbar ist: Füge die Datenbank trotzdem in `p2_trefferlisten` ein mit `treffer_gesamt = null`, `einschaetzung = "Suche nicht ausgeführt"`, `anpassung_notwendig = true`.
+   - **Leere `p2_trefferlisten`-Arrays sind verboten** — schreibe mindestens eine Zeile pro identifizierter DB.
 4) Dedupliziere die Ergebnisse.
 5) Weise jeden Record einem Cluster zu.
 6) Berechne relevance_score pro Record (0–100):

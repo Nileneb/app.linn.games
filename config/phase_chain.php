@@ -62,9 +62,8 @@ return [
         ],
         2 => [
             'min_cluster' => 1,
-            'min_mapping' => 1,
             'blocking' => true,
-            'warning' => 'P2 hat keinen Cluster oder kein Mapping — Phase 3 wird nicht gestartet.',
+            'warning' => 'P2 hat keine Cluster definiert — Phase 3 wird nicht gestartet.',
             'agent_check' => false,
         ],
         3 => [

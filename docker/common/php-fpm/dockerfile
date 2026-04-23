@@ -94,7 +94,7 @@ RUN mkdir -p .claude/agents \
     && cp docs/agents/worker-*.md .claude/agents/ \
     && cp docs/agents/chat-agent.md .claude/agents/ \
     && cp docs/agents/mcp-production.json .claude/ \
-    && cp docs/agents/settings.production.json .claude/
+    && cp docs/agents/settings.production.json .claude/settings.json
 
 # Ensure correct permissions
 RUN chown -R www-data:www-data /var/www
