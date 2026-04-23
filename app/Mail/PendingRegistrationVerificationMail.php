@@ -9,12 +9,25 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class PendingRegistrationVerificationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public int $tries = 3;
+    public int $backoff = 60;
+    public int $maxExceptions = 1;
+
     public function __construct(public readonly PendingRegistration $pending) {}
+
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('Mail delivery permanently failed', [
+            'mailable' => static::class,
+            'exception' => $exception->getMessage(),
+        ]);
+    }
 
     public function envelope(): Envelope
     {
