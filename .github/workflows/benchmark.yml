@@ -15,6 +15,7 @@ jobs:
   benchmark:
     name: Benchmark all layers
     runs-on: [self-hosted, u-server]
+    timeout-minutes: 20
 
     steps:
       - name: API latency — /health (30 requests, seq)
@@ -35,7 +36,7 @@ jobs:
           echo "=== /conversation/micro-batch latency (20 requests) ==="
           PAYLOAD='{"turns":[{"role":"user","content":"bench","timestamp":"2026-01-01T00:00:00Z"}],"session_id":"bench-lat","workspace_slug":"bench"}'
           TIMES=$(for i in $(seq 1 20); do
-            curl -s -o /dev/null -w "%{time_total}\n" \
+            curl -s -o /dev/null -w "%{time_total}\n" --max-time 60 \
               -X POST http://localhost:6480/conversation/micro-batch \
               -H "Authorization: Bearer ${MCP_SERVICE_TOKEN}" \
               -H "Content-Type: application/json" \
