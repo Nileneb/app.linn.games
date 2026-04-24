@@ -53,7 +53,8 @@ test('generate action produces watcher-scoped JWT and exposes Docker command', f
         ->assertSet('generatedToken', fn ($v) => is_string($v) && str_starts_with($v, 'eyJ'))
         ->assertSee('MAYRING_JWT=')
         ->assertSee('docker run -d --name mayring-watcher')
-        ->assertSee('python -m tools.conversation_watcher');
+        ->assertSee('nileneb/mayring-watcher:latest')
+        ->assertDontSee('python -m tools.conversation_watcher');
 });
 
 test('blocks users without active Mayring subscription', function () {

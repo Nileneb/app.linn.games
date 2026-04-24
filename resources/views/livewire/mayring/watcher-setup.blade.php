@@ -22,7 +22,7 @@
         <p class="text-xs text-zinc-500 dark:text-zinc-400">
             <strong>Wichtig:</strong> Der Watcher braucht Docker Desktop (Mac/Windows)
             oder eine Docker-Engine (Linux). Es wird kein Code auf Deinem Rechner
-            ausgeführt außer dem offiziellen MayringCoder-Image.
+            ausgeführt außer dem offiziellen MayringCoder-Watcher-Image (~50 MB).
         </p>
     </section>
 
@@ -57,16 +57,14 @@
                 fest eingebaut — nur Dein Token ist drin. Keine Config-Datei nötig.
             </p>
             <pre class="bg-zinc-900 text-zinc-100 p-4 rounded text-xs overflow-x-auto whitespace-pre select-all"
->docker pull nileneb/mayring:latest && \
+>docker pull nileneb/mayring-watcher:latest && \
 docker run -d --name mayring-watcher --restart=unless-stopped \
-  -w /app \
   -v ~/.claude/projects:/host_claude:ro \
   -v mayring-watcher-state:/root/.cache/mayryngcoder \
   -e CLAUDE_PROJECTS_DIR=/host_claude \
   -e MAYRING_API_URL={{ $apiBaseUrl }} \
   -e MAYRING_JWT={{ $generatedToken }} \
-  nileneb/mayring:latest \
-  python -m tools.conversation_watcher --workspace-id system</pre>
+  nileneb/mayring-watcher:latest</pre>
 
             <p class="text-xs text-zinc-500 dark:text-zinc-400">
                 Läuft er? <code>docker logs -f mayring-watcher</code><br>
