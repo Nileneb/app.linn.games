@@ -206,11 +206,13 @@ class MayringMcpClient
         try {
             $response = Http::timeout(5)->get($this->endpoint().'/stats/summary');
 
-            return $response->successful() ? ($response->json() ?? []) : [];
-        } catch (ConnectionException) {
-            $this->warnOffline('getStats');
+            if ($response->failed()) {
+                throw new \RuntimeException("MayringMcpClient: getStats fehlgeschlagen ({$response->status()})");
+            }
 
-            return [];
+            return $response->json() ?? [];
+        } catch (ConnectionException $e) {
+            throw new \RuntimeException('MayringMcpClient: getStats Verbindung getrennt', 0, $e);
         }
     }
 }
