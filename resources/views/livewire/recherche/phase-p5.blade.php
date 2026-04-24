@@ -680,46 +680,30 @@ new class extends Component {
             </div>
         </div>
 
-        @if ($showScreenForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelScreen"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Screening-Entscheidung</h3>
-                    <button wire:click="cancelScreen" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <x-crud.field label="Level">
-                            <select wire:model="screenLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
-                                <option value="L2_volltext">L2 — Volltext</option>
-                            </select>
-                        </x-crud.field>
-                        <x-crud.field label="Entscheidung" required>
-                            <select wire:model="screenEntscheidung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="eingeschlossen">Eingeschlossen</option>
-                                <option value="ausgeschlossen">Ausgeschlossen</option>
-                                <option value="unklar">Unklar</option>
-                            </select>
-                        </x-crud.field>
-                        <x-crud.field label="Reviewer">
-                            <input wire:model="screenReviewer" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </x-crud.field>
-                        <x-crud.field label="Ausschlussgrund">
-                            <input wire:model="screenAusschlussgrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </x-crud.field>
-                    </div>
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelScreen" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveScreen" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
-                </div>
+        <x-crud.form :visible="$showScreenForm" save-action="saveScreen" cancel-action="cancelScreen"
+            title="Screening-Entscheidung">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <x-crud.field label="Level">
+                    <select wire:model="screenLevel" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="L1_titel_abstract">L1 — Titel/Abstract</option>
+                        <option value="L2_volltext">L2 — Volltext</option>
+                    </select>
+                </x-crud.field>
+                <x-crud.field label="Entscheidung" required>
+                    <select wire:model="screenEntscheidung" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="eingeschlossen">Eingeschlossen</option>
+                        <option value="ausgeschlossen">Ausgeschlossen</option>
+                        <option value="unklar">Unklar</option>
+                    </select>
+                </x-crud.field>
+                <x-crud.field label="Reviewer">
+                    <input wire:model="screenReviewer" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
+                <x-crud.field label="Ausschlussgrund">
+                    <input wire:model="screenAusschlussgrund" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </x-crud.field>
             </div>
-        @endif
+        </x-crud.form>
 
         @if ($treffer->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">

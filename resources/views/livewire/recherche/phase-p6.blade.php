@@ -199,91 +199,64 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- ═══ Qualitätsbewertung (Risk of Bias) ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Qualitätsbewertung (Risk of Bias)
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $bewertungen->count() }})</span>
-                {{-- 📊 Visualisierung: RoB Traffic-Light / Summary Chart --}}
-            </h3>
-            <button wire:click="newQb" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showQbForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelQb"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Qualitätsbewertung {{ $editingQbId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelQb" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+    <x-crud.section title="Qualitätsbewertung (Risk of Bias)" :count="$bewertungen->count()" new-action="newQb">
+        <x-crud.form :visible="$showQbForm" save-action="saveQb" cancel-action="cancelQb"
+            title="Qualitätsbewertung {{ $editingQbId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer *</label>
+                <select wire:model="qbTrefferId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <option value="">— Treffer wählen —</option>
+                    @foreach ($treffer as $t)
+                        <option value="{{ $t->id }}">{{ str()->limit($t->titel ?? $t->record_id, 50) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Studientyp *</label>
+                    <select wire:model="qbStudientyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="RCT">RCT</option>
+                        <option value="nicht_randomisiert">Nicht-randomisiert</option>
+                        <option value="qualitativ">Qualitativ</option>
+                        <option value="mixed_methods">Mixed Methods</option>
+                        <option value="Kohortenstudie">Kohortenstudie</option>
+                        <option value="Fallkontrolle">Fallkontrolle</option>
+                        <option value="Querschnitt">Querschnitt</option>
+                    </select>
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer *</label>
-                        <select wire:model="qbTrefferId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="">— Treffer wählen —</option>
-                            @foreach ($treffer as $t)
-                                <option value="{{ $t->id }}">{{ str()->limit($t->titel ?? $t->record_id, 50) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Studientyp *</label>
-                            <select wire:model="qbStudientyp" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="RCT">RCT</option>
-                                <option value="nicht_randomisiert">Nicht-randomisiert</option>
-                                <option value="qualitativ">Qualitativ</option>
-                                <option value="mixed_methods">Mixed Methods</option>
-                                <option value="Kohortenstudie">Kohortenstudie</option>
-                                <option value="Fallkontrolle">Fallkontrolle</option>
-                                <option value="Querschnitt">Querschnitt</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">RoB-Tool *</label>
-                            <select wire:model="qbRobTool" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="RoB2">RoB 2</option>
-                                <option value="ROBINS-I">ROBINS-I</option>
-                                <option value="CASP_qualitativ">CASP (qualitativ)</option>
-                                <option value="AMSTAR2">AMSTAR 2</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Gesamturteil *</label>
-                            <select wire:model="qbGesamturteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="niedrig">Niedrig</option>
-                                <option value="moderat">Moderat</option>
-                                <option value="hoch">Hoch</option>
-                                <option value="kritisch">Kritisch</option>
-                                <option value="nicht_bewertet">Nicht bewertet</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Bewertet von</label>
-                            <input wire:model="qbBewertetVon" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Hauptproblem</label>
-                        <textarea wire:model="qbHauptproblem" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    <div>
-                        <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="qbImReviewBehalten" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Im Review behalten
-                        </label>
-                    </div>
-                    @error('qbTrefferId') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">RoB-Tool *</label>
+                    <select wire:model="qbRobTool" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="RoB2">RoB 2</option>
+                        <option value="ROBINS-I">ROBINS-I</option>
+                        <option value="CASP_qualitativ">CASP (qualitativ)</option>
+                        <option value="AMSTAR2">AMSTAR 2</option>
+                    </select>
                 </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelQb" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveQb" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Gesamturteil *</label>
+                    <select wire:model="qbGesamturteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="niedrig">Niedrig</option>
+                        <option value="moderat">Moderat</option>
+                        <option value="hoch">Hoch</option>
+                        <option value="kritisch">Kritisch</option>
+                        <option value="nicht_bewertet">Nicht bewertet</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Bewertet von</label>
+                    <input wire:model="qbBewertetVon" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Hauptproblem</label>
+                <textarea wire:model="qbHauptproblem" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                <input wire:model="qbImReviewBehalten" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Im Review behalten
+            </label>
+            @error('qbTrefferId') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         {{-- RoB Summary (inline Visualization) --}}
         @if ($robVerteilung->isNotEmpty())
@@ -418,57 +391,30 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Qualitätsbewertungen vorhanden.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Lückenanalyse ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Lückenanalyse
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $lucken->count() }})</span>
-                {{-- 📊 Visualisierung: Gap-Map / Evidence Matrix --}}
-            </h3>
-            <button wire:click="newLa" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showLaForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelLa"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Lücke {{ $editingLaId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelLa" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Fehlender Aspekt *</label>
-                        <textarea wire:model="laFehlenderAspekt" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-1">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Fehlender Studientyp</label>
-                            <input wire:model="laFehlenderStudientyp" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Mögliche Konsequenz</label>
-                            <input wire:model="laMoeglicheKonsequenz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Empfehlung</label>
-                            <input wire:model="laEmpfehlung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    @error('laFehlenderAspekt') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelLa" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveLa" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
-                </div>
+    <x-crud.section title="Lückenanalyse" :count="$lucken->count()" new-action="newLa">
+        <x-crud.form :visible="$showLaForm" save-action="saveLa" cancel-action="cancelLa"
+            title="Lücke {{ $editingLaId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Fehlender Aspekt *</label>
+                <textarea wire:model="laFehlenderAspekt" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Fehlender Studientyp</label>
+                <input wire:model="laFehlenderStudientyp" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Mögliche Konsequenz</label>
+                <input wire:model="laMoeglicheKonsequenz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Empfehlung</label>
+                <input wire:model="laEmpfehlung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+            @error('laFehlenderAspekt') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($lucken->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -498,7 +444,7 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Lücken identifiziert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Phase Transition Status ═══ --}}
     <div class="mt-4">

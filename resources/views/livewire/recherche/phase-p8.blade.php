@@ -278,16 +278,7 @@ new class extends Component {
 <div class="space-y-6" wire:poll.10s>
 
     {{-- ═══ Suchprotokoll ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Suchprotokoll
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $suchprotokolle->count() }})</span>
-                {{-- 📊 Visualisierung: Treffer-pro-Datenbank Balkendiagramm --}}
-            </h3>
-            <button wire:click="newSp" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
+    <x-crud.section title="Suchprotokoll" :count="$suchprotokolle->count()" new-action="newSp">
         <x-crud.form :visible="$showSpForm" save-action="saveSp" cancel-action="cancelSp"
             title="Suchprotokoll {{ $editingSpId ? 'bearbeiten' : 'hinzufügen' }}">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -427,18 +418,10 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch kein Suchprotokoll dokumentiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Limitationen ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Limitationen
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $limitationen->count() }})</span>
-            </h3>
-            <button wire:click="newLim" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
+    <x-crud.section title="Limitationen" :count="$limitationen->count()" new-action="newLim">
         <x-crud.form :visible="$showLimForm" save-action="saveLim" cancel-action="cancelLim"
             title="Limitation {{ $editingLimId ? 'bearbeiten' : 'hinzufügen' }}">
             <div>
@@ -479,19 +462,10 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Limitationen dokumentiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Reproduzierbarkeit ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Reproduzierbarkeits-Checkliste
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $reproduzierbarkeit->count() }})</span>
-                {{-- 📊 Visualisierung: Fortschritts-Ring — Erfüllte/Offene Prüfpunkte --}}
-            </h3>
-            <button wire:click="newRep" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
+    <x-crud.section title="Reproduzierbarkeits-Checkliste" :count="$reproduzierbarkeit->count()" new-action="newRep">
         <x-crud.form :visible="$showRepForm" save-action="saveRep" cancel-action="cancelRep"
             title="Reproduzierbarkeit {{ $editingRepId ? 'bearbeiten' : 'hinzufügen' }}">
             <div>
@@ -564,18 +538,10 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Prüfpunkte definiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Update-Plan ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Update-Plan
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $updatePlaene->count() }})</span>
-            </h3>
-            <button wire:click="newUp" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
+    <x-crud.section title="Update-Plan" :count="$updatePlaene->count()" new-action="newUp">
         <x-crud.form :visible="$showUpForm" save-action="saveUp" cancel-action="cancelUp"
             title="Update-Plan {{ $editingUpId ? 'bearbeiten' : 'hinzufügen' }}">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -635,5 +601,5 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch kein Update-Plan definiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 </div>

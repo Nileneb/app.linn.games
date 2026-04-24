@@ -325,52 +325,26 @@ new class extends Component {
 
 <div class="space-y-6" wire:poll.10s>
     {{-- ═══ Synthese-Methode ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Synthese-Methode
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $syntheseMethoden->count() }})</span>
-            </h3>
-            <button wire:click="newSm" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showSmForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelSm"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Synthese-Methode {{ $editingSmId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelSm" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Methode *</label>
-                        <select wire:model="smMethode" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="narrative_synthese">Narrative Synthese</option>
-                            <option value="meta_analyse">Meta-Analyse</option>
-                            <option value="thematische_synthese">Thematische Synthese</option>
-                            <option value="framework_synthesis">Framework Synthesis</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                        <textarea wire:model="smBegruendung" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    <div>
-                        <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                            <input wire:model="smGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Gewählt
-                        </label>
-                    </div>
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelSm" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveSm" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
-                </div>
+    <x-crud.section title="Synthese-Methode" :count="$syntheseMethoden->count()" new-action="newSm">
+        <x-crud.form :visible="$showSmForm" save-action="saveSm" cancel-action="cancelSm"
+            title="Synthese-Methode {{ $editingSmId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Methode *</label>
+                <select wire:model="smMethode" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <option value="narrative_synthese">Narrative Synthese</option>
+                    <option value="meta_analyse">Meta-Analyse</option>
+                    <option value="thematische_synthese">Thematische Synthese</option>
+                    <option value="framework_synthesis">Framework Synthesis</option>
+                </select>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
+                <textarea wire:model="smBegruendung" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                <input wire:model="smGewaehlt" type="checkbox" class="rounded border-neutral-300 dark:border-neutral-600"> Gewählt
+            </label>
+        </x-crud.form>
 
         @if ($syntheseMethoden->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -395,84 +369,59 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Synthese-Methode bewertet.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Datenextraktion ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Datenextraktion
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $datenextraktionen->count() }})</span>
-                {{-- 📊 Visualisierung: Evidence-Map — Länder × Outcomes Heatmap --}}
-            </h3>
-            <button wire:click="newDe" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showDeForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelDe"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Datenextraktion {{ $editingDeId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelDe" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+    <x-crud.section title="Datenextraktion" :count="$datenextraktionen->count()" new-action="newDe">
+        <x-crud.form :visible="$showDeForm" save-action="saveDe" cancel-action="cancelDe"
+            title="Datenextraktion {{ $editingDeId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer *</label>
+                <select wire:model="deTrefferId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                    <option value="">— Treffer wählen —</option>
+                    @foreach ($treffer as $t)
+                        <option value="{{ $t->id }}">{{ str()->limit($t->titel ?? $t->record_id, 60) }} ({{ $t->jahr }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Land</label>
+                    <input wire:model="deLand" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Treffer *</label>
-                        <select wire:model="deTrefferId" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                            <option value="">— Treffer wählen —</option>
-                            @foreach ($treffer as $t)
-                                <option value="{{ $t->id }}">{{ str()->limit($t->titel ?? $t->record_id, 60) }} ({{ $t->jahr }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Land</label>
-                            <input wire:model="deLand" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Stichprobe / Kontext</label>
-                            <input wire:model="deStichprobe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Phänomen / Intervention</label>
-                            <input wire:model="dePhaenomen" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Outcome / Ergebnis</label>
-                            <input wire:model="deOutcome" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Qualitätsurteil</label>
-                            <select wire:model="deQualitaetsurteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="">— keine Angabe —</option>
-                                <option value="niedrig">Niedrig</option>
-                                <option value="unklar">Unklar</option>
-                                <option value="hoch">Hoch</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
-                            <input wire:model="deAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Hauptbefund *</label>
-                        <textarea wire:model="deHauptbefund" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    @error('deTrefferId') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                    @error('deHauptbefund') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Stichprobe / Kontext</label>
+                    <input wire:model="deStichprobe" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelDe" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveDe" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Phänomen / Intervention</label>
+                    <input wire:model="dePhaenomen" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Outcome / Ergebnis</label>
+                    <input wire:model="deOutcome" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Qualitätsurteil</label>
+                    <select wire:model="deQualitaetsurteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="">— keine Angabe —</option>
+                        <option value="niedrig">Niedrig</option>
+                        <option value="unklar">Unklar</option>
+                        <option value="hoch">Hoch</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Anmerkung</label>
+                    <input wire:model="deAnmerkung" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Hauptbefund *</label>
+                <textarea wire:model="deHauptbefund" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            @error('deTrefferId') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+            @error('deHauptbefund') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         {{-- Evidence Map Heatmap (Länder × Outcomes) --}}
         @if ($datenextraktionen->isNotEmpty())
@@ -576,57 +525,30 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Daten extrahiert. Treffer aus P5 können hier analysiert werden.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ Muster & Konsistenz ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                Muster & Konsistenz
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $muster->count() }})</span>
-                {{-- 📊 Visualisierung: Stacked Bar — Pro Befund unterstützend vs. widersprechend --}}
-            </h3>
-            <button wire:click="newMk" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showMkForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelMk"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Muster / Konsistenz {{ $editingMkId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelMk" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Muster / Befund *</label>
-                        <textarea wire:model="mkBefund" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-1">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Unterstützende Quellen <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                            <input wire:model="mkUnterstuetzend" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Widersprechende Quellen <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
-                            <input wire:model="mkWidersprechend" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Mögliche Erklärung</label>
-                            <textarea wire:model="mkErklaerung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                        </div>
-                    </div>
-                    @error('mkBefund') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelMk" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveMk" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
-                </div>
+    <x-crud.section title="Muster & Konsistenz" :count="$muster->count()" new-action="newMk">
+        <x-crud.form :visible="$showMkForm" save-action="saveMk" cancel-action="cancelMk"
+            title="Muster / Konsistenz {{ $editingMkId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Muster / Befund *</label>
+                <textarea wire:model="mkBefund" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Unterstützende Quellen <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
+                <input wire:model="mkUnterstuetzend" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Widersprechende Quellen <span class="font-normal text-neutral-400">(kommagetrennt)</span></label>
+                <input wire:model="mkWidersprechend" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Mögliche Erklärung</label>
+                <textarea wire:model="mkErklaerung" rows="2" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            @error('mkBefund') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($muster->isNotEmpty())
             <div class="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -662,83 +584,58 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine Muster/Konsistenz-Befunde dokumentiert.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     {{-- ═══ GRADE Einschätzung ═══ --}}
-    <div class="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <div class="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                GRADE Einschätzung
-                <span class="ml-1 text-xs font-normal text-neutral-500">({{ $gradeEinschaetzungen->count() }})</span>
-                {{-- 📊 Visualisierung: GRADE Summary-of-Findings Tabelle mit Farbkodierung --}}
-            </h3>
-            <button wire:click="newGr" class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">+ Neu</button>
-        </div>
-
-        @if ($showGrForm)
-            <div class="fixed inset-0 z-30 bg-black/30" wire:click="cancelGr"></div>
-            <div class="fixed inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:max-w-md">
-                <div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <h3 class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">GRADE Einschätzung {{ $editingGrId ? 'bearbeiten' : 'hinzufügen' }}</h3>
-                    <button wire:click="cancelGr" class="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
-                    </button>
+    <x-crud.section title="GRADE Einschätzung" :count="$gradeEinschaetzungen->count()" new-action="newGr">
+        <x-crud.form :visible="$showGrForm" save-action="saveGr" cancel-action="cancelGr"
+            title="GRADE Einschätzung {{ $editingGrId ? 'bearbeiten' : 'hinzufügen' }}">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Outcome *</label>
+                    <input wire:model="grOutcome" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Outcome *</label>
-                            <input wire:model="grOutcome" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Studienanzahl</label>
-                            <input wire:model="grStudienanzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">GRADE-Urteil *</label>
-                            <select wire:model="grUrteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="hoch">⊕⊕⊕⊕ Hoch</option>
-                                <option value="moderat">⊕⊕⊕○ Moderat</option>
-                                <option value="niedrig">⊕⊕○○ Niedrig</option>
-                                <option value="sehr_niedrig">⊕○○○ Sehr niedrig</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">RoB gesamt</label>
-                            <select wire:model="grRobGesamt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                                <option value="">—</option>
-                                <option value="niedrig">Niedrig</option>
-                                <option value="unklar">Unklar</option>
-                                <option value="hoch">Hoch</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Inkonsistenz</label>
-                            <input wire:model="grInkonsistenz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Indirektheit</label>
-                            <input wire:model="grIndirektheit" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Impräzision</label>
-                            <input wire:model="grImpraezision" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
-                        <textarea wire:model="grBegruendung" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
-                    </div>
-                    @error('grOutcome') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Studienanzahl</label>
+                    <input wire:model="grStudienanzahl" type="number" min="0" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
-                <div class="border-t border-neutral-200 px-4 py-3 dark:border-neutral-700">
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cancelGr" class="rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700">Abbrechen</button>
-                        <button wire:click="saveGr" class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Speichern</button>
-                    </div>
+                <div class="sm:col-span-2">
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">GRADE-Urteil *</label>
+                    <select wire:model="grUrteil" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="hoch">⊕⊕⊕⊕ Hoch</option>
+                        <option value="moderat">⊕⊕⊕○ Moderat</option>
+                        <option value="niedrig">⊕⊕○○ Niedrig</option>
+                        <option value="sehr_niedrig">⊕○○○ Sehr niedrig</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">RoB gesamt</label>
+                    <select wire:model="grRobGesamt" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                        <option value="">—</option>
+                        <option value="niedrig">Niedrig</option>
+                        <option value="unklar">Unklar</option>
+                        <option value="hoch">Hoch</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Inkonsistenz</label>
+                    <input wire:model="grInkonsistenz" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Indirektheit</label>
+                    <input wire:model="grIndirektheit" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Impräzision</label>
+                    <input wire:model="grImpraezision" type="text" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100">
                 </div>
             </div>
-        @endif
+            <div>
+                <label class="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">Begründung</label>
+                <textarea wire:model="grBegruendung" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"></textarea>
+            </div>
+            @error('grOutcome') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+        </x-crud.form>
 
         @if ($gradeEinschaetzungen->isNotEmpty())
             <div class="overflow-x-auto">
@@ -788,7 +685,7 @@ new class extends Component {
         @else
             <p class="p-4 text-sm text-neutral-500 dark:text-neutral-400">Noch keine GRADE-Einschätzungen.</p>
         @endif
-    </div>
+    </x-crud.section>
 
     <!-- Mayring Snippet Extractor -->
     <div class="mt-8 border-t border-neutral-200 pt-8 dark:border-neutral-700">
