@@ -195,4 +195,22 @@ class MayringMcpClient
             return [];
         }
     }
+
+    /**
+     * Aggregate system stats from the public /stats/summary endpoint.
+     *
+     * @return array{chunks: array, sources: array, feedback: array, ingestion: array, recent_ops: array}
+     */
+    public function getStats(): array
+    {
+        try {
+            $response = Http::timeout(5)->get($this->endpoint().'/stats/summary');
+
+            return $response->successful() ? ($response->json() ?? []) : [];
+        } catch (ConnectionException) {
+            $this->warnOffline('getStats');
+
+            return [];
+        }
+    }
 }

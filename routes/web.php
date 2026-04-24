@@ -162,6 +162,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('mayring.subscription')
         ->get('mayring/watcher', \App\Livewire\Mayring\WatcherSetup::class)
         ->name('mayring.watcher');
+
+    Route::middleware('mayring.subscription')
+        ->get('mayring/memory', \App\Livewire\Mayring\MemoryDashboard::class)
+        ->name('mayring.stats');
 });
 
 // Paper Search MCP token exchange (unauthenticated by OAuth design — PKCE verifier proves ownership)
