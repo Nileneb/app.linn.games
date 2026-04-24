@@ -41,15 +41,15 @@
             </a>
         </div>
 
-        {{-- Watcher-Setup Link --}}
+        {{-- Memory Dashboard Link --}}
         <div class="rounded-lg border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-4 flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Conversation-Watcher</p>
-                <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Claude-Chats automatisch aus ~/.claude/projects in Deinen Memory-Store ingesten — läuft als Docker-Container auf Deinem Rechner.</p>
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Memory Dashboard</p>
+                <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Live-Metriken: Chunks, Quellen, Feedback-Ratio und Ingest-Operationen in Echtzeit.</p>
             </div>
-            <a href="{{ route('mayring.watcher') }}"
+            <a href="{{ route('mayring.memory') }}" wire:navigate
                 class="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-500 transition">
-                Einrichten
+                Öffnen
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>

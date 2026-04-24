@@ -30,16 +30,13 @@ test('requires authentication', function () {
 // gibt den ältesten owned-Workspace zurück — deshalb mutieren wir ihn
 // statt einen zweiten zu erzeugen (den die Middleware sonst nie sehen würde).
 
-test('renders setup page for active subscriber', function () {
+test('watcher url redirects to memory dashboard', function () {
     $user = User::factory()->withoutTwoFactor()->create();
     $user->currentWorkspace()->update(['mayring_active' => true]);
 
     $this->actingAs($user)
         ->get(route('mayring.watcher'))
-        ->assertOk()
-        ->assertSee('Conversation-Watcher einrichten')
-        ->assertSee('auf Deinem Rechner')
-        ->assertDontSee('MAYRING_JWT=eyJ');
+        ->assertRedirect(route('mayring.memory'));
 });
 
 test('generate action produces watcher-scoped JWT and exposes Docker command', function () {

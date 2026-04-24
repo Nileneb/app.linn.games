@@ -12,7 +12,7 @@ beforeEach(function () {
 });
 
 test('requires authentication', function () {
-    $this->get(route('mayring.stats'))
+    $this->get(route('mayring.memory'))
         ->assertRedirect(route('login'));
 });
 
@@ -72,6 +72,6 @@ test('blocks users without active mayring subscription', function () {
     $user->currentWorkspace()->update(['mayring_active' => false]);
 
     $this->actingAs($user)
-        ->get(route('mayring.stats'))
+        ->get(route('mayring.memory'))
         ->assertRedirect();
 });

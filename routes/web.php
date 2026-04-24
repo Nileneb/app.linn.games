@@ -147,25 +147,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('mayring.dashboard');
 
     // MayringCoder Subscription (kein Gate — jeder Auth-User kann abonnieren)
-    Route::get('einstellungen/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
-    Route::get('einstellungen/llm-endpoints', \App\Livewire\Settings\LlmEndpoints::class)->name('settings.llm-endpoints');
+    Route::get('settings/mayring-abo', \App\Livewire\Billing\MayringSubscription::class)->name('mayring.subscribe');
+    Route::get('settings/llm-endpoints', \App\Livewire\Settings\LlmEndpoints::class)->name('settings.llm-endpoints');
 
-    // MayringCoder Memory-Dashboard (nur für aktive Abonnenten)
-    Route::middleware('mayring.subscription')
-        ->get('recherche/mayring-memory', \App\Livewire\Recherche\MayringMemoryDashboard::class)
-        ->name('mayring.memory');
-
-    // Conversation-Watcher Setup — erklärt dem User, wozu der Watcher gut ist,
-    // gibt einen 30-Tage-JWT aus und rendert den fertigen Docker-Command zum
-    // Kopieren. Die Daten liegen beim User auf dem Rechner (~/.claude/projects),
-    // wir liefern nur Token + Anleitung.
-    Route::middleware('mayring.subscription')
-        ->get('mayring/watcher', \App\Livewire\Mayring\WatcherSetup::class)
-        ->name('mayring.watcher');
-
+    // MayringCoder Memory-Dashboard (Realtime-Stats: Chunks, Feedback, Ingest-Log)
     Route::middleware('mayring.subscription')
         ->get('mayring/memory', \App\Livewire\Mayring\MemoryDashboard::class)
-        ->name('mayring.stats');
+        ->name('mayring.memory');
+
+    // Watcher-Setup (Legacy-URL — leitet auf Memory-Dashboard um)
+    Route::middleware('mayring.subscription')
+        ->get('mayring/watcher', fn () => redirect()->route('mayring.memory'))
+        ->name('mayring.watcher');
 });
 
 // Paper Search MCP token exchange (unauthenticated by OAuth design — PKCE verifier proves ownership)
