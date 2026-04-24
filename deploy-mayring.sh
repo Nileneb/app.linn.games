@@ -44,14 +44,7 @@ docker stop mayring-watcher 2>/dev/null && docker rm mayring-watcher 2>/dev/null
 "${DM[@]}" down --remove-orphans 2>/dev/null || true
 
 echo "==> Starting MayringCoder stack..."
-# Start watcher profile when CLAUDE_PROJECTS_DIR is set and the path exists.
-# Auth: watcher uses MCP_SERVICE_TOKEN from .env.production (no MAYRING_JWT needed).
-if [ -n "${CLAUDE_PROJECTS_DIR:-}" ] && [ -d "${CLAUDE_PROJECTS_DIR}" ]; then
-  echo "    Watcher aktiv: ${CLAUDE_PROJECTS_DIR}"
-  "${DM[@]}" --profile watcher up -d
-else
-  "${DM[@]}" up -d
-fi
+"${DM[@]}" up -d
 
 # ── Health check ───────────────────────────────
 echo "==> Health check (http://localhost:6480/ui/)..."
