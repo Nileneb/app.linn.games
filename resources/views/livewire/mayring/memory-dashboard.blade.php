@@ -18,8 +18,13 @@
         $pos      = $stats['feedback']['positive'] ?? 0;
         $neg      = $stats['feedback']['negative'] ?? 0;
         $neutral  = $stats['feedback']['neutral']  ?? 0;
+        $stars    = $stats['feedback']['stars'] ?? [];
         $total_fb = $pos + $neg;
+        $total_rated = array_sum($stars);
         $ratio    = $total_fb > 0 ? round($pos / $total_fb * 100) : 0;
+        $avg_stars = $total_rated > 0
+            ? round(array_sum(array_map(fn($k, $v) => (int)$k * $v, array_keys($stars), $stars)) / $total_rated, 1)
+            : null;
     @endphp
 
     {{-- Stat Cards --}}
@@ -34,16 +39,18 @@
             <p class="text-3xl font-bold mt-1 tabular-nums">{{ number_format($stats['sources']['count'] ?? 0) }}</p>
         </div>
         <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
-            <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Feedback Ratio</p>
-            @if($total_fb > 0)
+            <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Ø Qualität</p>
+            @if($avg_stars !== null)
+                <p class="text-3xl font-bold mt-1 tabular-nums">{{ $avg_stars }}★</p>
+                <p class="text-xs text-zinc-400 mt-1">
+                    {{ $total_rated }} bewertet · {{ $pos }}+ / {{ $neg }}&minus;
+                </p>
+            @elseif($total_fb > 0)
                 <p class="text-3xl font-bold mt-1 tabular-nums">{{ $ratio }}%</p>
-                <p class="text-xs text-zinc-400 mt-1">{{ $pos }}+ / {{ $neg }}&minus; · {{ $neutral }} abgerufen</p>
-            @elseif($neutral > 0)
-                <p class="text-3xl font-bold mt-1 tabular-nums text-zinc-400">{{ $neutral }}</p>
-                <p class="text-xs text-zinc-400 mt-1">Chunks abgerufen · kein explicit feedback</p>
+                <p class="text-xs text-zinc-400 mt-1">{{ $pos }}+ / {{ $neg }}&minus;</p>
             @else
                 <p class="text-3xl font-bold mt-1 text-zinc-300 dark:text-zinc-600">–</p>
-                <p class="text-xs text-zinc-400 mt-1">Noch keine Suchen</p>
+                <p class="text-xs text-zinc-400 mt-1">Training-Generator ausführen</p>
             @endif
         </div>
         <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
