@@ -17,6 +17,7 @@
     @php
         $pos      = $stats['feedback']['positive'] ?? 0;
         $neg      = $stats['feedback']['negative'] ?? 0;
+        $neutral  = $stats['feedback']['neutral']  ?? 0;
         $total_fb = $pos + $neg;
         $ratio    = $total_fb > 0 ? round($pos / $total_fb * 100) : 0;
     @endphp
@@ -34,8 +35,16 @@
         </div>
         <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
             <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Feedback Ratio</p>
-            <p class="text-3xl font-bold mt-1 tabular-nums">{{ $ratio }}%</p>
-            <p class="text-xs text-zinc-400 mt-1">{{ $pos }}+ / {{ $neg }}&minus;</p>
+            @if($total_fb > 0)
+                <p class="text-3xl font-bold mt-1 tabular-nums">{{ $ratio }}%</p>
+                <p class="text-xs text-zinc-400 mt-1">{{ $pos }}+ / {{ $neg }}&minus; · {{ $neutral }} abgerufen</p>
+            @elseif($neutral > 0)
+                <p class="text-3xl font-bold mt-1 tabular-nums text-zinc-400">{{ $neutral }}</p>
+                <p class="text-xs text-zinc-400 mt-1">Chunks abgerufen · kein explicit feedback</p>
+            @else
+                <p class="text-3xl font-bold mt-1 text-zinc-300 dark:text-zinc-600">–</p>
+                <p class="text-xs text-zinc-400 mt-1">Noch keine Suchen</p>
+            @endif
         </div>
         <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
             <p class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Ingest (24h)</p>
