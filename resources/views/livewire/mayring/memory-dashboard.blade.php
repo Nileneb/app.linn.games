@@ -137,6 +137,52 @@
     </div>
     @endif
 
+    {{-- LLM Calls Log --}}
+    @if(!empty($stats['llm_calls']['recent']))
+    <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
+        <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
+            <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">LLM Calls</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
+                {{ $stats['llm_calls']['last_24h'] ?? 0 }} heute
+            </span>
+            <span class="ml-auto text-xs text-zinc-400">letzte 20</span>
+        </div>
+        <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
+            @foreach($stats['llm_calls']['recent'] as $call)
+            @php
+                $typeColor = match($call['call_type'] ?? '') {
+                    'pi_task'  => 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+                    'analyze'  => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    'overview' => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                    default    => 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800',
+                };
+            @endphp
+            <div class="px-5 py-3">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="font-mono text-xs text-zinc-400 w-24 shrink-0">
+                        {{ \Carbon\Carbon::parse($call['created_at'])->diffForHumans() }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium {{ $typeColor }}">
+                        {{ $call['call_type'] ?? '–' }}
+                    </span>
+                    <span class="text-xs text-zinc-400 font-mono">{{ $call['model'] ?? '' }}</span>
+                    @if(($call['tool_calls'] ?? 0) > 0)
+                    <span class="text-xs text-zinc-400">{{ $call['tool_calls'] }} tools</span>
+                    @endif
+                    <span class="ml-auto text-xs text-zinc-400">{{ $call['duration_ms'] ?? 0 }}ms</span>
+                </div>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                    ↳ {{ Str::limit($call['prompt'] ?? '', 80) }}
+                </p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
+                    {{ Str::limit($call['response'] ?? '', 120) }}
+                </p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- Recent Operations Log --}}
     <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
         <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
