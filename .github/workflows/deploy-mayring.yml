@@ -73,10 +73,10 @@ jobs:
           cd ~/app.linn.games
           python3 scripts/write-env.py
 
-      - name: Write MayringCoder .env.production
+      - name: Write MayringCoder .env.mayring
         env:
           OLLAMA_URL: ${{ vars.OLLAMA_URL }}
-          OLLAMA_MODEL: ${{ vars.MAYRING_OLLAMA_MODEL }}
+          OLLAMA_SSL_VERIFY: "false"
           PI_REPO_SLUG: ${{ vars.PI_REPO_SLUG }}
           MCP_AUTH_ENABLED: "true"
           JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
@@ -87,14 +87,11 @@ jobs:
           LARAVEL_NETWORK: linn-shared
           MAYRING_PORT: ${{ vars.MAYRING_PORT }}
           MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
-          # Server-side watcher: path to ~/.claude/projects on the runner host.
-          # Set as GitHub Actions variable CLAUDE_PROJECTS_DIR (e.g. /home/nileneb/.claude/projects).
-          # Leave empty to skip the watcher profile.
           CLAUDE_PROJECTS_DIR: ${{ vars.CLAUDE_PROJECTS_DIR }}
         run: |
-          cat > ~/app.linn.games/.env.production << ENVEOF
+          cat > ~/app.linn.games/.env.mayring << ENVEOF
           OLLAMA_URL=${OLLAMA_URL}
-          OLLAMA_MODEL=${OLLAMA_MODEL}
+          OLLAMA_SSL_VERIFY=${OLLAMA_SSL_VERIFY}
           PI_REPO_SLUG=${PI_REPO_SLUG}
           MCP_AUTH_ENABLED=${MCP_AUTH_ENABLED}
           JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH}
