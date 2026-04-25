@@ -60,6 +60,83 @@
         </div>
     </div>
 
+    {{-- Pipeline Trace --}}
+    @if(!empty($stats['recent_jobs']))
+    <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
+        <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
+            <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">Pipeline Trace</span>
+            <span class="ml-auto text-xs text-zinc-400">letzte 5 Jobs</span>
+        </div>
+        <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
+            @foreach($stats['recent_jobs'] as $job)
+            @php
+                $statusColor = match($job['status'] ?? '') {
+                    'done'    => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                    'error'   => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                    'started' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    default   => 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800',
+                };
+                $stageOrder = ['fetch_repo','categorize','ingest_loop','wiki_hook_error'];
+                $stages = $job['stages'] ?? [];
+                $allStageKeys = array_unique(array_merge($stageOrder, array_keys($stages)));
+            @endphp
+            <div class="px-5 py-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="font-mono text-xs text-zinc-400">{{ $job['job_id'] }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium {{ $statusColor }}">
+                        {{ $job['status'] ?? '–' }}
+                    </span>
+                    @if($job['started_at'])
+                    <span class="ml-auto text-xs text-zinc-400">
+                        {{ \Carbon\Carbon::parse($job['started_at'])->diffForHumans() }}
+                    </span>
+                    @endif
+                </div>
+                @if(!empty($stages))
+                <div class="flex flex-wrap gap-2 mt-1">
+                    @foreach($allStageKeys as $key)
+                    @if(isset($stages[$key]))
+                    @php
+                        $isError = str_contains($key, 'error');
+                        $detail  = $stages[$key]['detail'] ?? '';
+                        $ts      = $stages[$key]['ts'] ?? null;
+                    @endphp
+                    <span title="{{ $detail }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono
+                        {{ $isError
+                            ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                            : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' }}">
+                        {{ $isError ? '⚠' : '✓' }} {{ $key }}
+                        @if($detail)<span class="text-zinc-400 dark:text-zinc-500 ml-0.5">{{ Str::limit($detail, 40) }}</span>@endif
+                    </span>
+                    @endif
+                    @endforeach
+                </div>
+                @else
+                <span class="text-xs text-zinc-400 italic">keine Stage-Daten (Job läuft noch oder zu alt)</span>
+                @endif
+
+                {{-- v2 post-ingest hooks --}}
+                @if(!empty($job['v2_jobs']))
+                <div class="flex flex-wrap gap-1.5 mt-1.5">
+                    @foreach($job['v2_jobs'] as $label => $v2status)
+                    @php
+                        $v2color = match($v2status) {
+                            'done'    => 'text-green-600 dark:text-green-400',
+                            'error'   => 'text-red-500',
+                            'started' => 'text-blue-500 animate-pulse',
+                            default   => 'text-zinc-400',
+                        };
+                    @endphp
+                    <span class="text-xs font-mono {{ $v2color }}">↳ {{ $label }}:{{ $v2status ?? '?' }}</span>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- Recent Operations Log --}}
     <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
         <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
