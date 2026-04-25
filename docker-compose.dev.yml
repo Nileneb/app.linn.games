@@ -1,6 +1,0 @@
-# Dev-Override: Ändert den nginx-Port von 6481 → 6480 (6481 ist durch VS Code belegt)
-# Verwendung: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-services:
-  web:
-    ports:
-      - "6480:80"
