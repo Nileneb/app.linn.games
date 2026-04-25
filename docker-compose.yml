@@ -62,17 +62,20 @@ services:
     stdin_open: true
     env_file:
       - .env
-      - .env.testing
     environment:
       - APP_ENV=testing
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
+      - MAIL_MAILER=array
+      - BROADCAST_CONNECTION=null
+      - QUEUE_CONNECTION=sync
+      - SESSION_DRIVER=array
+      - CLAUDE_API_KEY=
     volumes:
       - ./tests:/var/www/tests:ro
       - ./phpunit.xml:/var/www/phpunit.xml:ro
       - ./.env:/var/www/.env:ro
-      - ./.env.testing:/var/www/.env.testing:ro
     networks:
       - linn-network
 

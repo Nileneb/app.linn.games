@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Writes .env from .env.defaults + GitHub Environment variables passed as env vars.
-Called by CI/CD deploy workflows. All OVERRIDE_KEYS are injected via workflow env: block.
+"""Writes .env from GitHub Environment variables (secrets + variables).
+Called by CI/CD deploy workflows. All keys are injected via workflow env: block.
 
 Multiline-Werte (PEM-Keys) werden automatisch base64-encoded, damit die .env
 single-line safe bleibt. JwtIssuer/Middleware decoden automatisch.
@@ -9,11 +9,9 @@ import base64
 import os
 from pathlib import Path
 
-root = Path(__file__).parent.parent
-defaults_path = root / '.env.defaults'
-env_path = root / '.env'
+env_path = Path(__file__).parent.parent / '.env'
 
-OVERRIDE_KEYS = [
+KEYS = [
     # ── Secrets ─────────────────────────────────────────────────────
     'APP_KEY',
     'DB_PASSWORD', 'POSTGRES_PASSWORD',
@@ -29,49 +27,42 @@ OVERRIDE_KEYS = [
     'LANGDOCK_DB_USERNAME', 'LANGDOCK_DB_PASSWORD',
     # ── Variables ────────────────────────────────────────────────────
     'APP_NAME', 'VITE_APP_NAME', 'APP_ENV', 'APP_URL', 'APP_PORT', 'APP_DEBUG',
-    'DB_HOST', 'DB_DATABASE', 'DB_USERNAME',
+    'APP_LOCALE', 'APP_FALLBACK_LOCALE', 'APP_FAKER_LOCALE',
+    'APP_MAINTENANCE_DRIVER', 'BCRYPT_ROUNDS',
+    'LOG_CHANNEL', 'LOG_STACK', 'LOG_DEPRECATIONS_CHANNEL', 'LOG_LEVEL',
+    'DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME',
     'POSTGRES_DATABASE', 'POSTGRES_USERNAME',
+    'SESSION_DRIVER', 'SESSION_LIFETIME', 'SESSION_ENCRYPT',
+    'SESSION_PATH', 'SESSION_DOMAIN',
+    'BROADCAST_CONNECTION', 'FILESYSTEM_DISK',
+    'QUEUE_CONNECTION', 'CACHE_STORE',
+    'REDIS_CLIENT', 'REDIS_HOST', 'REDIS_PASSWORD', 'REDIS_PORT',
     'REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_HOST', 'REVERB_PORT', 'REVERB_SCHEME',
     'VITE_REVERB_APP_KEY', 'VITE_REVERB_HOST', 'VITE_REVERB_PORT', 'VITE_REVERB_SCHEME',
+    'MAIL_MAILER', 'MAIL_SCHEME', 'MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_FROM_ADDRESS',
+    'MEMCACHED_HOST',
+    'AWS_DEFAULT_REGION', 'AWS_USE_PATH_STYLE_ENDPOINT',
     'OLLAMA_URL',
+    'CLAUDE_USE_DIRECT_API', 'CLAUDE_USE_OLLAMA_WORKERS',
     'MAYRING_MCP_ENDPOINT', 'MAYRING_OLLAMA_MODEL', 'PI_AGENT_URL',
     'JWT_ISSUER', 'JWT_AUDIENCE', 'JWT_TTL_SECONDS', 'JWT_REFRESH_GRACE_SECONDS',
     'MAYRING_UI_AUTH_PASS', 'MAYRING_UI_AUTH_USER', 'MAYRING_PORT',
     'PAPER_SEARCH_URL',
-    'MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_FROM_ADDRESS',
     'STRIPE_MAYRING_PRICE_ID',
+    'MCP_RESTRICT_TO_INTERNAL',
 ]
 
-overrides = {k: os.environ[k] for k in OVERRIDE_KEYS if os.environ.get(k)}
+env = {k: os.environ[k] for k in KEYS if os.environ.get(k) is not None}
 
 # Multiline-Werte (PEM-Keys) base64-encoden für single-line .env.
-# Laravel-Code (JwtIssuer, VerifyMcpToken) decoded automatisch via base64_decode.
 for key in ('JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY'):
-    if key in overrides and '\n' in overrides[key]:
-        overrides[key] = base64.b64encode(overrides[key].encode()).decode()
+    if key in env and '\n' in env[key]:
+        env[key] = base64.b64encode(env[key].encode()).decode()
 
 # GitHub blocks GITHUB_ prefix in secret names — remap to correct .env keys
 for gh_key, env_key in [('GH_CLIENT_ID', 'GITHUB_CLIENT_ID'), ('GH_CLIENT_SECRET', 'GITHUB_CLIENT_SECRET')]:
-    if gh_key in overrides:
-        overrides[env_key] = overrides.pop(gh_key)
+    if gh_key in env:
+        env[env_key] = env.pop(gh_key)
 
-defaults_lines = defaults_path.read_text().splitlines() if defaults_path.exists() else []
-written: set[str] = set()
-out: list[str] = []
-
-for line in defaults_lines:
-    stripped = line.strip()
-    if stripped and not stripped.startswith('#') and '=' in stripped:
-        key = stripped.split('=', 1)[0].strip()
-        if key in overrides:
-            out.append(f'{key}={overrides[key]}')
-            written.add(key)
-            continue
-    out.append(line)
-
-for key, val in overrides.items():
-    if key not in written:
-        out.append(f'{key}={val}')
-
-env_path.write_text('\n'.join(out) + '\n')
-print(f'[write-env] .env written — {len(overrides)} overrides applied')
+env_path.write_text('\n'.join(f'{k}={v}' for k, v in env.items()) + '\n')
+print(f'[write-env] .env written — {len(env)} keys')
