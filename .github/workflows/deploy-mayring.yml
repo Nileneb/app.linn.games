@@ -76,34 +76,18 @@ jobs:
       - name: Write MayringCoder .env.mayring
         env:
           OLLAMA_URL: ${{ vars.OLLAMA_URL }}
-          OLLAMA_SSL_VERIFY: "false"
           PI_REPO_SLUG: ${{ vars.PI_REPO_SLUG }}
-          MCP_AUTH_ENABLED: "true"
-          JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
           JWT_ISSUER: ${{ vars.JWT_ISSUER }}
           JWT_AUDIENCE: ${{ vars.JWT_AUDIENCE }}
           APP_BASE_URL: ${{ vars.MAYRING_APP_BASE_URL }}
-          MAYRING_API_URL: http://mayring-api:8090
-          LARAVEL_NETWORK: linn-shared
           MAYRING_PORT: ${{ vars.MAYRING_PORT }}
           MCP_SERVICE_TOKEN: ${{ secrets.MCP_SERVICE_TOKEN }}
           CLAUDE_PROJECTS_DIR: ${{ vars.CLAUDE_PROJECTS_DIR }}
         run: |
-          cat > ~/app.linn.games/.env.mayring << ENVEOF
-          OLLAMA_URL=${OLLAMA_URL}
-          OLLAMA_SSL_VERIFY=${OLLAMA_SSL_VERIFY}
-          PI_REPO_SLUG=${PI_REPO_SLUG}
-          MCP_AUTH_ENABLED=${MCP_AUTH_ENABLED}
-          JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH}
-          JWT_ISSUER=${JWT_ISSUER}
-          JWT_AUDIENCE=${JWT_AUDIENCE}
-          APP_BASE_URL=${APP_BASE_URL}
-          MAYRING_API_URL=${MAYRING_API_URL}
-          LARAVEL_NETWORK=${LARAVEL_NETWORK}
-          MAYRING_PORT=${MAYRING_PORT}
-          MCP_SERVICE_TOKEN=${MCP_SERVICE_TOKEN}
-          CLAUDE_PROJECTS_DIR=${CLAUDE_PROJECTS_DIR}
-          ENVEOF
+          printf 'OLLAMA_URL=%s\nPI_REPO_SLUG=%s\nJWT_ISSUER=%s\nJWT_AUDIENCE=%s\nAPP_BASE_URL=%s\nMAYRING_PORT=%s\nMCP_SERVICE_TOKEN=%s\nCLAUDE_PROJECTS_DIR=%s\n' \
+            "$OLLAMA_URL" "$PI_REPO_SLUG" "$JWT_ISSUER" "$JWT_AUDIENCE" \
+            "$APP_BASE_URL" "$MAYRING_PORT" "$MCP_SERVICE_TOKEN" "$CLAUDE_PROJECTS_DIR" \
+            > ~/app.linn.games/.env.mayring
 
       - name: Write JWT public key for MayringCoder
         env:

@@ -24,6 +24,8 @@ services:
     env_file: .env.mayring
     environment:
       LARAVEL_INTERNAL_URL: http://web
+      OLLAMA_SSL_VERIFY: "false"
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
     volumes:
       - linn-mayring-cache:/app/cache
       - ./reports:/app/reports
@@ -49,6 +51,8 @@ services:
       MCP_HTTP_PORT: 8092
       MCP_HTTP_HOST: 0.0.0.0
       MCP_AUTH_ENABLED: "true"
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+      MAYRING_API_URL: http://mayring-api:8090
     volumes:
       - linn-mayring-cache:/app/cache
       - ./secrets:/secrets:ro
@@ -87,6 +91,7 @@ services:
     environment:
       LARAVEL_INTERNAL_URL: http://web
       GRADIO_ROOT_PATH: /ui
+      MAYRING_API_URL: http://mayring-api:8090
     volumes:
       - linn-mayring-cache:/app/cache:ro
       - ./secrets:/secrets:ro

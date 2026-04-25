@@ -8,6 +8,7 @@
 /vendor
 .env
 .env.backup
+.env.mayring
 .env.production
 .mcp.json
 .phpactor.json
